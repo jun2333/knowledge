@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水平垂直居布局</title>
+    <style>
+        .child{
+            width: 100px;
+            height: 100px;
+            background-color: #fff;
+            text-align: center;
+        }
+        /* 1.绝对定位+margin:auto */
+        .container1{
+            height: 200px;
+            background-color: #6b6767;
+            position: relative;
+        }
+        .child1{
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            margin: auto;
+        }
+        /* 2.绝对定位+margin负值 */
+        .container2{
+            margin-top: 10px;
+            height: 200px;
+            background-color: #6b6767;
+            position: relative;
+        }
+        .child2{
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin-left: -50px;
+            margin-top: -50px;
+        }
+        /* 3.绝对定位+transform：其实就是margin负值的替代方案，这样不用知道绝对宽高 */
+        .container3{
+            margin: 10px 0;
+            height: 200px;
+            background-color: #6b6767;
+            position: relative;
+        }
+        .child3{
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        /* 4.table配合对齐方式设置,利用了IFC */
+        .container4{
+            display: table-cell;
+            height: 200px;
+            width: 400px;
+            background-color: #6b6767;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .child4{
+            display: inline-block;
+        }
+        /* 5.flex布局 */
+        .container5{
+            margin-top: 10px;
+            display: flex;
+            height: 200px;
+            background-color: #6b6767;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 6.grid布局 */
+        .container6{
+            margin-top: 10px;
+            display: grid;
+            height: 200px;
+            background-color: #6b6767;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 精灵元素撑开高度，让子元素与精灵元素垂直对齐 */
+        .container7{
+            margin-top: 10px;
+            background-color: #6b6767;
+            text-align: center;
+        }
+        .container7::before{
+            display: inline-block;
+            height: 200px;
+            content: '';
+            vertical-align: middle;
+        }
+        .child5{
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container1">
+        <div class="child child1">定位+margin</div>
+    </div>
+    <div class="container2">
+        <div class="child child2">定位+margin</div>
+    </div>
+    <div class="container3">
+        <div class="child child3">定位+transform</div>
+    </div>
+    <div class="container4">
+        <div class="child child4">table</div>
+    </div>
+    <div class="container5">
+        <div class="child">flex</div>
+    </div>
+    <div class="container6">
+        <div class="child">grid</div>
+    </div>
+    <div class="container7">
+        <div class="child child5">grid</div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>css实现三角形</title>
+    <style>
+        .demo1{
+            position: relative;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 100px 100px 100px;
+            border-color: transparent transparent goldenrod transparent;
+        }
+        .demo1::after{
+            position: absolute;
+            left: -85px;
+            top: 9px;
+            display: block;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 85px 85px 85px;
+            border-color: transparent transparent #fff transparent;
+            content: '';
+        }
+        .demo2 {
+            width: 160px;
+            height: 200px;
+            background-repeat: no-repeat;
+            background-image: linear-gradient(32deg, orangered 50%, rgba(255, 255, 255, 0) 50%), linear-gradient(148deg, orangered 50%, rgba(255, 255, 255, 0) 50%);
+            background-size: 100% 50%;
+            background-position: top left, bottom left;
+        }
+        .demo3{
+            /* margin: 100px; */
+            width: 160px;
+            height: 200px;
+            background-color: skyblue;
+            clip-path: polygon(0 0, 0% 100%, 100% 50%);
+        }
+
+    </style>
+</head>
+<body>
+    <!-- border实现空心三角形 -->
+    <div class="demo1"></div>
+    <!-- 背景渐变设置 -->
+    <div class="demo2"></div>
+    <!-- clip-path -->
+    <div class="demo3"></div>
+</body>
+</html>

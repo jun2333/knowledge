@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>两栏布局</title>
+    <style>
+        .container1{
+            display: flex;
+            height: 200px;
+        }
+        .left1{
+            width: 200px;
+            background-color: red;
+        }
+        .right1{
+            flex: 0%;
+            background-color: green;
+        }
+        .container2{
+            margin-top: 10px;
+            height: 200px;
+        }
+        .left2{
+            float: left;
+            width: 200px;
+            height: inherit;
+            background-color: red;
+        }
+        .right2{
+            height: inherit;
+            background-color: green;
+            overflow: hidden;
+        }
+        .container3{
+            margin-top: 10px;
+            height: 200px;
+        }
+        .left3{
+            float: left;
+            width: 200px;
+            height: inherit;
+            background-color: red;
+        }
+        .right3{
+            margin-left: 200px;
+            height: inherit;
+            background-color: green;
+        }
+        .container4{
+            margin-top: 10px;
+            position: relative;
+            height: 200px;
+        }
+        .left4{
+            margin-right: 200px;
+            height: inherit;
+            background-color: red;
+        }
+        .right4{
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: inherit;
+            width: 200px;
+            background-color: green;
+        }
+
+        .container5{
+            margin-top: 10px;
+            height: 200px;
+        }
+        .left5{
+            float: left;
+            height: inherit;
+            background-color: red;
+            width: calc(100% - 200px);
+        }
+        .right5{
+            float: left;
+            height: inherit;
+            width: 200px;
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <!-- 左边固定，右边自适应 -->
+    <!-- flex布局实现 -->
+    <div class="container1">
+        <div class="left1">固定宽度</div>
+        <div class="right1">flex:1</div>
+    </div>
+    <!-- 浮动+BFC方式实现 -->
+    <div class="container2">
+        <div class="left2">左浮动</div>
+        <div class="right2">BFC</div>
+    </div>
+    <!-- 浮动+margin -->
+    <div class="container3">
+        <div class="left3">左浮动</div>
+        <div class="right3">margin-left</div>
+    </div>
+    <!-- 右边固定，左边自适应 -->
+    <!-- margin+定位 -->
+    <div class="container4">
+        <div class="left4">margin-right</div>
+        <div class="right4">绝对定位</div>
+    </div>
+    <!-- 纯浮动 -->
+    <div class="container5">
+        <div class="left5">左浮动+计算宽度calc</div>
+        <div class="right5">左浮动</div>
+    </div>
+    <!-- flex -->
+</body>
+</html>

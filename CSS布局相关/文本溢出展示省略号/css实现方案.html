@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本溢出</title>
+    <style>
+        .demo1{
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .demo2{
+            /* 多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）*/
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden;
+            width: 500px;
+        }
+        .demo3{
+            width: 500px;
+        }
+        .expand{
+            color: #115dc8;
+        }
+        .close{
+            color: #115dc8;
+        }
+    </style>
+</head>
+<body>
+    <h3>单行溢出</h3>
+    <p class="demo1">
+        单行文本溢出，没有兼容性问题可以直接用css;
+        单行文本溢出，没有兼容性问题可以直接用css;
+        单行文本溢出，没有兼容性问题可以直接用css;
+        单行文本溢出，没有兼容性问题可以直接用css;
+        单行文本溢出，没有兼容性问题可以直接用css
+    </p>
+    <h3>多行溢出</h3>
+    <p class="demo2">
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+    </p>
+    <h3>多行溢出js方案</h3>
+    <p id="demo3" class="demo3">
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+        多行文本溢出（只支持webkit内核浏览器，IE和火狐不支持）
+    </p>
+    <script src="./multiClamp.js"></script>
+    <script>
+        const containerElement = document.querySelector('#demo3')
+        new MultiClamp(containerElement, { 
+            rows: 2, // 文本限制行数，默认两行
+            ellipsis: '...', // 扩展省略号
+            expandable: true, // 是否支持展开操作，默认不支持
+            expandText: '展开', // 展开操作按钮文案，默认为展开
+            closeable: true, // 是否支持收起操作，默认不支持
+            closeText: '收起' // 收起操作按钮文案，默认为收起
+        })
+    </script>
+</body>
+</html>

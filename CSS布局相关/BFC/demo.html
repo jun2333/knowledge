@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BFC案例</title>
+    <style>
+        .BFC{
+            overflow: hidden;
+        }
+        .container{
+            width: 100%;
+            background-color: #eee;
+        }
+        .left{
+            float: left;
+            width: 200px;
+            height: 200px;
+            background-color: aquamarine;
+        }
+        .right{
+            margin-top: 10px;
+            height: 100px;
+            background-color: blueviolet;
+        }
+        .item{
+            margin-top: 10px;
+            height: 20px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- container加上BFC之后浮动元素也参与计算高度了 -->
+    <!-- 三块BFC,container、left、right都是独立的BFC -->
+    <div class="container BFC">
+        <div class="left"></div>
+        <!-- right加上BFC之后不与float元素重叠了，其实就是清除浮动的影响 -->
+        <!-- right使用BFC解决了margin合并问题 -->
+        <div class="right BFC">
+            <div class="item">
+                <span style="margin-right: 20px;">aaa</span>
+                <span style="margin-left: 10px;">bbb</span>
+            </div>
+            <div class="item"></div>
+        </div>
+    </div>
+</body>
+</html>

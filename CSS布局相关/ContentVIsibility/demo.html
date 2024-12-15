@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>content visibility</title>
+    <style>
+        .item{
+            content-visibility: auto;
+            contain-intrinsic-height: 200px;
+            list-style: none;
+            margin-top: 10px;
+            height: 200px;
+            border: 1px solid #000;
+            background-color: aqua;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <ul id="container"></ul>
+    <script>
+        const nums = 10000
+        for(let i=0; i<nums; i++){
+            const child = document.createElement('li')
+            child.innerHTML = 'hello world'+i
+            child.className = 'item'
+            document.querySelector('#container').appendChild(child)
+        }
+    </script>
+</body>
+</html>

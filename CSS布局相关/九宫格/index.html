@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>九宫格设计</title>
+  <style>
+    *{padding: 0; margin:0}
+    .grid{
+      margin: 100px 0 0 100px;
+      display: flex;
+      flex-wrap: wrap;
+      width: 300px;
+      list-style-type: none;
+    }
+    .grid li{
+      width: 100px;
+      height: 100px;
+      line-height: 100px;
+      text-align: center;
+      border: 4px solid #ccc;
+      box-sizing: border-box;
+      margin-left: -4px;
+      margin-top: -4px;
+    }
+    .grid li:nth-child(3n+1){
+      margin-left: 0;
+    }
+    .grid li:nth-child(1){
+      margin-top: 0;
+    }
+    .grid li:nth-child(2){
+      margin-top: 0;
+    }
+    .grid li:nth-child(3){
+      margin-top: 0;
+    }
+    .grid li:hover{
+      border-color: red;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <ul class="grid">
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+    <li>4</li>
+    <li>5</li>
+    <li>6</li>
+    <li>7</li>
+    <li>8</li>
+    <li>9</li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>list</title>
+  <style>
+    .list{
+      list-style-type: none;
+    }
+    .list li{
+      padding: 0 10px;
+      margin-top: 10px;
+      width: 300px;
+      height: 50px;
+      line-height: 50px;
+      background: #ccc;
+      border-radius: 10px;
+    }
+    .list li span{
+      float: right;
+    }
+  </style>
+</head>
+<body>
+  <ul class="list">
+    <li>######1<span class="remove">x</span></li>
+    <li>######2<span class="remove">x</span></li>
+    <li>######3<span class="remove">x</span></li>
+    <li>######4<span class="remove">x</span></li>
+    <li>######5<span class="remove">x</span></li>
+    <li>######6<span class="remove">x</span></li>
+    <li>######7<span class="remove">x</span></li>
+    <li>######8<span class="remove">x</span></li>
+    <li>######9<span class="remove">x</span></li>
+  </ul>
+  <ul class="list">
+    <li>%%%%%%1<span class="remove">x</span></li>
+    <li>%%%%%%2<span class="remove">x</span></li>
+    <li>%%%%%%3<span class="remove">x</span></li>
+    <li>%%%%%%4<span class="remove">x</span></li>
+    <li>%%%%%%5<span class="remove">x</span></li>
+    <li>%%%%%%6<span class="remove">x</span></li>
+    <li>%%%%%%7<span class="remove">x</span></li>
+    <li>%%%%%%8<span class="remove">x</span></li>
+    <li>%%%%%%9<span class="remove">x</span></li>
+  </ul>
+  <script>
+    class List{
+      constructor(el) {
+        this.els = Array.from(document.querySelectorAll(el))
+        let _this = this
+        this.els.forEach(item=>{
+          item.addEventListener('click',function(e){
+            if(e.target.className === 'remove'){
+              _this.removeItem(e.target)
+            }
+          }, false)
+        })
+      }
+      removeItem(e){
+        const findParent = (node)=>{
+          let parent = node.parentNode
+          let root = this.els.find(item=>item===parent)
+          if(root){
+            root.removeChild(node)
+          }else{
+            findParent(parent)
+          }
+        }
+        findParent(e)
+      }
+    }
+    window.addEventListener('DOMContentLoaded', function(){
+      new List('.list')
+    })
+  </script>
+</body>
+</html>
+
+
+<!-- 
+  考察复用性设计
+  事件委托
+  事件绑定
+  递归
+  浏览器渲染机制
+ -->

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>块级行内元素间距问题</title>
+    <style>
+        .space{
+            width: 200px;
+        }
+        .item{
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- 1.通过特定html书写方式
+    2.margin设置负值
+    3.font-size设0 -->
+    <div class="space">
+        <a href="" class="item">
+            你好</a><a href="" class="item">
+                我的</a><a href="" class="item">
+                    名字</a><a href="" class="item">
+                        叫做</a>
+    </div>
+</body>
+</html>

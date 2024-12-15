@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三栏布局</title>
+    <style>
+        .sider-left{
+            width: 200px;
+            /* height: inherit; */
+            background-color: green;
+        }
+        .sider-right{
+            width: 200px;
+            /* height: inherit; */
+            background-color: blue;
+        }
+        .center{
+            background-color: red;
+            text-align: center;
+        }
+
+        .p1{
+            /* BFC */
+            overflow: hidden;
+        }
+        .c11{
+            float: left;
+            height: 200px;
+        }
+        .c12{
+            float: left;
+            width: calc(100% - 400px);
+            height: 200px;
+        }
+        .c13{
+            float: right;
+            height: 200px;
+        }
+
+        .p2{
+            margin-top: 10px;
+            display: flex;
+        }
+        .c21{
+            order: 1;
+        }
+        .c22{
+            flex: 1;
+            order: 2;
+            height: 200px;
+        }
+        .c23{
+            order: 3;
+        }
+
+        .p3{
+            margin-top: 10px;
+            display: table;
+        }
+        .c31{
+            height: 200px;
+        }
+        .c32{
+            display: table-cell;
+            width: 100%;
+            height: 200px;
+            vertical-align: top;
+        }
+        .c33{
+            height: 200px;
+        }
+
+        .p4{
+            margin-top: 10px;
+            position: relative;
+        }
+        .c41{
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 200px;
+        }
+        .c42{
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 200px;
+        }
+        .c43{
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 200px;
+        }
+
+        .p5{
+            margin-top: 220px;
+            padding: 0 200px 0 200px;
+            height: 200px;
+            /* overflow: hidden; */
+        }
+        .c52{
+            position: relative;
+            float: left;
+            width: 100%;
+            height: inherit;
+        }
+        .c51{
+            float: left;
+            position: relative;
+            margin-left: -100%;
+            left: -200px;
+            height: inherit;
+        }
+        .c53{
+            position: relative;
+            float: left;
+            margin-left: -200px;
+            right: -200px;
+            height: inherit;
+        }
+
+        .p6{
+            margin-top: 10px;
+            height: 200px;
+        }
+        .c61,.c62,.c63{
+            float: left;
+            height: inherit;
+        }
+        .c62{
+            width: 100%;
+        }
+        .c62c{
+            margin: 0 200px;
+            height: inherit;
+        }
+    </style>
+</head>
+<body>
+    <!-- 两边固定，中间自适应 -->
+    <!-- 浮动 -->
+     <!-- 无法center前置 -->
+      <!-- 两侧高度无法自适应随着中间高度变化 -->
+    <div class="p1">
+        <div class="sider-left c11"></div>
+        <div class="center c12">float</div>
+        <div class="sider-right c13"></div>
+    </div>
+    <!-- flex -->
+     <!-- 可实现center前置,结合order属性实现中间部分优先加载 -->
+      <!-- 两侧高度可随着中间高度自适应变化 -->
+    <div class="p2">
+        <div class="center c22">flex</div>
+        <div class="sider-left c21"></div>
+        <div class="sider-right c23"></div>
+    </div>
+    <!-- table -->
+     <!-- 不支持center前置 -->
+    <div class="p3">
+        <div class="sider-left c31"></div>
+        <div class="center c32">table</div>
+        <div class="sider-right c33"></div>
+    </div>
+    <!-- 定位 -->
+     <!-- 可实现center前置 -->
+      <!-- 两侧高度无法自适应随着中间高度变化 -->
+    <div class="p4">
+        <div class="center c42">position</div>
+        <div class="sider-left c41"></div>
+        <div class="sider-right c43"></div>
+    </div>
+    <!-- 圣杯布局，浮动+相对定位+margin负值 -->
+     <!-- 原理：center100%宽度利用padding给左右留空间，左右部分被挤下去了，则利用margin负值回到当前行，并利用相对定位到该到的位置 -->
+     <!-- 可实现center前置 -->
+      <!-- 兼容性强 -->
+    <div class="p5">
+        <div class="center c52">圣杯布局</div>
+        <div class="sider-left c51"></div>
+        <div class="sider-right c53"></div>
+    </div>
+    <!-- 双飞翼布局, 浮动+margin负值 -->
+     <!-- 原理：和圣杯布局类似，不同点是center多了个父级元素，利用margin给左右留空间，被挤下去的左右部分则利用margin负值回到当前行，不需要相对定位 -->
+      <!-- 可实现center前置 -->
+       <!-- 兼容性强 -->
+    <div class="p6">
+        <div class="center c62">
+            <div class="c62c">双飞翼布局</div>
+        </div>
+        <div class="sider-left c61"></div>
+        <div class="sider-right c63"></div>
+    </div>
+    <!-- grid -->
+     <!-- 兼容性弱 -->
+</body>
+</html>

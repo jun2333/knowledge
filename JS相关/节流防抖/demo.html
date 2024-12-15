@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>节流防抖</title>
+</head>
+
+<body>
+    <script>
+        //节流实现(每隔一段时间执行一次)
+        var throttle;
+        //时间戳实现节流(缺陷：最后一次不会触发)
+        // throttle = function (func, delay) {
+        //     var prev = Date.now();
+        //     return function () {
+        //         var context = this;   //this指向window
+        //         var args = arguments;
+        //         var now = Date.now();
+        //         if (now - prev >= delay) {
+        //             func.apply(context, args);
+        //             prev = Date.now();
+        //         }
+        //     }
+        // }
+        //计时器实现节流:(缺陷：第一次不会立即触发)
+        // throttle = function (func, delay) {
+        //     var timer = null;
+        //     return function () {
+        //         var context = this;
+        //         var args = arguments;
+        //         if (!timer) {
+        //             timer = setTimeout(function () {
+        //                 func.apply(context, args);
+        //                 timer = null;
+        //             }, delay);
+        //         }
+        //     }
+        // }
+        throttle = function (func, delay) {
+            var timer = null;
+            var startTime = Date.now();  //设置开始时间
+            return function () {
+                var curTime = Date.now();
+                var remaining = delay - (curTime - startTime);  //剩余时间
+                var context = this;
+                var args = arguments;
+                clearTimeout(timer);
+                if (remaining <= 0) {      // 第一次触发立即执行
+                    func.apply(context, args);
+                    startTime = Date.now();
+                } else {
+                    timer = setTimeout(func, remaining);   //取消当前计数器并计算新的remaining
+                }
+            }
+        }
+        //防抖实现(一定时间内只执行最后一次)
+        function debounce(fn, wait) {
+            var timeout = null;      //定义一个定时器
+            return function () {
+                if (timeout !== null)
+                    clearTimeout(timeout);  //清除这个定时器
+                timeout = setTimeout(fn, wait);
+            }
+        }
+        function handle() {
+            console.log(Math.random());
+        }
+        window.addEventListener('click', throttle(handle, 1000));
+    </script>
+    <script>
+        function debounce(fn, await) {
+            var timer = null;
+            return function () {
+                if (timer !== null) {
+                    clearTimeout(timer);
+                }
+                timer = setTimeout(fn, await)
+            }
+        }
+
+        function throttle(fn,await){
+            var start = Date.now();
+            var timer = null;
+            return function(){
+                var cTime = Date.now();
+                var remain = await - (cTime - start);
+                var context = this;
+                var args = arguments;
+                clearTimeout(timer);
+                if(remain<=0){
+                    fn.apply(context,args)
+                }else{
+                    timer = setTimeout(fn,remain)
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
