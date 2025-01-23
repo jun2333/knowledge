@@ -32,6 +32,9 @@ Suspense组件在渲染过程
 2. 由于unwind，第二次进入beginWork,返回fallback对应的fiberNode
 3. promise请求成功，触发更新，第三次进入beginWork，返回Offscreen mode为visile
 
+## Hooks为啥不能用在条件语句中
+因为fiber tree是双缓存，其实hooks链表也是双缓存机制，更新的时候会执行函数组件，按照hooks执行顺序去对比old fiber中的hooks是否能复用，所以如果存在条件语句，可能会让hook对比的时候顺序错乱，引发异常情况
+
 ## Hooks与Update以及FiberNode的关系
 hooks作为单向无限链表存在fiberNode的memoizedState中
 hooks也有自己的memoizedState用于保存自身的状态(值)
