@@ -7,7 +7,7 @@
 6. 都有支持 native 的方案：Vue的weex、React的React native
 7. Diff 思想基本相同。vue 和 react 的 diff 算法都是进行同层次的比较，在处理老节点部分，都需要把节点处理 key - value 的 Map 数据结构，方便在往后的比对中可以快速通过节点的 key 取到对应的节点。同样在比对两个新老节点是否相同时，key 是否相同也是非常重要的判断标准。所以不论是 React, 还是 Vue，在写动态列表的时候，都需要设置一个唯一值 key，这样在 diff 算法处理的时候性能才最大化。
 ### 区别
-1. 语法不同。默认情况下，Vue 使用 SFC，React 使用 JSX。
+1. 语法不同。默认情况下，Vue 使用 SFC(Single File Component)，React 使用 JSX。
 
 2. 数据流向的不同。react从诞生开始就推崇单向数据流，而Vue是双向数据流，双向绑定。
 

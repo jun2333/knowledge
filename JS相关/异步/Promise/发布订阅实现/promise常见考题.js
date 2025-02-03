@@ -210,13 +210,13 @@ const m = () => {//难度系数最大
 
 const p = Promise.resolve();
 p.then(() => {
-    console.log('then 1');
+    console.log('then 1'); // 微任务1
 }).then(() => {
-    console.log('then 2');
+    console.log('then 2'); // 微任务3
 });
 (async () => {
     await p;
-    console.log('await end');
+    console.log('await end'); // 微任务2
 })();
 // then 1,  await end, then 2
 

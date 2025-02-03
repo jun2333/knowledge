@@ -48,3 +48,4 @@ Mutation完成后，Layout开始前
 2-1. FC执行useLayoutEffect,ClassComponent执行componentDidMount/Update；
 2-2. 除此之外还有this.setState的第二个参数(回调函数)以及对于HostRoot的ReactDOM.render的第三个参数(回调函数)会取出来执行(之前他们也会被当成属性存在updateQueue中)
 2-3. 重置ref
+注：useLayoutEffect在Layout阶段同步执行，js同步代码会阻塞浏览器渲染
