@@ -106,3 +106,13 @@ readContext:
 1. 生成一个contextItem加入到fiber.dependencies链表中
 2. 返回context.currentValue
 
+## 问题
+### context 与 props 和 react-redux 的对比？
+context解决了：
+
+1. 解决了 props 需要每一层都手动添加 props 的缺陷。
+2. 解决了改变 value ，组件全部重新渲染的缺陷。
+react-redux 就是通过 Provider 模式把 redux 中的 store 注入到组件中的
+
+### 如何解决 Context Provider 提供的对象可能引起的重复渲染问题？
+解决方案： use-context-selector (opens new window)，它可以让我们从 context value 中选择你会用到的状态，且只有在这些被选择的状态更新时，才会使组件重新渲染。

@@ -131,13 +131,13 @@ const i = () => {
 const j = () => {
     //考察node事件循环
     process.nextTick(() => {
-        console.log('nextTick');//2
+        console.log('nextTick');//2 idle过程
     });
     Promise.resolve().then(() => {
-        console.log('promise');//3
+        console.log('promise');//3 微任务
     });
     setImmediate(() => {
-        console.log('setImmediate');//4
+        console.log('setImmediate');//4 check setImmidiate
     });
     console.log('end');//1
 };

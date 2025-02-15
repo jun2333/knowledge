@@ -38,6 +38,7 @@
         //         }
         //     }
         // }
+        // 节流：每隔一段时间执行一次
         throttle = function (func, delay) {
             var timer = null;
             var startTime = Date.now();  //设置开始时间
@@ -47,6 +48,7 @@
                 var context = this;
                 var args = arguments;
                 clearTimeout(timer);
+                console.log('remaining', remaining)
                 if (remaining <= 0) {      // 第一次触发立即执行
                     func.apply(context, args);
                     startTime = Date.now();
@@ -68,34 +70,6 @@
             console.log(Math.random());
         }
         window.addEventListener('click', throttle(handle, 1000));
-    </script>
-    <script>
-        function debounce(fn, await) {
-            var timer = null;
-            return function () {
-                if (timer !== null) {
-                    clearTimeout(timer);
-                }
-                timer = setTimeout(fn, await)
-            }
-        }
-
-        function throttle(fn,await){
-            var start = Date.now();
-            var timer = null;
-            return function(){
-                var cTime = Date.now();
-                var remain = await - (cTime - start);
-                var context = this;
-                var args = arguments;
-                clearTimeout(timer);
-                if(remain<=0){
-                    fn.apply(context,args)
-                }else{
-                    timer = setTimeout(fn,remain)
-                }
-            }
-        }
     </script>
 </body>
 

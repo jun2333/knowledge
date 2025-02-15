@@ -46,8 +46,8 @@ var Event = (function(){
       };
 
       _trigger = function(){
-        var cache = _shift.call(arguments),
-             key = _shift.call(arguments),
+        var cache = _shift.call(arguments), // 第一个参数
+             key = _shift.call(arguments), // 第二个参数
              args = arguments,
              _self = this,
              ret,
