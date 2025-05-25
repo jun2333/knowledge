@@ -2,7 +2,7 @@
 ### construstor
 实例化类组件
 ### getDerivedStateFromProps/getSnapshotBeforeUpdate/componentWillMount/componentWillReceiveProps/componentWillUpdate/shouldComponentUpdate
-以上生命周期除了getSnapshotBeforeUpdate都发生在render阶段, getSnapshotBeforeUpdate发生在commit的beforeMutation阶段
+**以上生命周期除了getSnapshotBeforeUpdate都发生在render阶段, getSnapshotBeforeUpdate发生在commit的beforeMutation阶段**
 1. getDerivedStateFromProps用于替代componentWhillReceiveProps，所以在存在前者的时候不会执行后者
 2. componentWillMount会在getDerivedStateFromProps和getSnapshotBeforeUpdate都不存在的时候执行
 3. componentWillUpdate发生在更新阶段且需要更新条件下
@@ -15,8 +15,8 @@
 ### useEffect/useInsertionEffect/useLayoutEffect
 1. useEffect在commit的beforeMutation阶段异步调度，其回调函数执行时机发生在浏览器渲染完成之后
 2. useInsertionEffect会在commit的Mutation阶段同步调用，此时访问不了DOM，专门用于css in js
-3. useLayoutEffect会在commit的Layout阶段同步调用，用于浏览器渲染前做一些事情，可以访问DOM
-三者发生时机：useInsertionEffect->useLayoutEffect->useEffect
+3. useLayoutEffect会在commit的Layout阶段同步调用，用于浏览器渲染前做一些事情，可以访问DOM(理解为啥useInsertionEffect能阻塞渲染，因为其在操作DOM前同步执行，js引擎是单线程，同步执行js阻塞渲染)
+三者回调发生时机：useInsertionEffect->useLayoutEffect->useEffect
 
 ## 生命周期在函数组件中的替代方案
 ### componentDidMount

@@ -26,5 +26,5 @@ flushSync 中的 setState > 正常执行上下文中 setState > setTimeout ，Pr
 
 #### useState与setState区别
 1. 在设计上，setState倾向于将新值与旧值合并，useState主张重新赋值
-2. 在非pureComponnet组件模式下，setState不会对新旧值浅比较，只要调用就会执行更新；而useState会浅比较，无变化则跳过更新
-3. setState有专门的回调函数来监听数据变化，而useState只能依赖useEffect监听状态变化
+2. 在非pureComponent组件模式下，setState不会对新旧值浅比较，只要调用就会执行更新；而useState会浅比较，无变化则跳过更新
+3. setState有专门的回调函数来监听数据变化，而useState只能依赖useEffect监听状态变化，不过实质上setState的回调函数跟useEffect的回调函数执行时机都是在commit的Layout阶段

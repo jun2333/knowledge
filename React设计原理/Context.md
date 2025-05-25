@@ -48,6 +48,9 @@ Parent.childContextTypes = {
 
 解决方案：官方不建议用Lagacy Context API，如果硬要用，遇到Context中断问题可以采取发布订阅的方式解决，当context值变化的时候，通知到未被更新的消费子组件，让其调forceUpdate强行更新
 
+新的context设计:
+Provider和Consumer都是一个特殊的fiberNode存在于fiber树中，命中bailout后，如果context值变了，则深度遍历子树找到context consumer，找到之后为其附加renderLanes，然后再lanes冒泡到到root，这样子树的beginWork流程就不会被跳过了
+
 ## 新API
 基本上围绕着React.createContext生成的Provider/Consumer去使用，另外displayName用于调试
 新 API 的好处就在于从 Provider 到其内部 consumer 组件（包括 .contextType 和 useContext）的传播不受制于 shouldComponentUpdate 函数，因此当 consumer 组件在其祖先组件跳过更新的情况下也能更新
@@ -72,8 +75,31 @@ export default function ProviderDemo(){
 ### Consumer消费者
 1. 类组件
 给消费组件添加contextType静态属性值为Context对象，即可从this.context中访问到context value
+```javascript
+const ThemeContext = React.createContext(null)
+// 类组件 - contextType 方式
+class ConsumerDemo extends React.Component{
+   render(){
+       const { color,background } = this.context
+       return <div style={{ color,background } } >消费者</div> 
+   }
+}
+ConsumerDemo.contextType = ThemeContext
+
+const Son = ()=> <ConsumerDemo />
+```
 2. 函数组件
 使用useContext传入Context对象即可拿到值
+```javascript
+const ThemeContext = React.createContext(null)
+// 函数组件 - useContext方式
+function ConsumerDemo(){
+    const  contextValue = React.useContext(ThemeContext) /*  */
+    const { color,background } = contextValue
+    return <div style={{ color,background } } >消费者</div> 
+}
+const Son = ()=> <ConsumerDemo />
+```
 3. 订阅方式
 使用Consumer组件传递value值
 ```javascript
@@ -90,6 +116,9 @@ const Son = () => (
     </ThemeConsumer>
 ) 
 ```
+### 高阶用法
+1. 嵌套Provider： 当出现多个Provider嵌套的时候，分别使用Consumer组件消费各自接收信息
+2. 同一Provider逐层传递，下层Provider会覆盖上层的，Consumer只能消费到上层最近的Provider的信息
 
 ## 实现原理
 Provider:
@@ -115,4 +144,4 @@ context解决了：
 react-redux 就是通过 Provider 模式把 redux 中的 store 注入到组件中的
 
 ### 如何解决 Context Provider 提供的对象可能引起的重复渲染问题？
-解决方案： use-context-selector (opens new window)，它可以让我们从 context value 中选择你会用到的状态，且只有在这些被选择的状态更新时，才会使组件重新渲染。
+解决方案： use-context-selector，它可以让我们从 context value 中选择你会用到的状态，且只有在这些被选择的状态更新时，才会使组件重新渲染。
