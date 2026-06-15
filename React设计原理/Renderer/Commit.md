@@ -23,29 +23,28 @@ Suspense旧版本存在一种情况是若子孙组件同时存在同步和异步
 这显然不符合Suspense的理念，因此需要改变commit的遍历方式，这样才能处理得更细致，让同步组件不参与渲染(之前只是能遍历到Effects list的节点，所以无法精确控制Suspense里的同步组件也不参与渲染，现在使用了subtreeFlag之后就需要遍历所有组件，这样就可以达到预期效果了)
 
 ### BeforeMutation
-发生在归的过程
-处理getSnapshotBeforeUpdate钩子函数(class component)
+在BeforeMutation归的过程处理getSnapshotBeforeUpdate钩子函数(class component)
 调度Passive Effetct(useEffect)
 
-### Mutation
+### Mutation(操作真实DOM)
 这个阶段会**同步执行**useInsertionEffect，此时无法访问DOM
-1. 删除DOM元素(发生在递阶段：向下过程)
+1. 删除DOM元素(**发生在递阶段：向下过程**)
 fiber.deletions：是一个数组，存储这要删除的节点fiberNodes
 实际操作比较复杂：需要执行子树的unmount逻辑ClassComponent的卸载相关钩子以及FC的effect的destroy函数等
-2. 移动、插入、更新DOM元素(发生在归阶段：向上)
+2. 移动、插入、更新DOM元素(**发生在归阶段：向上**)
 2-1. 移动/插入：找父节点，before节点，DOM插入before之前
 2-2. 更新：fiber.updateQueue记录了更新的内容
-3. 置空ref
+3. 置空ref(**mount阶段和ref发生变化场景才有这步**)
 
-### fiber tree切换
+### fiber tree切换(current指向的切换，为生命周期函数服务)
 Mutation完成后，Layout开始前
 之所以在这一时机执行，是因为对于ClassComponent而言，当执行componentWillUnmount(Mutation阶段)current指向UI中对应的树，componentDidMount/Update(Layout阶段)current指向本次更新的Fiber Tree
 
 ### Layout
 1. 处理offscreencomponent逻辑(递阶段)
-2. 根据fiberNode.tag不同，执行不同逻辑(归阶段)
+2. 根据fiberNode.tag(tag就是组件分类，函数组件/类组件/Suspense/...)不同，执行不同逻辑(归阶段)
 如：
 2-1. FC执行useLayoutEffect,ClassComponent执行componentDidMount/Update；
 2-2. 除此之外还有this.setState的第二个参数(回调函数)以及对于HostRoot的ReactDOM.render的第三个参数(回调函数)会取出来执行(之前他们也会被当成属性存在updateQueue中)
-2-3. 重置ref
-注：useLayoutEffect在Layout阶段同步执行，js同步代码会阻塞浏览器渲染
+2-3. 重置ref(**mount阶段和ref发生变化场景才有这步**)
+注：useLayoutEffect在Layout阶段同步执行，js同步代码会阻塞浏览器渲染(区分浏览器渲染和框架render的概念)

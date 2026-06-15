@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>performance</title>
+    <script src="./index.js"></script>
+    <script>
+        new PerformanceObserver((entryList) => {
+            for (const entry of entryList.getEntries()) {
+                const delay = entry.processingStart - entry.startTime;
+                console.log("FID candidate:", delay, entry) // FID
+                console.log("all duration", entry.duration) // 包括FID事件加事件处理的耗时
+            }
+        }).observe({ type: "first-input", buffered: true });
+
+        new PerformanceObserver((entryList) => {
+            for (const entry of entryList.getEntries()) {
+                console.log('LCP candidate:', entry.startTime) // LCP
+            }
+        }).observe({ type: 'largest-contentful-paint', buffered: true });
+        // delay(1000) // 下面代码同步阻断渲染，测试LCP时间
+    </script>
+</head>
+
+<body>
+    <!-- <p id="text">hello</p>
+    <input id="btn" type="button" value="change text"> -->
+</body>
+<script>
+    window.addEventListener("load", () => {
+        if (document.readyState === "complete") {
+            console.log('所有资源已加载完成');
+            window.requestIdleCallback((deadline) => {
+                if (deadline.timeRemaining() > 0) {
+                    idleCallback()
+                }
+            })
+            render()
+            const inputDom = document.querySelector('#btn')
+            const textDom = document.querySelector('#text')
+            inputDom.addEventListener('click', () => {
+                textDom.textContent = textDom.textContent + ' world'
+                delay(3000) // 阻塞渲染，导致上面的DOM操作会在5s后才生效，这里跟React的useLayoutEffect一样的原理
+            })
+            delay(2000) // 渲染结束后继续执行同步代码这里可以对首次交互事件接收做个阻塞
+        }
+    })
+</script>
+
+</html>

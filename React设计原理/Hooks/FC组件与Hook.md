@@ -24,7 +24,7 @@ Suspense有两种状态：suspend(挂起)、非suspend
 Suspense组件在渲染过程
 1. beginWork进入Suspense组件时返回Offscreen对应fiberNode，mode为visile
 2. 继续子组件beginWork，当render流程(try..catch)捕获到Promise的时候(Promise会被当成错误抛出来),为最近的Suspense组件标记ShouldCapture flag(界定unwind流程终止)
-3. unwind流程(向上遍历重置状态,Class CP的错误捕获也有这个阶段),直到遇到符合条件的Suspense组件或者ErrorBoundary终止unwind
+3. unwind流程(向上遍历重置状态,Class Component的错误捕获也有这个阶段),直到遇到符合条件的Suspense组件或者ErrorBoundary终止unwind
 4. 从终止unwind的fiberNode继续beginWork，当进入commit阶段会渲染挂起状态应该展示的UI(fallback)
 5. 当Promise状态请求成功，回调自动触发一次update，Suspense组件再次进入render阶段
 所以，整个完整的工作流程一共会发生三次beginWork:
@@ -84,8 +84,8 @@ update阶段它们都是updateReducer,它接收一个reducer的入参，计算�
 5. effect相关Hook
 如：
 useEffect：commit执行之后异步执行，不阻塞视图渲染
-useLayoutEffect：commit子阶段Layout同步执行，一般用于执行DOM相关操作
 useInsertionEffect：commit子阶段Mutation同步执行，无法访问DOM，专门为css-in-js设计的
+useLayoutEffect：commit子阶段Layout同步执行，一般用于执行DOM相关操作
 
 memoizedState数据结构：
 tag----区分effect类型(Passive|Layout|Insertion) 决定什么时机调用

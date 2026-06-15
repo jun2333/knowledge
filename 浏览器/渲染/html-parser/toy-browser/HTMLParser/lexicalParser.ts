@@ -21,6 +21,7 @@ export default class HTMLLexicalParser {
   state: Function;
   initState: Function;
   receiveInput(char) {
+    console.log('this.state', this.state)
     this.state = this.state(char);
   }
   reset() {

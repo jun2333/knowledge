@@ -11,7 +11,7 @@ LanePriority和SchedulerPriority的相互转换都需要ReactPriorityLevel来进
 ### lane算法
 用32位二进制描述任务的lane，lane可以描述任务的优先级：越低的位代表越高优先级
 一批lane被称为lanes，lanes可以描述任务的批次
-通过lane的设计很好的解耦了优先级和批次，能更好的处理I/O密集型任务
+**通过lane的设计很好的解耦了优先级和批次，能更好的处理I/O密集型任务**
 ### lane优势
 1. 将批量处理与优先级解耦，更好处理cpu密集型任务
 2. 用二进制变量，利用位掩码的特性，运算速度快
@@ -21,7 +21,7 @@ LanePriority和SchedulerPriority的相互转换都需要ReactPriorityLevel来进
 是否为同步优先级->是否是render阶段更新->transition相关lane->用户手动设置的lane->事件相关的lane
 2. lanes冒泡(从FiberNode到FiberRootNode)
 调用markUpdateLaneFromFiberToRoot，从发生update的fiberNode开始向上遍历，逐个附加lane到父节点的childLanes中
-冒泡的意义在于优化，比如说某fiberNode的子孙节点不包含本次update的lane的话，则跳过子孙节点的render流程
+**冒泡的意义在于优化，比如说某fiberNode的子孙节点不包含本次update的lane的话，则跳过子孙节点的render流程**
 3. 调度FiberRootNode
 a. 选定本批次lanes:pendingLanes里高优的组成基础lanes+suspense相关的lanes+纠缠的lanes
 b. 调度策略:

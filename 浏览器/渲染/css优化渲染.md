@@ -31,6 +31,7 @@ Web中使用非系统字体（@font-face规则引入的字体）时，浏览器�
 浏览器针对处理CSS动画和不会很好地触发重排（因此也导致绘）的动画属性进行了优化。为了提高性能，可以将被动画化的节点从主线程移到GPU上。将导致合成的属性包括 3D transforms (transform: translateZ(), rotate3d()，等)，animating， transform 和 opacity, position: fixed，will-change，和 filter。一些元素，例如 <video>, <canvas> 和 <iframe>，也位于各自的图层上。 将元素提升为图层（也称为合成）时，动画转换属性将在GPU中完成，从而改善性能，尤其是在移动设备上。
 
 ### 关键css
+提取出首屏的关键css，将其与其他css拆分开来，其他css异步或者按需加载，从而减小同步阻塞渲染的css体积
 
 ### 避免@import包含多个样式表
 多使用link代替@import关联多个样式表，link标签可以并行下载，而嵌套的@import实际上是串行会阻塞渲染

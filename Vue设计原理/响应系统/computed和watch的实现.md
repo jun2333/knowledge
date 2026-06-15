@@ -100,6 +100,11 @@ function computed(getter){
 }
 ```
 
+### 总结：
+computed实质上内部包含一个lazy effect，lazy effect不会立即执行effectFn，而是将其返回。此外也给effect配置了scheduler，用于修改dirty以及调trigger函数。computed返回一个对象，对value属性进行get拦截，get中做了以下事情：
+1. 利用dirty变量控制缓存，当scheduler执行之后将dirty设置为true，只有dirty为true的时候才执行effectFn
+2. 手动调track实现对value的响应式建立
+
 ## watch原理解析
 ### 本质上就是一个effect配置了scheduler
 ```javascript
@@ -138,13 +143,12 @@ fucntion watch(source, cb){
     let oldValue, newValue
     const myEffect = effect(()=>getter()), {
         lazy: true,
-        scheduler(){
+        scheduler(){ // 当依赖的响应式数据发生变化就会触发scheduler的执行
             newValue = myEffect()
-            cb(oldValue, newValue)
-            oldValue = newValue
+            cb(oldValue, newValue) // 首次oldValue是undefined
+            oldValue = newValue // 存储当前值作为oldValue
         }
     })
-    oldValue = myEffect()
 }
 ```
 ### 加入options选项
@@ -201,9 +205,9 @@ fucntion watch(source, cb, options){
         cleanup = fn
     }
     cosnt job = ()=>{
-        if(cleanup) cleanup() // 执行用户注册的过期函数
+        if(cleanup) cleanup() // 在callback执行之前执行用户注册的过期函数，实际上引用上次callback函数内部的一个变量形成闭包
         newValue = myEffect()
-        cb(newValue, oldValue, onInvalidate)
+        cb(newValue, oldValue, onInvalidate) // callback执行的时候会注册过期函数，因此先执行的且注册了过期函数的在下次执行就会被失效掉
         oldValue = newValue
     }
     const myEffect = effect(()=>getter()), {
@@ -239,4 +243,10 @@ watch(obj, async(newVal, oldVal, onInvalidate)=>{
     }
 })
 ```
+
+### 总结：
+watch也是内置配置了lazy、scheduler的effect，首先会对第一个参数进行函数化包装，如果是对象的话会深度读取(触发依赖收集)，然后会在scheduler中选择**合适的时机(合适的时机是指options可以配置immediate、flush等选项)**执行job函数，job函数主要干了下面事情：
+1. 如果有清除过期函数配置则调用清除回调函数
+2. 执行watch第二个参数callback，传入oldValue、newValue、onInvalidate(暴露给外面注册过期函数)
+3. 更新oldValue
 

@@ -11,6 +11,7 @@ diff实际上是用新的element children(是一个数组结构，调React.creat
 key和type都相同，复用~用新element的props更新旧fiberNode，并返回fiberNode
 key相同若type不同，跳出循环，不用继续遍历了，剩下的节点都无法复用，全部标记删除(key相同都不能复用，其他没啥指望的了~)
 key不同则标记当前节点无法复用需要删除，继续遍历兄弟节点
+**type: 字符串/对象，对于基础DOM节点来说就是html标签，对于组件来说就是实例化的组件对象**
 ### 多节点diff
 当child类型为Array时走多节点diff逻辑：
 基本分三种情况：
