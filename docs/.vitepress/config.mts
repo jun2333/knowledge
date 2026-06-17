@@ -11,6 +11,7 @@ export default defineConfig({
       { text: 'JavaScript', link: '/javascript/memory' },
       { text: 'Vue', link: '/vue/double-binding' },
       { text: 'React', link: '/react/concept' },
+      { text: 'AI Agent', link: '/ai-agent/' },
       { text: '浏览器', link: '/browser/overview' },
       { text: 'CSS', link: '/css/bfc' },
       { text: '性能优化', link: '/performance/web' },
@@ -327,6 +328,42 @@ export default defineConfig({
           text: '框架对比',
           items: [
             { text: '⭐ React vs Vue', link: '/mvvm/react-vs-vue' },
+          ]
+        }
+      ],
+
+      '/ai-agent/': [
+        {
+          text: 'Spec-First 开发',
+          items: [
+            { text: '⭐ 核心思想', link: '/ai-agent/spec-first/overview' },
+            { text: '工作流程', link: '/ai-agent/spec-first/workflow' },
+          ]
+        },
+        {
+          text: 'Harness 工程',
+          items: [
+            { text: '⭐ 核心思想', link: '/ai-agent/harness-engineering/core-concepts' },
+            { text: '最佳实践', link: '/ai-agent/harness-engineering/best-practices' },
+          ]
+        },
+        {
+          text: 'Qoder 实践',
+          items: [
+            { text: '⭐ 优化实践', link: '/ai-agent/qoder/optimization' },
+          ]
+        },
+        {
+          text: 'Prompt Engineering',
+          items: [
+            { text: '基础技巧', link: '/ai-agent/prompt-engineering/basics' },
+            { text: '高级技巧', link: '/ai-agent/prompt-engineering/advanced' },
+          ]
+        },
+        {
+          text: 'RAG 检索增强',
+          items: [
+            { text: '⭐ RAG 入门', link: '/ai-agent/rag/introduction' },
           ]
         }
       ]

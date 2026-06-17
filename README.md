@@ -26,34 +26,37 @@ npm run docs:dev
 
 ### 框架原理
 - **Vue**
-  - [响应式原理](浏览器\渲染\html-parser\toy-browser\readme.md) - 见 toy-browser 项目
-  - 虚拟 DOM - 待补充
-  - 生命周期 - 待补充
+  - [响应式原理](docs/vue/double-binding.md) - Vue3 响应式系统实现
+  - [生命周期](docs/vue/lifecycle-v2.md) - Vue2/Vue3 生命周期详解
+  - [Computed & Watch](docs/vue/computed-watch.md) - 计算属性与监听器
 - **React**
-  - Fiber 架构 - 待补充
-  - Hooks 原理 - 待补充
+  - [Fiber 架构](docs/react/reconciler.md) - Reconciler 协调器
+  - [Hooks 原理](docs/react/fc-hook.md) - FC 组件与 Hook 实现
+  - [调度器](docs/react/scheduler.md) - Scheduler 优先级调度
 
 ### 浏览器
-- [渲染机制](浏览器\渲染\html-parser\toy-browser\readme.md) - 见 toy-browser 项目
+- [渲染机制](docs/browser/toy-browser.md) - 见 toy-browser 项目
 - 事件循环 - 待补充
-- 存储机制 - 待补充
-- 网络协议 - 待补充
+- [存储机制](docs/browser/storage-cache.md) - 浏览器存储与缓存
+- [网络协议](docs/browser/https.md) - HTTP/HTTPS/TCP/WebSocket
 
 ### 性能优化
-- [大文件上传](性能优化\大文件上传\upload_vue3\README.md) - 完整项目实战
-- 加载优化 - 待补充
-- 渲染优化 - 待补充
+- [大文件上传](docs/performance/upload-idea.md) - 完整项目实战
+- [加载优化](docs/performance/web.md) - Web 性能优化策略
+- [渲染优化](docs/performance/smooth.md) - 让网页更丝滑
 
 ### CSS 布局
-- [九宫格布局](CSS布局相关\九宫格\index.html) - 示例代码
+- [九宫格布局](CSS布局相关/九宫格/index.html) - 示例代码
+- [BFC 概念](docs/css/bfc.md) - 块级格式化上下文
+- [移动端适配](docs/css/mobile-adaptation.md) - 响应式设计方案
 
 ### 算法
-- 排序算法 - 待补充
-- 数据结构 - 待补充
-- 常见面试题 - 待补充
+- [排序算法](docs/algorithms/bubble-insert-selection.md) - 冒泡、插入、选择排序
+- [数据结构](docs/algorithms/heap.md) - 堆、栈、树、散列表
+- [常见面试题](docs/algorithms/binary-search.md) - 二分查找、字符串匹配
 
 ### 工程化
-- [ServiceWorker Webpack Plugin](架构\serviceworker-webpack-plugins\README.md) - 插件开发
+- [ServiceWorker Webpack Plugin](docs/engineering/architecture.md) - 插件开发
 
 ---
 
@@ -132,12 +135,12 @@ npm run docs:preview
 
 | 分类 | 已完成 | 待补充 |
 |------|--------|--------|
-| JavaScript | 1 | 4+ |
-| 框架原理 | 0 | 5+ |
-| 浏览器 | 0 | 4+ |
-| 性能优化 | 1 | 3+ |
-| CSS | 1 | 5+ |
-| 算法 | 0 | 10+ |
+| JavaScript | 4+ | 3 (闭包、原型链、事件机制) |
+| 框架原理 | 47+ (Vue 20 + React 27) | 0 |
+| 浏览器 | 11+ | 1 (事件循环) |
+| 性能优化 | 6+ | 0 |
+| CSS | 8+ | 0 |
+| 算法 | 11+ | 0 |
 
 ---
 

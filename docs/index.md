@@ -10,8 +10,8 @@ hero:
       text: 开始学习
       link: /javascript/core
     - theme: alt
-      text: 在 GitHub 查看
-      link: https://github.com/your-repo
+      text: 在 Gitee 查看
+      link: https://gitee.com/jun2333/front-end-knowledge-summary
 
 features:
   - icon: 📚
@@ -61,6 +61,6 @@ features:
 选择一个主题开始学习:
 
 - [JavaScript 核心](/javascript/core) - 前端开发的基础
-- [Vue 响应式原理](/frameworks/vue-reactive) - 深入理解 Vue
-- [浏览器渲染机制](/browser/rendering) - 理解页面如何呈现
+- [Vue 响应式原理](/vue/double-binding) - 深入理解 Vue
+- [浏览器渲染机制](/browser/css-rendering) - 理解页面如何呈现
 - [性能优化实战](/performance/optimization) - 提升用户体验
