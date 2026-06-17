@@ -1,0 +1,22 @@
+{
+  "name": "summary",
+  "version": "1.0.0",
+  "description": "个人总结和笔记",
+  "main": "index.js",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/jun2333/front-end-knowledge-summary.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}

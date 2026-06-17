@@ -1,0 +1,90 @@
+## 微前端架构的价值
+1. 微前端的微在于将大型应用拆分成一个个子应用，因此可以解决大型巨石应用带来的一些问题
+2. 业务整合，统一入口，权限以及交互风格
+3. 渐进式迭代升级和迁移，好的微前端架构应该做到与技术栈无关，对于陈旧技术项目也应该是能友好接入，可以很好的采取渐进式重构
+
+## 一个好的微前端架构应具有哪些特性
+1. 与框架无关
+2. 独立开发，独立部署也能独立运行
+3. 良好的js沙箱隔离和样式隔离机制
+4. 良好的通信系统
+5. 易于接入，子应用改造成本低，主子应用低耦合
+6. 生态繁华，持续维护
+7. 性能优秀
+8. ...
+
+## 为啥不用iframe，iframe是浏览器原生的硬隔离方案
+1. 路由不同步
+2. DOM割裂
+3. 通信困难，需定义规范
+4. 资源加载慢，白屏时间长
+5. 无法预加载缓存 iframe 内容
+6. 保活场景下，子应用多了性能差
+
+## 市面上流行微前端框架对比
+### qiankun
+1. 改造有一定成本，需要对webpack配置进行一些改造
+2. 不支持保活
+3. js隔离采取快照、代理等方式，有一些性能损耗
+4. css 沙箱无法绝对的隔离，采用严格隔离会有各种问题
+5. 社区强大，与umi整套体系兼容
+### micro-app
+micro-app 是基于 webcomponent + qiankun sandbox 的微前端方案
+比较qiankun接入成本方面稍微低了一些，但依然存在一些不足
+缺点:
+1. 多应用激活后无法保持状态，刷新后状态丢失
+2. 沙箱方案性能损耗，css无法绝对隔离
+3. 对于不支持webcomponent的没有做降级方案
+4. 支持vite但是需要是有plugin改造子应用，且js代码没办法做沙箱隔离
+### EMP
+EMP 方案是基于 webpack 5 module federation 的微前端方案
+实际上是一个去中心化的模块共享方案，模块可以是一个组件也可以是一个应用
+缺点：
+1. 与npm类似，版本切换问题依然存在
+2. 无微前端需要的一些特征，如js，css的隔离
+3. 无保活机制
+4. 只能应用于webpack项目并且对旧项目不友好，需要升级webpack5
+### 无界iframe方案
+采取webcomponent和iframe结合
+优势：
+1. 改造成本最低，只需支持跨域访问
+2. 用到iframe实现js隔离，性能较好并且隔离性好
+3. 支持保活
+4. 兼容IE
+5. 支持vite
+6. 首屏加载快(预加载+预执行)
+#### js隔离和dom隔离
+子应用DOM->webcomponent和shadow DOM容器中，私有dom但与主应用同一文档不割裂
+子应用js->放在iframe运行，天然的js隔离，通过Object.defineProperty&Proxy对iframe的document进行劫持，让其实际控制的是操作webcomponent
+#### 路由同步
+1. 在iframe内部进行history.pushState，浏览器会自动的在joint session history (opens new window)中添加iframe的session-history (opens new window)，浏览器的前进、后退在不做任何处理的情况就可以直接作用于子应用
+2. 劫持iframe的history.pushState和history.replaceState，就可以将子应用的url同步到主应用的query参数上，当刷新浏览器初始化iframe时，读回子应用的url并使用iframe的history.replaceState进行同步s
+#### 通信机制
+1. props 注入机制：子应用通过$wujie.props可以轻松拿到主应用注入的数据
+2. window.parent 通信机制：子应用iframe沙箱和主应用同源，子应用可以直接通过window.parent和主应用通信
+3. 去中心化的通信机制：无界提供了EventBus实例，注入到主应用和子应用，所有的应用可以去中心化的进行通信
+#### 预加载&预执行
+预加载指的是在应用空闲的时候requestIdleCallback将所需要的静态资源提前从网络中加载到内存中
+预执行也是类似于react fiber架构，在浏览器空闲的时候执行子应用的js文件，提前渲染子应用
+#### 三种模式
+保活模式：切换子应用保存承接dom的webcomponent在内存中，待重新激活的时候会重新挂载到容器中
+单例模式：共用同一wujie实例，切换应用调用子应用的unmount方法，共用iframe
+重建模式：当无法命中上述两种模式的时候，默认是重建模式。重建模式下每次切走子应用会销毁webcomponent和iframe
+#### 降级方案
+webcomponent+shadowdom->iframe dom
+Proxy->Object.defineProperty
+
+## 微前端js沙箱隔离实现
+### 基本手段
+1. eval
+2. with
+3. with+proxy
+
+### 单实例沙箱
+proxy+快照
+
+### 多实例沙箱
+维护状态池，类似于fakeWindow，利用proxy代理各应用的上下文，先去fakeWindow找，找不到再到window
+
+### 降级
+当不支持proxy的时候，基于diff+快照实现的沙箱，只是单实例(快照就是给window拍个照复制一份属性，然后临时改window的属性，后续卸载子应用的时候再diff还原它，并且记录子应用修改的属性，等到再次激活的时候再快速还原子应用)

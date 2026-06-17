@@ -1,0 +1,43 @@
+## 性能优化
+通过两种方式进行性能优化
+1. 编写符合性能优化策略的组件，命中策略
+2. 使用性能优化api，命中策略(shouldComponentUpdate,pureComponent,React.memo,useMemo,useCallback)
+### eagerState策略
+如果某个状态更新前后没有变化，则可以跳过render流程
+我们知道state计算发生在beginWork中，当fiberNode不存在**待执行的更新**则说明当前产生的update是当前fiberNode**第一个待执行的更新**，计算结果不会受到其他update的影响，则将这一计算过程提前到schedule阶段进行，提前计算的结果若与上次结果相等，说明state没变，不用render
+### bailout策略(紧急救助策略)
+子fiberNode没有变化，可以复用
+变化是由**自变量**改变造成的，可以围绕state、props、context展开看
+进入beginWork后，会有两次对是否命中bailout策略的判断:
+第一次检测：刚进beginWork update流程
+需要同时满足以下4个判断条件
+1. oldProps === newProps
+每次组件render返回的对象都是全新对象，只有当父节点命中bailout，复用了子fiberNode，在子fiberNode的beginWork中，oldProps与newProps才会相等，因此这个条件及其苛刻
+2. Legacy Context没有变化(使用了旧的context api，context值没变)
+3. fiberNode的type没有变化(type是组件构造函数或者html标签字符串)
+尽量不要把组件定义在组件内，不然每次生成的type都是新的对象，无法命中bailout
+4. 当前fiberNode没有更新发生，state没变化
+
+第二次检测：是根据不同tag进入到fiberNode处理逻辑时，有两次命中的可能
+a. 开发者使用了性能优化api，如：React.memo
+当检测到开发者使用了性能优化api时，对于oldProps===newProps这个判断会被改写，同时满足下面三个条件即可命中bailout
+1. oldProps，newProps比较改成浅比较
+2. 不存在更新
+3. ref没变
+b. 虽然有更新，但是state没有变化
+
+命中后的优化程度：
+1. 整棵树都命中----跳过整棵树的beginWork
+2. 只是子fiberNode命中----基于current 子fiberNode克隆一份，也可省了子fiberNode的reconciler流程
+### bailout策略与Context
+旧的context值是存在栈里
+通过beginWork过程入栈，completeWork过程出栈取到对应的值
+而命中了bailout策略的跳过整棵树的优化时，不会有**入栈、出栈**这种操作，因此context值变化后，子树也不会被更新
+**意思就是只要用了旧的Context api,如果context值发生变化，就必然不能命中bailout策略**
+
+新的context设计
+命中bailout后，如果context值变了，则深度遍历子树找到context consumer，找到之后为其附加renderLanes，然后再lanes冒泡到到root，这样子树的beginWork流程就不会被跳过了
+**新的Context api能精准找到需要更新的节点**
+
+### 了解性能优化对日常开发的启发
+原则：只有父组件命中bailout策略，子组件才有希望命中baolout策略，因此需要将可变部分和不可变部分各自分离，使得不变部分命中bailout策略，尽可能让上层组件命中bailout策略
