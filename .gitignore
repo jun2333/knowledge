@@ -10,8 +10,9 @@ build/
 .out/
 
 # VitePress
-.vitepress/cache/
-.vitepress/dist/
+**/.vitepress/cache/
+**/.vitepress/dist/
+**/.vitepress/.temp/
 
 # Logs
 *.log
