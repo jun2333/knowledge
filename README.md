@@ -2,16 +2,20 @@
 
 > 系统化整理的前端面试知识点，从基础到进阶，助你拿下前端 Offer
 
-## 🚀 在线文档站点
+## 🚀 快速开始
 
-**推荐使用在线版本查看，支持全文搜索和更好的导航：**
+### 在线文档站点（推荐）
 
 ```bash
 npm install
-npm run docs:dev
+npm run dev  # 或 npm run docs:dev
 ```
 
 然后访问 http://localhost:5173
+
+**✨ 新特性**：现在支持全文搜索、更好的导航和移动端适配！
+
+📖 **写作指南**：查看 [docs/GUIDE.md](docs/GUIDE.md) 了解如何维护知识库。
 
 ---
 
@@ -46,9 +50,9 @@ npm run docs:dev
 - [渲染优化](docs/performance/smooth.md) - 让网页更丝滑
 
 ### CSS 布局
-- [九宫格布局](CSS布局相关/九宫格/index.html) - 示例代码
 - [BFC 概念](docs/css/bfc.md) - 块级格式化上下文
 - [移动端适配](docs/css/mobile-adaptation.md) - 响应式设计方案
+- [更多布局示例](archive/source-notes-2025/CSS布局相关/) - 历史代码示例
 
 ### 算法
 - [排序算法](docs/algorithms/bubble-insert-selection.md) - 冒泡、插入、选择排序
@@ -83,51 +87,71 @@ npm run docs:dev
 
 ```
 .
-├── docs/                    # VitePress 文档站点
+├── docs/                    # 🌟 VitePress 文档站点（唯一内容源）
+│   ├── .vitepress/         # VitePress 配置
 │   ├── javascript/         # JavaScript 核心知识点
-│   ├── frameworks/         # 框架原理
+│   ├── react/              # React 框架原理
+│   ├── vue/                # Vue 框架原理
 │   ├── browser/            # 浏览器相关
+│   ├── css/                # CSS 布局与特性
 │   ├── performance/        # 性能优化
-│   └── algorithms/         # 算法
-├── JS相关/                 # JavaScript 学习笔记和代码
-├── CSS布局相关/            # CSS 布局示例
-├── 浏览器/                 # 浏览器原理学习和实践
-├── Vue设计原理/            # Vue 源码学习
-├── React设计原理/          # React 源码学习
-├── 性能优化/               # 性能优化项目
-├── 架构/                   # 架构设计相关
-├── 算法/                   # 算法练习
-├── 读书笔记/               # 技术书籍笔记
-└── 知识杂记/               # 零散知识点
+│   ├── algorithms/         # 算法
+│   ├── engineering/        # 工程化与架构
+│   ├── books/              # 读书笔记
+│   ├── ai-agent/           # AI Agent 学习
+│   └── misc/               # 杂项知识
+├── archive/                 # 历史归档（只读）
+│   └── source-notes-2025/  # 2025年前的旧笔记结构
+├── package.json
+└── README.md
 ```
+
+**💡 重要提示**：自 2026-06 起，所有内容统一在 `docs/` 目录下维护，实现单一真相源。
 
 ---
 
 ## 🔧 使用说明
 
-### 运行文档站点
+### 日常写作
+
+**直接在 `docs/` 目录下编辑即可！**
+
+```bash
+# 启动开发服务器（支持热重载）
+npm run dev
+
+# 编辑任意 markdown 文件
+code docs/react/my-new-topic.md
+
+# 保存后浏览器自动刷新，实时预览
+```
+
+详细的工作流说明请查看 [docs/GUIDE.md](docs/GUIDE.md)
+
+### 常用命令
 
 ```bash
 # 安装依赖
 npm install
 
 # 启动开发服务器
-npm run docs:dev
+npm run dev          # 简写
+npm run docs:dev     # 完整写法
 
 # 构建生产版本
-npm run docs:build
+npm run build
 
 # 预览生产版本
-npm run docs:preview
+npm run preview
 ```
 
-### 查看具体项目
+### 查看历史项目
 
-各个子项目都有独立的 README 文档，可以直接查看：
+各个子项目的代码已归档到 `archive/source-notes-2025/`，可以查看历史实现：
 
-- `性能优化/大文件上传/upload_vue3/` - Vue3 大文件上传项目
-- `浏览器/渲染/html-parser/toy-browser/` - 简易浏览器实现
-- `架构/serviceworker-webpack-plugins/` - Webpack 插件开发
+- `archive/source-notes-2025/性能优化/大文件上传/` - Vue3 大文件上传项目
+- `archive/source-notes-2025/浏览器/渲染/html-parser/toy-browser/` - 简易浏览器实现
+- `archive/source-notes-2025/架构/serviceworker-webpack-plugins/` - Webpack 插件开发
 
 ---
 
@@ -137,16 +161,23 @@ npm run docs:preview
 |------|--------|--------|
 | JavaScript | 4+ | 3 (闭包、原型链、事件机制) |
 | 框架原理 | 47+ (Vue 20 + React 27) | 0 |
-| 浏览器 | 11+ | 1 (事件循环) |
+| 浏览器 | 12+ | 1 (事件循环) |
 | 性能优化 | 6+ | 0 |
 | CSS | 8+ | 0 |
-| 算法 | 11+ | 0 |
+| 算法 | 12+ | 0 |
+| AI Agent | 9+ | 持续更新中 |
+
+**总计**: 100+ 篇高质量技术笔记
 
 ---
 
 ## 📝 更新日志
 
-- **2026-06**: 搭建 VitePress 文档站点，开始系统化整理
+- **2026-06**: 
+  - ✨ 重构为单一真相源架构，所有内容统一在 `docs/` 下维护
+  - 🚀 升级 VitePress 文档站点，支持全文搜索和更好的导航
+  - 📦 归档历史笔记到 `archive/` 目录
+  - 📖 新增写作指南文档
 - **2024-08**: 添加 toy-browser 等项目实践
 - **更早**: 个人学习笔记积累
 

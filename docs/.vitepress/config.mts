@@ -7,7 +7,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
-      { text: '快速开始', link: '/guide/quick-start' },
+      { text: '写作指南', link: '/GUIDE' },
       { text: 'JavaScript', link: '/javascript/memory' },
       { text: 'Vue', link: '/vue/double-binding' },
       { text: 'React', link: '/react/concept' },
@@ -18,6 +18,7 @@ export default defineConfig({
       { text: '架构', link: '/engineering/micro-frontend' },
       { text: '算法', link: '/algorithms/basic' },
       { text: '读书笔记', link: '/books/js-you-dont-know' },
+      { text: '杂项', link: '/misc/notes' },
     ],
 
     sidebar: {
@@ -319,6 +320,9 @@ export default defineConfig({
           text: '杂项',
           items: [
             { text: '知识杂记', link: '/misc/notes' },
+            { text: 'JavaScript 调试', link: '/misc/javascript-debugging' },
+            { text: 'SSH 快速登录配置', link: '/misc/ssh-quick-login' },
+            { text: '开发插件归纳', link: '/misc/dev-plugins-summary' },
           ]
         }
       ],
@@ -375,6 +379,33 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://gitee.com/jun2333/front-end-knowledge-summary' }
-    ]
+    ],
+
+    footer: {
+      message: '',
+      copyright: ''
+    }
+  },
+
+  markdown: {
+    config(md) {
+      const defaultRender = md.renderer.rules.fence || (() => '')
+      
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const token = tokens[idx]
+        if (token.info === 'mermaid') {
+          const code = token.content.trim()
+          // 使用 pre 标签保持格式
+          return `<pre class="mermaid" style="display:none;">${code}</pre>`
+        }
+        return defaultRender(tokens, idx, options, env, self)
+      }
+    }
+  },
+
+  vite: {
+    optimizeDeps: {
+      include: ['mermaid']
+    }
   }
 })

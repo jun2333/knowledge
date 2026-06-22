@@ -1,0 +1,19 @@
+// . # >
+digraph lexicalParser {
+  beforeSelector[style=filled,color=".7 .3 1.0"]
+  beforeSelector -> selectorStart [label=". #"];
+  beforeSelector -> selector [label="[letter]"];
+  selectorStart -> selector [label="[letter]"];
+  selector -> beforeSelector [label=", > + ~"];
+  selector -> whiteSpaceAfterSelector [label="[WhiteSpace]"];
+  selector -> beforeDeclaration [label="{"]
+  selector -> selectorStart [label=". #"]
+  whiteSpaceAfterSelector -> beforeSelector[label=", > + ~"];
+  whiteSpaceAfterSelector -> beforeDeclaration[label="{"];
+  whiteSpaceAfterSelector -> selector[label="[letter] . # *"];
+  beforeDeclaration -> declarationProperty [label="[letter]"]
+  beforeDeclaration -> beforeSelector [label="}"]
+  declarationProperty -> declarationValue [label=":"]
+  declarationValue -> beforeDeclaration [label=";"]
+  declarationValue -> beforeSelector [label="}"]
+}

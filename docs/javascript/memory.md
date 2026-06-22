@@ -116,10 +116,6 @@ Two-Finger算法是一个**Two Passes**算法，即需要遍历堆内存两次�
 
 在这两次遍历过程中，首尾两个指针分别从堆的头尾两个位置向中间移动，直至两个指针相遇，由于它们的运动轨迹酷似两根手指向中间移动的轨迹，因此称为Two Finger算法。
 
-<img src="http://www.processon.com/chart_image/530043370cf2a3dc99dd935b.png" alt="img"  />
-
-
-
 第一次遍历伪代码：
 
 ```c++
@@ -149,7 +145,23 @@ relocate(start,end)
             scan <- scan - size(scan)
 ```
 
-![img](http://www.processon.com/chart_image/530175170cf2a3dc99de59d9.png)
+```mermaid
+graph LR
+    subgraph heap["堆内存"]
+        A["A"] --> B["B"]
+        B --> D["D"]
+        C["C"] --> E["E"]
+        D --> F["F"]
+        E --> G["G"]
+    end
+    Root1["Root1"] --> A
+    Root2["Root2"] --> C
+    Root3["Root3"] --> E
+    classDef marked fill:#f9f,stroke:#333
+    class B,D,E marked
+```
+
+*图示：Two-Finger 算法第一次遍历 - 标记可达对象并计算迁移位置*
 
 第二次遍历伪代码：
 
@@ -168,7 +180,19 @@ updateReferences(start,end)
         scan <- scan + size(scan)
 ```
 
-![img](http://www.processon.com/chart_image/53006f070cf2a3dc99ddbc95.png)
+```mermaid
+graph LR
+    subgraph update["更新引用关系"]
+        Root1["Root1"] --> A_new["A"]
+        Root2["Root2"] --> C_new["C"]
+        Root3["Root3"] --> E_new["E"]
+        A_new --> D_new["D"]
+        E_new --> G_new["G"]
+    end
+    note1["所有节点已迁移到新位置"]
+```
+
+*图示：Two-Finger 算法第二次遍历 - 更新所有引用指向新位置*
 
 ###### LISP2算法
 
@@ -192,7 +216,26 @@ computeLocations(start,end,toRegion):
         scan <- scan + size(scan)
 ```
 
-![img](http://www.processon.com/chart_image/5300867d0cf2a3dc99ddd478.png)
+```mermaid
+graph TB
+    subgraph before["第一次遍历前"]
+        A1["A"] --> B1["B"]
+        B1 --> D1["D"]
+        C1["C"] --> E1["E"]
+        D1 --> F1["F"]
+        E1 --> G1["G"]
+    end
+    subgraph after["第一次遍历后 - 记录迁移地址"]
+        B2["B 迁移到:0"] 
+        D2["D 迁移到:2"]
+        E2["E 迁移到:6"]
+    end
+    Root1["Root1"] --> B2
+    Root2["Root2"] --> D2
+    Root3["Root3"] --> E2
+```
+
+*图示：LISP2 算法第一次遍历 - 计算每个可达对象的迁移地址*
 
 1. 指针free, scan同时指向堆起始位置，同时scan指针向堆尾移动，目的是要找到被标记的可达对象。
 2. 找到可达对象后，在scan指针对应的位置分配一个额外的空间来存储该可达对象应该迁移到的地址 - 就是free指针指向的位置0，同时free指针向堆尾移动B对象大小的距离- free'指针指向的位置。最后scan指针继续往前走，直到寻找到下一个可达对象D - scan'指针指向的位置。
@@ -218,7 +261,19 @@ updateReferences(start,end):
         scan <- scan + size(scan)
 ```
 
-![img](http://www.processon.com/chart_image/530173360cf2a3dc99de5668.png)
+```mermaid
+graph LR
+    subgraph updateRef["更新引用"]
+        Root1["Root1"] --> B_moved["B"]
+        Root2["Root2"] --> D_moved["D"]
+        Root3["Root3"] --> E_moved["E"]
+        B_moved --> D_moved
+        E_moved --> G_moved["G"]
+    end
+    note1["B位置0 D位置2 E位置6 G位置8"]
+```
+
+*图示：LISP2 算法第二次遍历 - 修改所有对象的引用关系*
 
 1. 修改根对象的引用关系，根对象1引用对象B，对象B的迁移地址为0，于是collector将根对象对B对象的引用指向它的迁移地址 - 位置0， 现在A对象所处的位置。
 2. 同理，对于根对象2，3都执行同样的操作，将它们对其所引用的对象的引用修改为对应的它们所引用的对象的迁移地址。
@@ -240,4 +295,17 @@ relocate(start,end):
 
 
 
-![img](http://www.processon.com/chart_image/5300ad940cf2a3dc99ddf4c4.png)
+```mermaid
+graph TB
+    subgraph move["第三次遍历 - 移动对象"]
+        B["B 位置0"] --> D["D 位置2"]
+        D --> E["E 位置6"]
+        E --> G["G 位置8"]
+    end
+    Root1["Root1"] --> B
+    Root2["Root2"] --> D
+    Root3["Root3"] --> E
+    note["所有可达对象已紧凑排列 无碎片空间"]
+```
+
+*图示：LISP2 算法第三次遍历 - 根据迁移地址移动对象，完成压缩*
