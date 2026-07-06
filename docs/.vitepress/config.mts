@@ -388,19 +388,7 @@ export default defineConfig({
   },
 
   markdown: {
-    config(md) {
-      const defaultRender = md.renderer.rules.fence || (() => '')
-      
-      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
-        const token = tokens[idx]
-        if (token.info === 'mermaid') {
-          const code = token.content.trim()
-          // 使用 pre 标签保持格式
-          return `<pre class="mermaid" style="display:none;">${code}</pre>`
-        }
-        return defaultRender(tokens, idx, options, env, self)
-      }
-    }
+    // 使用 VitePress 内置的 Mermaid 支持
   },
 
   vite: {

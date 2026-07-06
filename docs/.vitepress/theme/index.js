@@ -1,62 +1,62 @@
 import DefaultTheme from 'vitepress/theme'
-import mermaid from 'mermaid'
-
-let mermaidInitialized = false
-
-function initMermaid() {
-  if (mermaidInitialized) return
-  
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'default',
-    securityLevel: 'loose',
-  })
-  
-  mermaidInitialized = true
-}
-
-async function renderMermaidDiagrams() {
-  const elements = document.querySelectorAll('pre.mermaid')
-  
-  for (const element of elements) {
-    // 跳过已经渲染的元素
-    if (element.getAttribute('data-processed')) continue
-    
-    try {
-      const code = element.textContent || ''
-      const id = 'mermaid-' + Math.random().toString(36).substring(7)
-      const { svg } = await mermaid.render(id, code)
-      
-      // 创建新的 div 替换 pre
-      const div = document.createElement('div')
-      div.className = 'mermaid'
-      div.innerHTML = svg
-      div.setAttribute('data-processed', 'true')
-      element.replaceWith(div)
-    } catch (error) {
-      console.error('Mermaid rendering error:', error)
-      element.innerHTML = `<pre style="color: red;">Mermaid 渲染错误: ${error.message}</pre>`
-      element.style.display = 'block'
-    }
-  }
-}
 
 export default {
   ...DefaultTheme,
-  enhanceApp({ app, router, siteData }) {
-    // 初始化 mermaid
+  async enhanceApp({ app, router }) {
+    // 只在客户端初始化 mermaid
     if (typeof window !== 'undefined') {
-      initMermaid()
+      const { default: mermaid } = await import('mermaid')
+      
+      mermaid.initialize({
+        startOnLoad: false, // 禁用自动加载，手动控制
+        theme: 'default',
+        securityLevel: 'loose',
+      })
       
       // 页面加载后渲染
-      setTimeout(renderMermaidDiagrams, 100)
+      setTimeout(() => renderMermaid(), 100)
       
-      // 监听路由变化
-      if (router.onAfterRouteChanged) {
-        router.onAfterRouteChanged(() => {
-          setTimeout(renderMermaidDiagrams, 100)
-        })
+      // 路由切换后重新渲染
+      router.onAfterRouteChanged = () => {
+        setTimeout(() => renderMermaid(), 100)
       }
     }
   },
+}
+
+// 渲染所有 Mermaid 图表
+async function renderMermaid() {
+  try {
+    const { default: mermaid } = await import('mermaid')
+    const diagrams = document.querySelectorAll('.language-mermaid pre')
+    
+    for (const diagram of diagrams) {
+      const code = diagram.textContent || ''
+      const parent = diagram.parentElement
+      
+      if (!parent) continue
+      
+      // 如果已经渲染过，跳过
+      if (parent.querySelector('.mermaid')) continue
+      
+      try {
+        // 使用合法的 ID 格式（只包含字母、数字、下划线、连字符）
+        const id = `mermaid-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
+        const { svg } = await mermaid.render(id, code)
+        const container = document.createElement('div')
+        container.className = 'mermaid'
+        container.innerHTML = svg
+        
+        // 安全地替换 pre 标签
+        // 先验证 diagram 是否仍然是 parent 的子节点
+        if (diagram.parentNode === parent) {
+          parent.replaceChild(container, diagram)
+        }
+      } catch (err) {
+        console.error('Mermaid render error:', err)
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load mermaid:', err)
+  }
 }
