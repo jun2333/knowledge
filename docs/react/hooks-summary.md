@@ -1,28 +1,459 @@
-## Hooks介绍
-### useState
-状态管理，改变会造成组件更新，适合简单的视图状态存储
-### useReducer
-用于复杂的状态管理，传入reducer(明确状态改变规则的函数)和初始对象
-返回一个对象和dispatch函数
-### useEffect
-用于异步获取数据、订阅/清除事件或定时器
-### useContext
-全局状态或者跨级状态传输
-### useCallback
-缓存函数，用于有一定性能瓶颈的场景，如大量计算或者大量渲染，切记不要滥用，否则反而增加了代码复杂度
-### useMemo
-缓存值，用于昂贵的计算或者排序，跟如上一样不要滥用
-### useRef
-引用存储，与useState不同的是，ref的更新不会触发组件更新
-用于存储DOM引用，或者一些需要持久缓存的变量
-### useImperativeHandle
-与forwordRef一起使用，用于定义ref引用的组件可访问的范围
-### useTransition
-用于标记过渡状态，渲染优先级较低，避免阻塞用户交互
-### useDerferredValue
-延迟值更新，将这个值的更新延迟到浏览器空闲时进行
-### useId
-v18新出的，生成全局唯一id标识符；避免id冲突以及服务器渲染一致性保证
+# Hooks 用法总结
 
-## 自定义Hook
-至少包含一个内置hook的函数，需要按照hook规范去设计(比如不能用于条件语句中)。入参和返参自行定义，主要用于封装可复用的逻辑
+本文档总结 React 常用 Hook 的用法、使用场景和注意事项。
+
+---
+
+## 状态管理
+
+### useState
+
+管理组件内部状态，状态变化会触发组件重新渲染。
+
+```jsx
+const [count, setCount] = useState(0);
+
+// 函数式更新（基于前一个状态计算）
+setCount(prev => prev + 1);
+```
+
+**使用场景**：简单的视图状态（计数器、表单输入、开关等）
+
+**注意事项**：
+- setState 是异步的，连续调用会合并（batching）
+- 对象/数组类型的 state 需要返回新引用才能触发更新
+
+---
+
+### useReducer
+
+用于复杂的状态管理，适合状态逻辑较多或下一个状态依赖前一个状态的场景。
+
+```jsx
+const initialState = { count: 0 };
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment':
+      return { count: state.count + 1 };
+    case 'decrement':
+      return { count: state.count - 1 };
+    default:
+      throw new Error();
+  }
+}
+
+const [state, dispatch] = useReducer(reducer, initialState);
+
+// 使用
+dispatch({ type: 'increment' });
+```
+
+**useState vs useReducer**：
+- useState：简单状态，逻辑简单
+- useReducer：复杂状态，逻辑集中，便于测试和维护
+- useState 底层就是 useReducer（使用 `basicStateReducer`）
+
+---
+
+## 副作用
+
+### useEffect
+
+处理副作用（数据请求、订阅、DOM 操作等），在浏览器绘制后异步执行，不阻塞渲染。
+
+```jsx
+useEffect(() => {
+  // 副作用逻辑
+  const subscription = api.subscribe(data);
+
+  // 清理函数
+  return () => {
+    subscription.unsubscribe();
+  };
+}, [data]); // 依赖数组
+```
+
+**依赖数组规则**：
+| 依赖数组 | 执行时机 |
+|---------|---------|
+| 不传 | 每次 render 后都执行 |
+| `[]` | 只在 mount 时执行一次 |
+| `[a, b]` | a 或 b 变化时执行 |
+
+**常见陷阱**：
+- 闭包陷阱：effect 内部引用的变量如果没有加入依赖数组，会拿到旧值
+- 无限循环：effect 内部 setState，且依赖数组包含该 state
+
+---
+
+### useLayoutEffect
+
+与 useEffect 类似，但在 DOM 变更后**同步**执行，会阻塞浏览器绘制。
+
+```jsx
+useLayoutEffect(() => {
+  // 在浏览器绘制前同步执行
+  // 适合需要读取 DOM 布局并同步修改的场景
+  const rect = ref.current.getBoundingClientRect();
+  if (rect.width < 100) {
+    ref.current.style.width = '100px';
+  }
+}, []);
+```
+
+**useEffect vs useLayoutEffect**：
+- useEffect：异步执行，不阻塞渲染，适合大多数副作用
+- useLayoutEffect：同步执行，阻塞渲染，适合需要测量 DOM 并同步修改的场景
+
+---
+
+### useInsertionEffect
+
+在 DOM 变更前同步执行，无法访问 DOM，专门为 CSS-in-JS 库设计。
+
+```jsx
+useInsertionEffect(() => {
+  // 注入样式
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  return () => {
+    document.head.removeChild(style);
+  };
+}, [css]);
+```
+
+**执行顺序**：useInsertionEffect → DOM 变更 → useLayoutEffect → 浏览器绘制 → useEffect
+
+---
+
+## 缓存与优化
+
+### useCallback
+
+缓存函数引用，避免子组件不必要的重新渲染。
+
+```jsx
+const handleClick = useCallback(() => {
+  doSomething(id);
+}, [id]);
+
+// 传给子组件
+<Child onClick={handleClick} />
+```
+
+**使用场景**：
+- 传给 `React.memo` 包裹的子组件的回调函数
+- 作为 useEffect 的依赖
+
+**不要滥用**：对于简单组件或不频繁渲染的场景，直接传函数即可。
+
+---
+
+### useMemo
+
+缓存计算结果，避免每次 render 都重新计算。
+
+```jsx
+const expensiveValue = useMemo(() => {
+  return computeExpensiveValue(a, b);
+}, [a, b]);
+```
+
+**使用场景**：
+- 昂贵的计算（大数据处理、复杂算法）
+- 创建对象/数组作为 props 传给子组件
+
+**useCallback vs useMemo**：
+- `useCallback(fn, deps)` 等价于 `useMemo(() => fn, deps)`
+- useCallback 缓存函数，useMemo 缓存值
+
+---
+
+## 引用
+
+### useRef
+
+存储可变引用，更新不会触发组件重新渲染。
+
+```jsx
+const inputRef = useRef(null);
+
+// 1. 访问 DOM 元素
+<input ref={inputRef} />
+inputRef.current.focus();
+
+// 2. 保存可变值（不触发渲染）
+const timerRef = useRef(null);
+timerRef.current = setInterval(() => {}, 1000);
+
+// 3. 保存上一次的值
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => { ref.current = value; });
+  return ref.current;
+}
+```
+
+**useRef vs useState**：
+- useRef：更新不触发渲染，适合存储不需要反映到 UI 的值
+- useState：更新触发渲染，适合需要反映到 UI 的状态
+
+---
+
+### useImperativeHandle
+
+配合 `forwardRef` 使用，自定义暴露给父组件的 ref 方法。
+
+```jsx
+const FancyInput = forwardRef((props, ref) => {
+  const inputRef = useRef();
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current.focus(),
+    clear: () => inputRef.current.value = ''
+  }));
+
+  return <input ref={inputRef} />;
+});
+
+// 父组件使用
+const inputRef = useRef();
+<FancyInput ref={inputRef} />
+inputRef.current.focus();
+```
+
+---
+
+## 并发特性
+
+### useTransition
+
+标记低优先级更新，避免阻塞用户交互。
+
+```jsx
+const [isPending, startTransition] = useTransition();
+
+const handleFilterChange = (newFilter) => {
+  setInputValue(newFilter); // 高优先级：立即更新输入框
+
+  startTransition(() => {
+    setFilter(newFilter); // 低优先级：延迟更新列表
+  });
+};
+```
+
+**使用场景**：搜索框输入、筛选器切换等需要立即响应用户操作，但后续更新可以延迟的场景。
+
+---
+
+### useDeferredValue
+
+延迟值更新，将低优先级值的更新推迟到浏览器空闲时。
+
+```jsx
+const [query, setQuery] = useState('');
+const deferredQuery = useDeferredValue(query);
+
+// 输入框立即响应
+<input value={query} onChange={e => setQuery(e.target.value)} />
+
+// 列表延迟更新，不阻塞输入
+<SearchResults query={deferredQuery} />
+```
+
+**useTransition vs useDeferredValue**：
+- useTransition：主动标记哪些更新是低优先级
+- useDeferredValue：被动延迟某个值的更新
+
+---
+
+## 其他
+
+### useContext
+
+跨层级传递数据，避免 prop drilling。
+
+```jsx
+const ThemeContext = createContext('light');
+
+function App() {
+  return (
+    <ThemeContext.Provider value="dark">
+      <Toolbar />
+    </ThemeContext.Provider>
+  );
+}
+
+function Toolbar() {
+  const theme = useContext(ThemeContext);
+  return <div>Theme: {theme}</div>;
+}
+```
+
+**注意事项**：Context 值变化会导致所有消费者重新渲染，可以考虑拆分 Context 或使用 `useMemo` 稳定 value。
+
+---
+
+### useId
+
+生成全局唯一 ID，避免 ID 冲突，保证 SSR 一致性。
+
+```jsx
+function FormField() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Name</label>
+      <input id={id} name="name" />
+    </>
+  );
+}
+```
+
+---
+
+### useSyncExternalStore
+
+订阅外部数据源（如 Redux store、URL 参数），保证并发渲染下的数据一致性。
+
+```jsx
+const state = useSyncExternalStore(
+  store.subscribe,  // 订阅函数
+  store.getState    // 获取当前值
+);
+```
+
+**使用场景**：集成外部状态管理库（Redux、Zustand 等）时推荐使用。
+
+---
+
+## React 19 新增 Hook
+
+### useActionState
+
+管理 Action 的状态（pending、error、result），配合表单 action 使用。
+
+```jsx
+import { useActionState } from 'react';
+
+async function submitForm(formData) {
+  const response = await api.submit(formData);
+  if (!response.ok) throw new Error('提交失败');
+  return response.data;
+}
+
+function Form() {
+  const [result, submitAction, isPending] = useActionState(submitForm, null);
+
+  return (
+    <form action={submitAction}>
+      {result?.error && <p style={{ color: 'red' }}>{result.error}</p>}
+      {result?.success && <p style={{ color: 'green' }}>提交成功！</p>}
+      <input name="name" required />
+      <button type="submit" disabled={isPending}>
+        {isPending ? '提交中...' : '提交'}
+      </button>
+    </form>
+  );
+}
+```
+
+**返回值**：`[state, action, isPending]`
+- `state`：Action 的返回值或初始值
+- `action`：绑定到表单 action 的函数
+- `isPending`：Action 是否正在执行
+
+---
+
+### useOptimistic
+
+乐观更新，在异步操作完成前立即更新 UI，提升用户体验。
+
+```jsx
+import { useOptimistic } from 'react';
+
+function MessageList({ messages, sendMessage }) {
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic(
+    messages,
+    (state, newMessage) => [...state, { text: newMessage, sending: true }]
+  );
+
+  const handleSubmit = async (formData) => {
+    const text = formData.get('message');
+    addOptimisticMessage(text); // 立即显示（乐观更新）
+    await sendMessage(text);    // 后台发送
+  };
+
+  return (
+    <div>
+      {optimisticMessages.map((msg, i) => (
+        <div key={i} style={{ opacity: msg.sending ? 0.5 : 1 }}>
+          {msg.text} {msg.sending && '(发送中...)'}
+        </div>
+      ))}
+      <form action={handleSubmit}>
+        <input name="message" />
+        <button>发送</button>
+      </form>
+    </div>
+  );
+}
+```
+
+**使用场景**：点赞、评论、消息发送等需要即时反馈的场景。
+
+---
+
+### use()
+
+在 render 中直接读取 Promise 或 Context，无需 useEffect 或 useContext。
+
+```jsx
+// 读取 Promise
+function Comments({ commentsPromise }) {
+  const comments = use(commentsPromise); // 直接在 render 中读取
+  return comments.map(c => <div key={c.id}>{c.text}</div>);
+}
+
+// 读取 Context
+function ThemeButton() {
+  const theme = use(ThemeContext); // 等价于 useContext(ThemeContext)
+  return <button style={{ background: theme.bg }}>按钮</button>;
+}
+```
+
+**注意事项**：
+- `use()` 必须在组件或自定义 Hook 的顶层调用
+- 读取 Promise 时，组件必须被 Suspense 包裹
+- 不能用在条件语句或循环中
+
+---
+
+### useHostTransitionStatus（Server Components）
+
+在 Server Components 中检测 Transition 状态，用于条件渲染。
+
+```jsx
+// 仅在 Server Components 中可用
+import { useHostTransitionStatus } from 'react';
+
+function LoadingIndicator() {
+  const status = useHostTransitionStatus();
+  if (status === 'pending') {
+    return <Skeleton />;
+  }
+  return null;
+}
+```
+
+---
+
+## Hook 规则
+
+1. **只在最顶层使用 Hook** — 不要在循环、条件或嵌套函数中调用 Hook
+2. **只在 React 函数中调用 Hook** — 不要在普通 JS 函数中调用
+
+违反规则会导致 Hook 状态匹配错乱，引发难以排查的 bug。

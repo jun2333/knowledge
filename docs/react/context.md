@@ -1,147 +1,184 @@
-## Lagacy API
-父子组件都需要声明类的静态属性childContextTypes和contextTypes，父类需要定义getChildContext方法返回context的值
-```javascript
-class Child extends React.Component {
-  render() {
-    // 4. 这里使用 this.context.value 获取
-    return <p>{this.context.value}</p>
-  }
-}
+# Context
 
-// 3. 子组件添加 contextTypes 静态属性
-Child.contextTypes = {
-  value: PropTypes.string
-};
+Context 用于跨层级传递数据，避免 prop drilling（逐层传递 props）。
 
+---
+
+## Legacy API（已废弃）
+
+> 这部分记录 Context 的演进历史，帮助理解新 API 的设计动机。
+
+Legacy API 需要父子组件都声明静态属性，父组件定义 `getChildContext` 方法：
+
+```jsx
 class Parent extends React.Component {
-
-  state = {
-    value: 'foo'
-  }
-
-  // 1. 当 state 或者 props 改变的时候，getChildContext 函数就会被调用
   getChildContext() {
-    return {value: this.state.value}
+    return { value: this.state.value };
   }
+  render() { return <Child />; }
+}
+Parent.childContextTypes = { value: PropTypes.string };
 
+class Child extends React.Component {
+  render() { return <p>{this.context.value}</p>; }
+}
+Child.contextTypes = { value: PropTypes.string };
+```
+
+### Context 中断问题
+
+**现象**：如果组件提供的 Context 发生了变化，但中间父组件的 `shouldComponentUpdate` 返回 `false`，那么使用到该值的后代组件不会更新。
+
+**原因**：旧的 Context 值存在栈里，通过 beginWork 过程入栈，completeWork 过程出栈来获取。当命中 bailout 策略跳过整棵树时，不会有入栈、出栈操作，因此 Context 值变化后，子树也不会被更新。
+
+**结论**：使用旧 Context API 时，如果 Context 值发生变化，子树必然不能命中 bailout 策略。
+
+**解决方案**：官方不建议使用 Legacy Context API。如果硬要用，可以采取发布订阅的方式，当 Context 值变化时通知消费子组件调用 `forceUpdate` 强行更新。
+
+---
+
+## 新 API
+
+新 API 围绕 `React.createContext` 生成的 Provider/Consumer 使用。
+
+```jsx
+const ThemeContext = React.createContext(null); // 上下文对象
+const ThemeProvider = ThemeContext.Provider;    // 提供者
+const ThemeConsumer = ThemeContext.Consumer;    // 订阅消费者
+```
+
+**新 API 的优势**：从 Provider 到 Consumer 的传播不受 `shouldComponentUpdate` 限制，即使祖先组件 bailout，Consumer 也能正确更新。
+
+### Provider
+
+Provider 组件传值 `value`，value 变化会导致消费 value 的组件重新渲染。
+
+```jsx
+const ThemeContext = React.createContext(null);
+
+function App() {
+  const [theme, setTheme] = useState({ color: '#ccc', background: 'pink' });
+  return (
+    <ThemeContext.Provider value={theme}>
+      <Child />
+    </ThemeContext.Provider>
+  );
+}
+```
+
+### Consumer
+
+有三种消费方式：
+
+**1. 类组件 — contextType**
+
+```jsx
+class ThemedButton extends React.Component {
   render() {
-    return (
-      <div>
-        <Child />
-      </div>
-    )
+    const { color, background } = this.context;
+    return <button style={{ color, background }}>按钮</button>;
   }
 }
-
-// 2. 父组件添加 childContextTypes 静态属性
-Parent.childContextTypes = {
-  value: PropTypes.string
-};
+ThemedButton.contextType = ThemeContext;
 ```
-### Conetxt中断问题
-现象：如果组件提供的一个 context 发生了变化，而中间父组件的 shouldComponentUpdate 返回 false，那么使用到该值的后代组件不会进行更新。使用了 context 的组件则完全失控，所以基本上没有办法能够可靠的更新 context。
 
-原因: 旧的context值是存在栈里
-通过beginWork过程入栈，completeWork过程出栈取到对应的值
-而命中了bailout策略的跳过整棵树的优化时，不会有**入栈、出栈**这种操作，因此context值变化后，子树也不会被更新
-**意思就是只要用了旧的Context api,如果context值发生变化，就必然不能命中bailout策略**
+**2. 函数组件 — useContext**
 
-解决方案：官方不建议用Lagacy Context API，如果硬要用，遇到Context中断问题可以采取发布订阅的方式解决，当context值变化的时候，通知到未被更新的消费子组件，让其调forceUpdate强行更新
-
-新的context设计:
-Provider和Consumer都是一个特殊的fiberNode存在于fiber树中，命中bailout后，如果context值变了，则深度遍历子树找到context consumer，找到之后为其附加renderLanes，然后再lanes冒泡到到root，这样子树的beginWork流程就不会被跳过了
-
-## 新API
-基本上围绕着React.createContext生成的Provider/Consumer去使用，另外displayName用于调试
-新 API 的好处就在于从 Provider 到其内部 consumer 组件（包括 .contextType 和 useContext）的传播不受制于 shouldComponentUpdate 函数，因此当 consumer 组件在其祖先组件跳过更新的情况下也能更新
-```javascript
-const ThemeContext = React.createContext(null) // 上下文对象
-const ThemeProvider = ThemeContext.Provider  //提供者
-const ThemeConsumer = ThemeContext.Consumer // 订阅消费者
-```
-### Provider提供者
-Provider组件传值value，value变化会导致消费value的组件重新渲染
-```javascript
-const ThemeProvider = ThemeContext.Provider  //提供者
-export default function ProviderDemo(){
-    const [ contextValue , setContextValue ] = React.useState({  color:'#ccc', background:'pink' })
-    return <div>
-        <ThemeProvider value={ contextValue } > 
-            <Son />
-        </ThemeProvider>
-    </div>
+```jsx
+function ThemedButton() {
+  const theme = useContext(ThemeContext);
+  return <button style={theme}>按钮</button>;
 }
 ```
-### Consumer消费者
-1. 类组件
-给消费组件添加contextType静态属性值为Context对象，即可从this.context中访问到context value
-```javascript
-const ThemeContext = React.createContext(null)
-// 类组件 - contextType 方式
-class ConsumerDemo extends React.Component{
-   render(){
-       const { color,background } = this.context
-       return <div style={{ color,background } } >消费者</div> 
-   }
-}
-ConsumerDemo.contextType = ThemeContext
 
-const Son = ()=> <ConsumerDemo />
-```
-2. 函数组件
-使用useContext传入Context对象即可拿到值
-```javascript
-const ThemeContext = React.createContext(null)
-// 函数组件 - useContext方式
-function ConsumerDemo(){
-    const  contextValue = React.useContext(ThemeContext) /*  */
-    const { color,background } = contextValue
-    return <div style={{ color,background } } >消费者</div> 
-}
-const Son = ()=> <ConsumerDemo />
-```
-3. 订阅方式
-使用Consumer组件传递value值
-```javascript
-const ThemeConsumer = ThemeContext.Consumer // 订阅消费者
+**3. Consumer 组件 — 订阅方式**
 
-function ConsumerDemo(props){
-    const { color,background } = props
-    return <div style={{ color,background } } >消费者</div> 
+```jsx
+function ThemedButton({ color, background }) {
+  return <button style={{ color, background }}>按钮</button>;
 }
-const Son = () => (
-    <ThemeConsumer>
-       { /* 将 context 内容转化成 props  */ }
-       { (contextValue)=> <ConsumerDemo  {...contextValue}  /> }
-    </ThemeConsumer>
-) 
+
+function Child() {
+  return (
+    <ThemeContext.Consumer>
+      {theme => <ThemedButton {...theme} />}
+    </ThemeContext.Consumer>
+  );
+}
 ```
+
 ### 高阶用法
-1. 嵌套Provider： 当出现多个Provider嵌套的时候，分别使用Consumer组件消费各自接收信息
-2. 同一Provider逐层传递，下层Provider会覆盖上层的，Consumer只能消费到上层最近的Provider的信息
+
+**嵌套 Provider**：多个 Provider 嵌套时，分别使用 Consumer 消费各自的信息。
+
+**Provider 覆盖**：同一 Context 的 Provider 逐层传递，下层 Provider 会覆盖上层的，Consumer 只能消费到最近的 Provider 的信息。
+
+```jsx
+<ThemeContext.Provider value="light">
+  <ThemeContext.Provider value="dark">
+    <Child /> {/* 消费到 "dark" */}
+  </ThemeContext.Provider>
+</ThemeContext.Provider>
+```
+
+---
 
 ## 实现原理
-Provider:
-本质上是一个特殊的React Element对象，所以也会被转换成FiberNode存在于fiber树中，也会参与到调和(即：beginWork阶段)
-更新操作：调updateContextProvider
-1. pushProvider:将value值更新到context实例的currentValue属性上
-2. 判断新旧value相等且不是legacy context就停止更新
-3. 否则往下更新继续调和，向下调和过程中找到消费组件(通过对比fiber.dependencies属性是否包含当前context)，对消费组件fiber标记高优渲染
-4. 归的过程lane冒泡
 
-Consumer:
-无论使用哪种方式消费context，实质上都是调readContext
-readContext:
-1. 生成一个contextItem加入到fiber.dependencies链表中
-2. 返回context.currentValue
+### Provider
 
-## 问题
-### context 与 props 和 react-redux 的对比？
-context解决了：
+Provider 本质上是一个特殊的 React Element，会被转换成 FiberNode 存在于 Fiber 树中，参与调和（beginWork 阶段）。
 
-1. 解决了 props 需要每一层都手动添加 props 的缺陷。
-2. 解决了改变 value ，组件全部重新渲染的缺陷。
-react-redux 就是通过 Provider 模式把 redux 中的 store 注入到组件中的
+**更新流程**：
 
-### 如何解决 Context Provider 提供的对象可能引起的重复渲染问题？
-解决方案： use-context-selector，它可以让我们从 context value 中选择你会用到的状态，且只有在这些被选择的状态更新时，才会使组件重新渲染。
+```
+1. pushProvider：将 value 更新到 context 实例的 currentValue 属性上
+2. 判断新旧 value 相等且不是 legacy context → 停止更新
+3. 否则继续向下调和，找到消费组件（通过对比 fiber.dependencies 是否包含当前 context）
+4. 对消费组件 Fiber 标记高优渲染
+5. 归的过程 lane 冒泡
+```
+
+### Consumer
+
+无论使用哪种方式消费 Context，实质上都是调用 `readContext`：
+
+```
+1. 生成一个 contextItem 加入到 fiber.dependencies 链表中
+2. 返回 context.currentValue
+```
+
+### 新 API 如何解决 Context 中断问题
+
+Provider 和 Consumer 都是特殊的 FiberNode 存在于 Fiber 树中。命中 bailout 后，如果 Context 值变了，则深度遍历子树找到 Context Consumer，为其附加 `renderLanes`，然后 lanes 冒泡到 root，这样子树的 beginWork 流程就不会被跳过。
+
+---
+
+## 常见问题
+
+### Context 与 Props、React-Redux 的对比
+
+| 方案 | 优点 | 缺点 |
+|------|------|------|
+| **Props** | 简单直接 | 需要逐层传递（prop drilling） |
+| **Context** | 跨层级传递 | 值变化时所有 Consumer 重新渲染 |
+| **React-Redux** | 精确订阅，性能更好 | 需要引入额外库 |
+
+### 如何避免 Context 引起的重复渲染
+
+Context 值变化会导致所有 Consumer 重新渲染。解决方案：
+
+**1. 拆分 Context** — 将频繁变化的值和稳定值分开存储
+
+```jsx
+const ThemeContext = createContext(null);      // 稳定值
+const UserContext = createContext(null);       // 频繁变化
+```
+
+**2. 使用 useMemo 稳定 value** — 避免每次 render 都创建新对象
+
+```jsx
+const value = useMemo(() => ({ theme, user }), [theme, user]);
+```
+
+**3. 使用 use-context-selector** — 可以从 Context value 中选择需要的状态，只有被选择的状态更新时才重新渲染。

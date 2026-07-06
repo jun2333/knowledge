@@ -1,71 +1,115 @@
-## useLog
-1. log数据存全局
-2. 上报函数缓存
-3. 绑定/解绑事件在useEffect进行
-```javascript
-export const LogContext = React.createContext({})
+# 自定义 Hook 案例
 
-export default function useLog(){
-    /* 一些公共参数 */
-    const message = React.useContext(LogContext)
-    const listenDOM = React.useRef(null)
+自定义 Hook 是封装可复用逻辑的函数，必须以 `use` 开头，内部至少调用一个内置 Hook。
 
-    /* 分清依赖关系 -> message 改变，   */
-    const reportMessage = React.useCallback(function(data,type){
-        if(type==='pv'){ // pv 上报
-            console.log('组件 pv 上报',message)
-        }else if(type === 'click'){  // 点击上报
-            console.log('组件 click 上报',message,data)
-        }
-    },[ message ])
+---
 
-    React.useEffect(()=>{
-        const handleClick = function (e){
-            reportMessage(e.target,'click')
-        }
-        if(listenDOM.current){
-            listenDOM.current.addEventListener('click',handleClick)
-        }
+## useLog — 日志上报
 
-        return function (){
-            listenDOM.current && listenDOM.current.removeEventListener('click',handleClick)
-        }
-    },[ reportMessage  ])
+封装 PV/Click 上报逻辑，自动绑定/解绑事件。
 
-    return [ listenDOM , reportMessage  ]
+```jsx
+import React from 'react';
+
+export const LogContext = React.createContext({});
+
+export default function useLog() {
+  const message = React.useContext(LogContext);
+  const listenDOM = React.useRef(null);
+
+  const reportMessage = React.useCallback(function(data, type) {
+    if (type === 'pv') {
+      console.log('组件 pv 上报', message);
+    } else if (type === 'click') {
+      console.log('组件 click 上报', message, data);
+    }
+  }, [message]);
+
+  React.useEffect(() => {
+    const handleClick = (e) => {
+      reportMessage(e.target, 'click');
+    };
+
+    if (listenDOM.current) {
+      listenDOM.current.addEventListener('click', handleClick);
+    }
+
+    return () => {
+      listenDOM.current?.removeEventListener('click', handleClick);
+    };
+  }, [reportMessage]);
+
+  return [listenDOM, reportMessage];
 }
 ```
 
-## useForceUpdate
-内部维护一个state用于更新，返回一个函数更新state
-```javascript
+**使用示例**：
+
+```jsx
+function MyComponent() {
+  const [logRef, reportLog] = useLog();
+
+  return (
+    <LogContext.Provider value={{ page: 'home' }}>
+      <div ref={logRef}>
+        <button onClick={() => reportLog({ action: 'submit' }, 'click')}>
+          提交
+        </button>
+      </div>
+    </LogContext.Provider>
+  );
+}
+```
+
+---
+
+## useForceUpdate — 强制更新
+
+当需要手动触发组件重新渲染时使用（如引用了外部可变对象）。
+
+```jsx
 function useForceUpdate() {
   const [, setTick] = useState(0);
-  const forceUpdate = useCallback(() => {
-    setTick(tick => tick + 1);
-  }, []);
-  return forceUpdate;
+  return useCallback(() => setTick(t => t + 1), []);
 }
 ```
 
-## useVisible
-利用IntersectionObserver实现懒加载图片等功能
-```javascript
+**使用示例**：
+
+```jsx
+function Component() {
+  const forceUpdate = useForceUpdate();
+  const externalObj = useRef(new ExternalStore());
+
+  useEffect(() => {
+    const unsubscribe = externalObj.current.subscribe(() => {
+      forceUpdate(); // 外部状态变化时强制更新
+    });
+    return unsubscribe;
+  }, [forceUpdate]);
+
+  return <div>{externalObj.current.value}</div>;
+}
+```
+
+---
+
+## useVisible — 可见性检测
+
+利用 IntersectionObserver 实现懒加载、无限滚动等功能。
+
+```jsx
 import { useState, useEffect, useRef } from 'react';
 
-function useVisible(options) {
-  const { root = null, rootMargin = '0px', threshold = 0.1 } = options || {};
+function useVisible(options = {}) {
+  const { root = null, rootMargin = '0px', threshold = 0.1 } = options;
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        } else {
-          setIsVisible(false);
-        }
+        setIsVisible(entry.isIntersecting);
       });
     }, { root, rootMargin, threshold });
 
@@ -73,171 +117,222 @@ function useVisible(options) {
       observer.observe(ref.current);
     }
 
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
+    return () => observer.disconnect();
   }, [root, rootMargin, threshold]);
 
-  return {
-    ref,
-    isVisible
-  };
+  return { ref, isVisible };
 }
 ```
 
-## usePrevious
-保存上一次的值
-```javascript
-function usePrevious(value) {
-  // 创建一个 ref 对象来保存上一次的值
-  const ref = useRef();
-  
-  // 在 useEffect 中更新 ref 的值
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  
-  // 返回上一次的值
-  return ref.current;
+**使用示例**：
+
+```jsx
+// 懒加载图片
+function LazyImage({ src, alt }) {
+  const { ref, isVisible } = useVisible();
+
+  return (
+    <img
+      ref={ref}
+      src={isVisible ? src : 'placeholder.png'}
+      alt={alt}
+    />
+  );
 }
 
-// 测试用例
-import React, { useState } from 'react';
-import usePrevious from './usePrevious';
+// 无限滚动
+function InfiniteList() {
+  const { ref, isVisible } = useVisible();
 
-function MyComponent() {
-  const [count, setCount] = useState(0);
-  const prevCount = usePrevious(count);
+  useEffect(() => {
+    if (isVisible) {
+      loadMore(); // 底部可见时加载更多
+    }
+  }, [isVisible]);
 
   return (
     <div>
-      <p>Current count: {count}</p>
-      <p>Previous count: {prevCount}</p>
-      <button onClick={() => setCount(count + 1)}>Increment</button>
+      {items.map(item => <Item key={item.id} {...item} />)}
+      <div ref={ref}>{loading && '加载中...'}</div>
     </div>
   );
 }
 ```
 
-## React-Redux中的Hooks
-一个是注入 Store 的 useCreateStore ，另外一个是负责订阅更新的 useConnect
-### useCreateStore 
-用于产生一个状态 Store ，通过 context 上下文传递 ，为了让每一个自定义 hooks useConnect 都能获取 context 里面的状态属性。
-实际上就是用useRef缓存store
-```javascript
-export const ReduxContext = React.createContext(null)
-/* 用于产生 reduxHooks 的 store */
-export function useCreateStore(reducer,initState){
-   const store = React.useRef(null)
-   /* 如果存在——不需要重新实例化 Store */
-   if(!store.current){
-       store.current  = new ReduxHooksStore(reducer,initState).exportStore()
-   }
-   return store.current
+---
+
+## usePrevious — 保存上一次的值
+
+用于比较当前值和上一次的值，常见于动画、条件渲染等场景。
+
+```jsx
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
 }
 ```
-ReduxHooksStore的设计：是一个自带状态，内部有发布订阅能力的类
-```javascript
-import { unstable_batchedUpdates } from 'react-dom'
-class ReduxHooksStore {
-    constructor(reducer,initState){
-       this.name = '__ReduxHooksStore__'
-       this.id = 0
-       this.reducer = reducer
-       this.state = initState
-       this.mapConnects = {}
+
+**使用示例**：
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+  const prevCount = usePrevious(count);
+
+  return (
+    <div>
+      <p>当前：{count}</p>
+      <p>上一次：{prevCount}</p>
+      <button onClick={() => setCount(c => c + 1)}>+1</button>
+    </div>
+  );
+}
+```
+
+---
+
+## useDebounce — 防抖
+
+延迟执行函数，适合搜索框输入、窗口 resize 等高频触发场景。
+
+```jsx
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+```
+
+**使用示例**：
+
+```jsx
+function SearchBox() {
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300);
+
+  useEffect(() => {
+    if (debouncedQuery) {
+      searchAPI(debouncedQuery); // 停止输入 300ms 后才请求
     }
-    /* 需要对外传递的接口 */
-    exportStore=()=>{
-        return {
-            dispatch:this.dispatch.bind(this),
-            subscribe:this.subscribe.bind(this),
-            unSubscribe:this.unSubscribe.bind(this),
-            getInitState:this.getInitState.bind(this)
+  }, [debouncedQuery]);
+
+  return (
+    <input
+      value={query}
+      onChange={e => setQuery(e.target.value)}
+      placeholder="搜索..."
+    />
+  );
+}
+```
+
+---
+
+## useLocalStorage — 本地存储
+
+将状态同步到 localStorage，刷新后数据不丢失。
+
+```jsx
+function useLocalStorage(key, initialValue) {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = (value) => {
+    const valueToStore = value instanceof Function ? value(storedValue) : value;
+    setStoredValue(valueToStore);
+    window.localStorage.setItem(key, JSON.stringify(valueToStore));
+  };
+
+  return [storedValue, setValue];
+}
+```
+
+**使用示例**：
+
+```jsx
+function ThemeToggle() {
+  const [theme, setTheme] = useLocalStorage('theme', 'light');
+
+  return (
+    <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}>
+      当前主题：{theme}
+    </button>
+  );
+}
+```
+
+---
+
+## useFetch — 数据请求
+
+封装数据请求逻辑，自动管理 loading、error 状态。
+
+```jsx
+function useFetch(url, options = {}) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    fetch(url, options)
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled) {
+          setData(data);
+          setLoading(false);
         }
-    }
-    /* 获取初始化 state */
-    getInitState=(mapStoreToState)=>{
-        return mapStoreToState(this.state)
-    }
-    /* 更新需要更新的组件 */
-    publicRender=()=>{
-        unstable_batchedUpdates(()=>{ /* 批量更新 */
-            Object.keys(this.mapConnects).forEach(name=>{
-                const { update } = this.mapConnects[name]
-                update(this.state)
-            })
-        })
-    }
-    /* 更新 state  */
-    dispatch=(action)=>{
-       this.state = this.reducer(this.state,action)
-       // 批量更新
-       this.publicRender()
-    }
-    /* 注册每个 connect  */
-    subscribe=(connectCurrent)=>{
-        const connectName = this.name + (++this.id)
-        this.mapConnects[connectName] =  connectCurrent
-        return connectName
-    }
-    /* 解除绑定 */
-    unSubscribe=(connectName)=>{
-        delete this.mapConnects[connectName]
-    }
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setError(err);
+          setLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [url]);
+
+  return { data, loading, error };
 }
 ```
-### useConnect 
-使用这个自定义 hooks 的组件，可以获取改变状态的 dispatch 方法，还可以订阅 state ，被订阅的 state 发生变化，组件更新。
-使用方式:
-```javascript
-// 订阅 state 中的 number 
-const mapStoreToState = (state)=>({ number: state.number  })
-const [ state , dispatch ] = useConnect(mapStoreToState)
-```
-实现:
-```javascript
-export function useConnect(mapStoreToState=()=>{}){
-    /* 获取 Store 内部的重要函数 */
-   const contextValue = React.useContext(ReduxContext) // 拿到store实例
-   const { getInitState , subscribe ,unSubscribe , dispatch } = contextValue
-   /* 用于传递给业务组件的 state  */
-   const stateValue = React.useRef(getInitState(mapStoreToState))
 
-   const [ , forceUpdate ] = React.useState() // 用于强行渲染
-   /* 产生 */
-   const connectValue = React.useMemo(()=>{
-       const state =  {
-           /* 用于比较一次 dispatch 中，新的 state 和 之前的state 是否发生变化  */
-           cacheState: stateValue.current,
-           /* 更新函数 */
-           update:function (newState) { // 交给发布订阅器去调用，传入新值
-               /* 获取订阅的 state */
-               const selectState = mapStoreToState(newState)
-               /* 浅比较 state 是否发生变化，如果发生变化， */
-               const isEqual = shallowEqual(state.cacheState,selectState)
-               state.cacheState = selectState
-               stateValue.current  = selectState
-               if(!isEqual){
-                   /* 更新 */
-                   forceUpdate({})
-               }
-           }
-       }
-       return state
-   },[ contextValue ]) // 将 contextValue 作为依赖项。
+**使用示例**：
 
-   React.useEffect(()=>{
-       /* 组件挂载——注册 connect */
-       const name =  subscribe(connectValue)
-       return function (){
-            /* 组件卸载 —— 解绑 connect */
-           unSubscribe(name)
-       }
-   },[ connectValue ]) /* 将 connectValue 作为 useEffect 的依赖项 */
+```jsx
+function UserProfile({ userId }) {
+  const { data, loading, error } = useFetch(`/api/users/${userId}`);
 
-   return [ stateValue.current , dispatch ]
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>加载失败</div>;
+  if (!data) return null;
+
+  return <div>{data.name}</div>;
 }
 ```
+
+---
+
+## 设计自定义 Hook 的原则
+
+1. **单一职责** — 每个 Hook 只负责一个功能
+2. **组合优于继承** — 复杂逻辑通过组合多个简单 Hook 实现
+3. **返回值清晰** — 返回数组（按顺序解构）或对象（按名称解构）
+4. **依赖管理** — 内部 useEffect 的依赖数组要完整，避免闭包陷阱
+5. **清理副作用** — 订阅、定时器、事件监听等要在 cleanup 中清理
