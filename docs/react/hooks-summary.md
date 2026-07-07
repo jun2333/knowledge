@@ -110,7 +110,7 @@ useLayoutEffect(() => {
 
 ### useInsertionEffect
 
-在 DOM 变更前同步执行，无法访问 DOM，专门为 CSS-in-JS 库设计。
+在 **Mutation 阶段**同步执行，**无法访问组件自身的 DOM 节点**（通过 ref 获取），专门为 CSS-in-JS 库设计。
 
 ```jsx
 useInsertionEffect(() => {
@@ -125,7 +125,24 @@ useInsertionEffect(() => {
 }, [css]);
 ```
 
-**执行顺序**：useInsertionEffect → DOM 变更 → useLayoutEffect → 浏览器绘制 → useEffect
+**为什么无法访问 ref？**
+
+Commit 阶段的执行顺序：
+1. **Before Mutation 阶段** — 准备工作
+2. **Mutation 阶段** — `safelyDetachRef`（ref.current = null）→ DOM 操作 → **useInsertionEffect 执行**
+3. **Layout 阶段** — `safelyAttachRef`（ref.current = 新 DOM 节点）→ useLayoutEffect 执行
+
+useInsertionEffect 执行时，ref 已经被 detach（`ref.current = null`），但新的 DOM 节点还没有被 attach，所以无法通过 ref 访问组件的 DOM 节点。
+
+**可以访问 `document` 全局对象**，因为 `document` 不依赖 ref，始终存在。
+
+**执行顺序**：useInsertionEffect → DOM 变更完成 → useLayoutEffect → 浏览器绘制 → useEffect
+
+**为什么 React 要这样设计？**
+
+1. **CSS-in-JS 需要在 DOM 变更前注入样式** — 这样浏览器在绘制时就能使用新样式，避免闪烁
+2. **不允许访问 ref 是为了保证一致性** — Mutation 阶段 ref 已经被重置为 `null`，如果允许访问，只能得到 `null`，无法获取有效的 DOM 节点
+3. **强制分离关注点** — CSS-in-JS 只负责注入样式（操作 document.head），不应该依赖组件的 DOM 结构
 
 ---
 
@@ -264,6 +281,8 @@ const deferredQuery = useDeferredValue(query);
 <SearchResults query={deferredQuery} />
 ```
 
+**实现原理**：当值变化时，保持使用旧值，并通过 `requestDeferredLane()` 调度一个**低优先级的 Transition 更新**（TransitionLane11-14），让 Scheduler 在空闲时再渲染新值。
+
 **useTransition vs useDeferredValue**：
 - useTransition：主动标记哪些更新是低优先级
 - useDeferredValue：被动延迟某个值的更新
@@ -313,6 +332,15 @@ function FormField() {
 }
 ```
 
+**实现原理**：
+
+- **SSR/Hydration**：使用 `treeId`（组件在树中的位置）+ `localId`（组件内调用顺序）生成 id，格式为 `_R{treeId}{localId}_`
+- **纯 CSR**：使用全局计数器生成 id，格式为 `_r{counter}_`
+
+**为什么 SSR 和 CSR Hydration 能保持一致的 id？**
+
+SSR 和 Hydration 使用**相同的规则**（treeId + localId），组件的渲染顺序是确定的，所以生成相同的 id。纯 CSR 的规则不同，但跟 SSR 无关，不需要考虑一致性问题。
+
 ---
 
 ### useSyncExternalStore
@@ -325,6 +353,10 @@ const state = useSyncExternalStore(
   store.getState    // 获取当前值
 );
 ```
+
+**实现原理**：每次渲染时直接调用 `getSnapshot()` 获取最新值，通过 `useEffect` 订阅 store 变化。当 store 变化时，检查 snapshot 是否变化，如果变化则用同步优先级强制重新渲染，保证并发渲染下的数据一致性。
+
+**设计初衷**：让 React 能够跟踪外部数据源的变化，并在并发渲染模式下保证数据一致性。
 
 **使用场景**：集成外部状态管理库（Redux、Zustand 等）时推荐使用。
 
@@ -360,6 +392,11 @@ function Form() {
   );
 }
 ```
+
+**参数**：
+- `action` — 异步函数 `(formData) => result`，处理表单提交
+- `initialState` — 初始状态（如 `null`）
+- `permalink` — 可选，用于服务端行动的永久链接
 
 **返回值**：`[state, action, isPending]`
 - `state`：Action 的返回值或初始值
@@ -403,6 +440,16 @@ function MessageList({ messages, sendMessage }) {
 }
 ```
 
+**参数**：
+- `currentState` — 当前真实状态（如 `messages`）
+- `reducer` — `(state, optimisticValue) => newState`，定义如何合并乐观更新
+
+**返回值**：`[optimisticState, addOptimistic]`
+- `optimisticState` — 包含乐观更新的状态
+- `addOptimistic` — 触发乐观更新的函数，异步操作完成后自动恢复为真实状态
+
+**失败处理**：如果异步操作失败，乐观更新会自动回滚到真实状态（因为真实状态未改变）。
+
 **使用场景**：点赞、评论、消息发送等需要即时反馈的场景。
 
 ---
@@ -429,12 +476,26 @@ function ThemeButton() {
 - `use()` 必须在组件或自定义 Hook 的顶层调用
 - 读取 Promise 时，组件必须被 Suspense 包裹
 - 不能用在条件语句或循环中
+- **Promise 引用必须稳定** — 如果每次渲染创建新 Promise 会导致无限循环，需要用 `useMemo` 缓存或直接导出 Promise 实例
+
+```jsx
+// ❌ 每次渲染创建新 Promise，无限循环
+const data = use(fetchData());
+
+// ✅ 用 useMemo 缓存
+const promise = useMemo(() => fetchData(), []);
+const data = use(promise);
+
+// ✅ 直接导出 Promise 实例（模块级别单例）
+import { dataPromise } from './api';
+const data = use(dataPromise);
+```
 
 ---
 
 ### useHostTransitionStatus（Server Components）
 
-在 Server Components 中检测 Transition 状态，用于条件渲染。
+在 Server Components 中检测客户端组件的 Transition 状态，用于条件渲染。
 
 ```jsx
 // 仅在 Server Components 中可用
@@ -448,6 +509,30 @@ function LoadingIndicator() {
   return null;
 }
 ```
+
+**使用场景**：客户端组件通过 `startTransition` 触发低优先级更新，服务端组件需要感知这个状态来决定渲染什么内容。
+
+```jsx
+// 客户端组件 — 触发 Transition
+'use client';
+function SearchButton({ onSearch }) {
+  const [startTransition] = useTransition();
+  return <button onClick={() => startTransition(() => onSearch())}>搜索</button>;
+}
+
+// 服务端组件 — 感知 Transition 状态
+function SearchResult() {
+  const status = useHostTransitionStatus();
+  if (status === 'pending') {
+    return <Skeleton />;  // Transition 进行中，显示骨架
+  }
+  return <ActualResults />;  // 完成，显示真实结果
+}
+```
+
+**为什么需要它？** 服务端组件没有 `useTransition`（不在浏览器运行，没有交互），但又需要知道客户端组件的 Transition 状态来做条件渲染。这个 Hook 就是给服务端组件开的一个"窗口"，让它能感知到客户端的 Transition 状态。
+
+**简单说**：客户端触发 Transition，服务端感知并响应。
 
 ---
 

@@ -109,13 +109,20 @@ export default defineConfig({
           ]
         },
         {
-          text: 'Renderer 渲染器',
+          text: 'Reconciler 协调器',
           items: [
             { text: 'Reconciler 协调器', link: '/react/reconciler' },
             { text: '⭐ Reconcile 算法 (Diff)', link: '/react/reconcile-algorithm' },
             { text: 'Commit 阶段', link: '/react/commit' },
             { text: '状态更新流程', link: '/react/state-update' },
             { text: '性能优化', link: '/react/performance' },
+          ]
+        },
+        {
+          text: 'Renderer 渲染器',
+          items: [
+            { text: 'ReactDOM 实现', link: '/react/react-dom' },
+            { text: 'React Native 渲染', link: '/react/react-native' },
           ]
         },
         {

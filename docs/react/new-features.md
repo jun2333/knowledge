@@ -170,10 +170,95 @@ function ThemeButton() {
 
 React 19 引入了 `prerender` 和 `prerenderToNodeStream` 两个新的 API，用于改进静态 HTML 生成，支持流环境如 Node.js Streams 和 Web Streams。
 
+#### 背景：为什么需要静态 API？
+
+React 18 的 `renderToString` 和 `renderToPipeableStream` 主要用于 **SSR（服务端渲染）**，需要配合客户端 hydration。但有些场景只需要**纯静态 HTML**，不需要 hydration：
+
+- **静态站点生成（SSG）** — 构建时生成 HTML，部署到 CDN
+- **邮件模板** — 生成 HTML 邮件内容
+- **PDF 生成** — 将 React 组件渲染为 HTML 再转 PDF
+- **爬虫友好** — 生成纯 HTML 供搜索引擎抓取
+
+#### `prerender` — 生成完整 HTML
+
 ```jsx
 import { prerender } from 'react-dom/static';
 
+// 生成完整 HTML（包含 doctype、html、head、body）
 const { prelude } = await prerender(<App />);
+
+// prelude 是一个 ReadableStream，可以转换为字符串
+const html = await new Response(prelude).text();
+console.log(html);
+// <!DOCTYPE html><html><head>...</head><body>...</body></html>
+```
+
+**使用场景**：SSG 构建时生成静态 HTML 文件
+
+```jsx
+// 构建脚本示例
+import { prerender } from 'react-dom/static';
+import fs from 'fs';
+
+async function build() {
+  const { prelude } = await prerender(<App />);
+  const html = await new Response(prelude).text();
+  fs.writeFileSync('dist/index.html', html);
+}
+
+build();
+```
+
+#### `prerenderToNodeStream` — Node.js 流式生成
+
+```jsx
+import { prerenderToNodeStream } from 'react-dom/static.node';
+
+// 返回 Node.js Readable Stream
+const stream = prerenderToNodeStream(<App />);
+
+// 直接写入文件
+stream.pipe(fs.createWriteStream('dist/index.html'));
+
+// 或在 Express 中返回
+app.get('/', (req, res) => {
+  stream.pipe(res);
+});
+```
+
+**使用场景**：服务端动态生成 HTML 响应
+
+#### 与 SSR API 的区别
+
+| API | 用途 | 是否需要 Hydration |
+|---|---|---|
+| `renderToString` | SSR，生成 HTML 字符串 | ✅ 需要 |
+| `renderToPipeableStream` | SSR，流式渲染 | ✅ 需要 |
+| `prerender` | 静态 HTML 生成 | ❌ 不需要 |
+| `prerenderToNodeStream` | 静态 HTML 流式生成 |  不需要 |
+
+**核心区别**：静态 API 生成的 HTML 是"死"的，没有 React 运行时，不能交互；SSR API 生成的 HTML 需要客户端 hydration 才能交互。
+
+#### 完整示例：SSG 构建脚本
+
+```jsx
+import { prerender } from 'react-dom/static';
+import fs from 'fs';
+import path from 'path';
+
+const routes = ['/', '/about', '/contact'];
+
+async function build() {
+  for (const route of routes) {
+    const { prelude } = await prerender(<App route={route} />);
+    const html = await new Response(prelude).text();
+    const filePath = path.join('dist', route === '/' ? 'index.html' : `${route}.html`);
+    fs.writeFileSync(filePath, html);
+    console.log(`Generated: ${filePath}`);
+  }
+}
+
+build();
 ```
 
 ### 3. 改进与兼容性
@@ -232,9 +317,20 @@ function Component() {
 }
 ```
 
-### 4. React Compiler（v19.2，2025 年 10 月）
+### 4. React Compiler（v1.0，2025 年 10 月 7 日）
 
-React Compiler 在 v19.2 中正式发布 v1.0，标志着 React 进入**编译时优化**时代：
+React Compiler 在 2025 年 10 月 7 日正式发布 v1.0，标志着 React 进入**编译时优化**时代。
+
+#### 发布时间线
+
+| 阶段 | 时间 | 状态 |
+|---|---|---|
+| **Experimental** | 2024 年 5 月（React Conf） | ✅ 已完成 |
+| **Public Beta** | 2024 年 10 月 21 日 | ✅ 已完成 |
+| **Release Candidate (RC)** | 2025 年初 | ✅ 已完成 |
+| **v1.0 Stable** | 2025 年 10 月 7 日 | ✅ **已发布** |
+
+#### 核心功能
 
 - **自动记忆化** — 编译器自动为组件和 Hook 添加记忆化，无需手动使用 `React.memo`、`useMemo`、`useCallback`
 - **细粒度更新** — 编译器分析组件内部的数据流，只重新渲染真正变化的部分
@@ -248,13 +344,38 @@ const ExpensiveComponent = React.memo(({ data }) => {
   return <div onClick={handleClick}>{processed}</div>;
 });
 
-// React 19.2 + Compiler：编译器自动处理
+// React 19 + Compiler：编译器自动处理
 function ExpensiveComponent({ data }) {
   const processed = heavyProcess(data); // 编译器自动记忆化
   const handleClick = () => doSomething(data); // 编译器自动稳定引用
   return <div onClick={handleClick}>{processed}</div>;
 }
 ```
+
+#### 已知限制
+
+1. **需要遵守 React 规则** — 违反 Rules of React 的代码会被跳过编译
+2. **TypeScript 严格模式** — 需要开启 `strictNullChecks`
+3. **某些模式不支持** — 如动态属性访问、某些闭包模式
+4. **调试体验** — 编译后代码难以调试，需要 source map 支持
+
+#### 实际采用情况
+
+- **Next.js** — 已在 Next.js 15+ 中集成支持
+- **Meta 内部** — 已在 Facebook/Instagram 生产环境使用
+- **社区采用** — 逐步推广中，建议新项目尝试
+
+#### 启用方式
+
+```bash
+# 安装
+npm install -D babel-plugin-react-compiler@latest
+
+# 或先使用 ESLint 插件检查代码合规性
+npm install -D eslint-plugin-react-compiler@latest
+```
+
+**建议**：先在非关键路径上试用，确保代码符合 React 规则后再全面启用。
 
 ---
 

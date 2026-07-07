@@ -11,11 +11,74 @@
 
 ### 为什么类组件走向函数组件？
 
-JavaScript 这个语言本身不是像 Java 那样按照面向对象编程设计的。它的对象是基于原型和原型链的设计、是动态的。相较面向对象、基于类的写法，对象委托关联的复用手段表达更为确切。虽然 ES6 也支持了 class 语法，但其底层依旧是基于对象委托关联，并且与传统类的特点也有所差异（如类是静态的，而 JS 里的是动态；类的继承、实例化是基于复制，而 JS 仍然是通过原型委托关联）。
+**类组件的三个痛点**：
 
-回到 JS 本身，函数是 JavaScript 的第一公民，函数的使用比类更为简洁简单，并且可以将**状态逻辑**等代码与**函数组件**解耦，使得项目代码逻辑更为清晰，也更好维护。Vue 的 Composition API 和 React Hooks 的出现就是为了解决逻辑复用问题。
+1. **this 指向混乱** — 事件处理需要 bind(this)，箭头函数写法不统一，新手容易踩坑
+2. **生命周期导致逻辑分散** — 相关逻辑被迫拆分到 componentDidMount、componentDidUpdate、componentWillUnmount 中，不相关的逻辑却挤在同一个生命周期里
+3. **逻辑复用困难** — HOC 和 Render Props 导致组件嵌套过深（"嵌套地狱"），且复用逻辑与组件耦合
 
-因此 React 更推崇函数组件描述 UI，通过 Hooks 的方式切入状态逻辑，逐步弃用将逻辑写在各个生命周期钩子中，从而避免逻辑分散。Vue 也大致是这个方向，由原来的 Options API 转成 Composition API，通过一个 setup 函数统一收拢所有逻辑。
+**函数组件的解决方案**：
+
+- **没有 this** — 直接用变量，不需要 bind
+- **Hook 按逻辑组织代码** — 相关状态和副作用写在一起，不相关的逻辑自然分离
+- **自定义 Hook 实现逻辑复用** — 直接提取函数，无需嵌套包装
+
+**语言层面的原因**：
+
+JS 的 `class` 只是原型链的语法糖，底层仍然是基于对象委托，和 Java 那种基于类的继承完全不同。在 JS 中用 class 是"削足适履"——强行套用面向对象的模式，却要承受 this 绑定、原型链查找等额外复杂度。
+
+函数才是 JS 最自然的表达方式：
+- 函数是一等公民，可以直接作为值传递、返回、存储
+- 闭包天然支持状态封装，不需要 class 的实例属性
+- 原型链的本质就是函数之间的委托关系
+
+所以用函数组件写 React，是用 JS 最擅长的方式解决问题，而不是模仿其他语言的范式。
+
+```jsx
+// 类组件：逻辑分散在三个生命周期中
+class FriendStatus extends React.Component {
+  state = { isOnline: null };
+  componentDidMount() { ChatAPI.subscribe(this.handleStatusChange); }
+  componentDidUpdate() { /* 需要手动处理 props 变化 */ }
+  componentWillUnmount() { ChatAPI.unsubscribe(this.handleStatusChange); }
+  handleStatusChange = (status) => { this.setState({ isOnline: status.isOnline }); }
+  render() { return this.state.isOnline ? 'Online' : 'Offline'; }
+}
+
+// 函数组件：相关逻辑聚合在一起
+function FriendStatus({ friendID }) {
+  const [isOnline, setIsOnline] = useState(null);
+  useEffect(() => {
+    const handleStatusChange = (status) => setIsOnline(status.isOnline);
+    ChatAPI.subscribe(friendID, handleStatusChange);
+    return () => ChatAPI.unsubscribe(friendID, handleStatusChange);
+  }, [friendID]);
+  return isOnline ? 'Online' : 'Offline';
+}
+```
+
+Vue 也走了同样的路：Options API → Composition API，本质上都是**按逻辑组织代码，而非按生命周期组织代码**。
+
+```mermaid
+flowchart LR
+    subgraph Class["类组件：按生命周期组织"]
+        direction TB
+        C1["constructor"] ~~~ C2["componentDidMount"] ~~~ C3["componentDidUpdate"] ~~~ C4["componentWillUnmount"]
+        C1 --- M1["初始化 A 状态"]
+        C2 --- M2["订阅 A 事件"]
+        C3 --- M3["对比 A props 变化"]
+        C4 --- M4["取消订阅 A"]
+        C2 --- M5["订阅 B 事件"]
+        C3 --- M6["对比 B props 变化"]
+        C4 --- M7["清理 B 定时器"]
+    end
+
+    subgraph Func["函数组件：按逻辑关注点组织"]
+        direction TB
+        F1["Hook A：状态 + 订阅 + 清理"]
+        F2["Hook B：状态 + 订阅 + 清理"]
+    end
+```
 
 ---
 
@@ -33,7 +96,7 @@ JavaScript 这个语言本身不是像 Java 那样按照面向对象编程设计
 
 ---
 
-## HOC（高阶组件）
+## HOC（Higher-Order Component，高阶组件）
 
 HOC 是 React 对装饰器模式的一种实现，实质上就是一个函数接收一个组件（函数/类）作为入参，然后经过包装再返回一个新的组件。
 
@@ -111,6 +174,13 @@ function withLogging(WrappedComponent) {
 2. 嵌套泛滥，多层抽象同样增加了复杂度和理解成本（最关键的缺陷）
 3. Ref 传递缺陷
 
+```mermaid
+flowchart TD
+    A["withAuth"] --> B["withTheme"]
+    B --> C["withLogging"]
+    C --> D["App"]
+```
+
 ---
 
 ## Render Props
@@ -141,12 +211,19 @@ class MouseTracker extends React.Component {
 ```
 
 **优点**：
-- 比 HOC 更灵活，没有嵌套问题
+- 比 HOC 更灵活，没有**组件嵌套**问题（不会出现 `withA(withB(withC(Component)))` 的 wrapper hell）
 - 可以明确知道数据来源
 
 **缺点**：
-- 代码嵌套较深（"回调地狱"）
+- 多个 Render Props 组合时会产生**回调嵌套**（"回调地狱"）
 - 无法在 return 语句外使用数据（render 函数内部）
+
+```mermaid
+flowchart TD
+    A["MouseTracker"] -->|render| B["ThemeConsumer"]
+    B -->|render| C["I18nConsumer"]
+    C -->|render| D["最终 UI"]
+```
 
 ---
 
@@ -155,6 +232,20 @@ class MouseTracker extends React.Component {
 将逻辑复用转变成 Hook 的组合。React 16 以后推出了很多内置 Hook，有与状态有关的 `useState`，与生命周期有关的 `useEffect` 等等。
 
 这样就可以将代码逻辑和状态随意组合成一个自定义 Hook，我们可以封装很多通用 Hook 从而达到代码复用的目的。同时函数组件代替类组件，使得开发更为简洁简单，理解成本更低。
+
+```mermaid
+flowchart LR
+    subgraph CustomHook["自定义 Hook（逻辑层）"]
+        H1["useState"]
+        H2["useEffect"]
+    end
+
+    subgraph Component["组件（视图层）"]
+        V1["return JSX"]
+    end
+
+    CustomHook -->|提供数据| Component
+```
 
 ```jsx
 // 自定义 Hook：鼠标位置追踪
@@ -244,4 +335,4 @@ React 在逻辑复用上，从 Mixins 到 HOC，从 HOC 到 Render Props 再到�
 | **Mixins** | 简单 | 命名冲突、逻辑分散 |
 | **HOC** | 低耦合 | 嵌套泛滥、ref 传递缺陷 |
 | **Render Props** | 灵活 | 代码嵌套深 |
-| **Hooks** | 简洁、逻辑聚合 | 闭包陷阱、学习成本 |
+| **Hooks** | 解耦视图与逻辑、逻辑聚合 | 闭包陷阱、学习成本 |

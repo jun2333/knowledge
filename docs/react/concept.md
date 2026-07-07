@@ -291,7 +291,7 @@ FiberNode 是 Fiber 架构的核心，包含以下关键属性：
 
 ### 双缓存机制（Double Buffering）
 
-双缓存机制的核心目的是**避免中间状态暴露给用户**，并支持**中断恢复**。
+双缓存机制的核心目的是**隔离 Render 阶段的变更**，保证 `current` 树的完整性，并支持**中断恢复**。
 
 **Mount 时构建 Fiber Tree：**
 
@@ -322,9 +322,110 @@ FiberNode 是 Fiber 架构的核心，包含以下关键属性：
 
 > **为什么需要双缓存？**
 >
-> 1. **避免中间状态** — 如果直接在当前树上修改，用户可能看到不完整的 UI
-> 2. **支持中断恢复** — 更新可以被中断，下次继续时从 `workInProgress` 树恢复进度
-> 3. **复用节点** — 未变化的节点可以直接复用，不需要重新创建
+> 1. **支持中断恢复** — Render 阶段是可中断、可恢复的。`workInProgress` 树提供了独立的计算空间，保证 `current` 树始终完整一致。更新可以被中断，下次继续时从 `workInProgress` 树恢复进度，或者丢弃 `workInProgress` 重新开始，不会影响 `current` 树。
+> 2. **复用节点** — 未变化的节点可以直接从 `current` 树复制过来（通过 `alternate` 指针），避免重新创建，提升性能。
+> 3. **支持生命周期钩子** — 在 Commit 阶段，React 需要调用 `componentDidUpdate` 等生命周期钩子，这些钩子需要访问更新前的 `props` 和 `state`。有了双缓存树，`current` 树保存了更新前的状态，`workInProgress` 树保存了更新后的状态，可以方便地传递 `prevProps`/`prevState`。
+>
+> **常见误解澄清**：
+> - "避免用户看到不完整的 UI" — 这个说法不够准确。即使没有双缓存，只要分 Render + Commit 两阶段，DOM 操作依然是在 Commit 阶段一次性完成的，用户不会看到中间状态。
+> - 双缓存真正解决的是 **React 内部状态的隔离问题**，确保 Render 阶段的可中断性不会破坏 `current` 树的完整性。
+
+---
+
+## 不可变数据模型
+
+### 什么是不可变数据？
+
+**不可变（Immutable）** 意味着数据一旦创建就不能被修改，任何"修改"操作都会返回一个新的数据副本。
+
+```js
+// 可变数据（Mutable）— 直接修改原对象
+const obj = { count: 0 };
+obj.count = 1;  // 原对象被修改了
+console.log(obj); // { count: 1 }
+
+// 不可变数据（Immutable）— 返回新对象
+const obj = { count: 0 };
+const newObj = { ...obj, count: 1 };  // 创建了新对象
+console.log(obj);      // { count: 0 } — 原对象没变
+console.log(newObj);   // { count: 1 } — 新对象
+```
+
+### React 中的表现
+
+React 每次渲染都会创建**全新的变量和函数**：
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  // 每次渲染，count 都是一个新的变量
+  // 第1次渲染：count = 0（变量 A）
+  // 第2次渲染：count = 1（变量 B，不是变量 A 被修改了）
+  
+  const handleClick = () => {
+    console.log(count); // 捕获的是创建时的 count 变量
+  };
+  
+  return <button onClick={handleClick}>{count}</button>;
+}
+```
+
+**关键点**：
+- 第 1 次渲染：`count = 0`，`handleClick` 闭包捕获 `count = 0`
+- 第 2 次渲染：`count = 1`（新变量），但 `handleClick` 还是引用第 1 次的 `count = 0`
+
+### 为什么 React 采用不可变数据？
+
+1. **可预测性** — 数据不会在不知情的情况下被修改
+2. **易于比较** — 判断数据是否变化只需比较引用（`===`），不需要深度遍历
+3. **时间旅行调试** — 每次状态都是独立的快照，可以回溯
+4. **并发安全** — 多个任务可以安全地访问不同版本的数据
+
+### 与闭包陷阱的关系
+
+正是因为 React 每次渲染创建新变量，闭包捕获的永远是**创建时的那个变量**，而不是"最新的值"：
+
+```jsx
+useEffect(() => {
+  const timer = setInterval(() => {
+    console.log(count); // 捕获的是第1次渲染的 count 变量
+  }, 1000);
+}, []); // effect 只执行一次，闭包永远引用第1次渲染的变量
+```
+
+### 对比 Vue
+
+Vue 采用**可变数据模型**：
+
+```js
+// Vue
+const state = reactive({ count: 0 });
+
+// 直接修改原对象
+state.count = 1;  // 原对象被修改了
+
+// 闭包中访问的始终是同一个响应式对象
+setTimeout(() => {
+  console.log(state.count); // 始终是最新值 1
+}, 1000);
+```
+
+**差异**：
+- **React**：每次渲染创建新变量 → 闭包捕获旧值 → 需要 useRef/函数式更新
+- **Vue**：响应式对象始终不变 → 闭包访问的是同一个对象 → 自动获取最新值
+
+### 总结
+
+| | React | Vue |
+|---|---|---|
+| **数据模型** | 不可变（Immutable） | 可变（Mutable） |
+| **每次渲染** | 创建新变量 | 修改原对象 |
+| **闭包行为** | 捕获创建时的值 | 访问同一个响应式对象 |
+| **优势** | 可预测、易比较、时间旅行 | 直观、自动追踪最新值 |
+| **代价** | 闭包陷阱、需要手动处理 | 响应式系统复杂度 |
+
+React 的不可变数据模型是其设计哲学的核心，带来了可预测性和并发能力，但也导致了闭包陷阱等问题。理解这一点，就能理解为什么需要 `useRef`、函数式更新、`useReducer` 等解决方案。
 
 ---
 

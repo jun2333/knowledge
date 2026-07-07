@@ -6,6 +6,47 @@ React 组件从创建到销毁会经历一系列生命周期阶段。类组件�
 
 ## 类组件生命周期
 
+```mermaid
+flowchart TD
+    subgraph Mount["挂载 Mount"]
+        direction LR
+        A["constructor"] --> B["getDerivedStateFromProps"]
+        B --> C["render"]
+        C --> D["componentDidMount"]
+    end
+
+    subgraph Update["更新 Update"]
+        direction LR
+        E["getDerivedStateFromProps"] --> F["shouldComponentUpdate"]
+        F -->|false| SKIP["跳过更新"]
+        F -->|true| G["render"]
+        G --> H["getSnapshotBeforeUpdate"]
+        H --> I["componentDidUpdate"]
+    end
+
+    subgraph Unmount["卸载 Unmount"]
+        direction LR
+        J["componentWillUnmount"]
+    end
+
+    Mount --> Update
+    Update --> Unmount
+
+    style A fill:#4ade80,color:#000
+    style B fill:#4ade80,color:#000
+    style C fill:#4ade80,color:#000
+    style E fill:#4ade80,color:#000
+    style F fill:#4ade80,color:#000
+    style G fill:#4ade80,color:#000
+    style H fill:#fb923c,color:#000
+    style D fill:#fb923c,color:#000
+    style I fill:#fb923c,color:#000
+    style J fill:#fb923c,color:#000
+    style SKIP fill:#666,color:#fff
+```
+
+> 🟢 绿色 = Render 阶段（可中断）｜🟠 橙色 = Commit 阶段（同步执行）
+
 ### 挂载阶段
 
 ```

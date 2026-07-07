@@ -192,3 +192,129 @@ function basicStateReducer(state, action) {
 
 1. **render 阶段**标记 ref flag：mount 时 ref props 存在，update 时 ref props 发生变化
 2. **commit 阶段**针对有 ref 标记的 FiberNode：移除旧的 ref → Layout 阶段重新赋值 ref
+
+---
+
+## 闭包陷阱
+
+### 产生原理
+
+闭包陷阱的本质是：**Hook 回调函数捕获的是创建时的变量值，而非最新值**。
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      console.log(count); // 永远是 0，不是最新值！
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []); // deps 为空，effect 只执行一次
+
+  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;
+}
+```
+
+**原因分析**：
+
+1. 第 1 次渲染：`count = 0`，`useEffect` 创建闭包，捕获 `count = 0`
+2. 点击按钮：`count = 1`，触发重新渲染
+3. 第 2 次渲染：`count = 1`，但 `deps = []`，`useEffect` 不重新执行
+4. `setInterval` 回调仍然引用第 1 次渲染的闭包，`count` 永远是 `0`
+
+**根本原因**：JavaScript 的闭包机制 + React 的不可变数据模型（每次渲染创建新的变量）
+
+### 解决方案
+
+#### 方案 1：正确设置 deps
+
+```jsx
+useEffect(() => {
+  const timer = setInterval(() => {
+    console.log(count); // 每次 count 变化都会重新创建 effect
+  }, 1000);
+  return () => clearInterval(timer);
+}, [count]); // ✅ 添加 count 到 deps
+```
+
+**问题**：每次 `count` 变化都会清除并重新创建定时器，可能不符合预期。
+
+#### 方案 2：使用函数式更新
+
+```jsx
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCount(c => c + 1); // ✅ 函数式更新，不依赖外部 count
+  }, 1000);
+  return () => clearInterval(timer);
+}, []);
+```
+
+**适用场景**：新状态依赖旧状态时（如计数器）。
+
+#### 方案 3：使用 useRef 保存最新值
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+  const countRef = useRef(count);
+
+  // 每次渲染后同步最新值
+  useEffect(() => {
+    countRef.current = count;
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      console.log(countRef.current); // ✅ 通过 ref 访问最新值
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;
+}
+```
+
+**原理**：`useRef` 返回的对象在整个组件生命周期内保持不变，`current` 属性可变，闭包捕获的是 ref 对象本身（不变），而非 `count` 值。
+
+#### 方案 4：使用 useReducer
+
+```jsx
+function Counter() {
+  const [count, dispatch] = useReducer((state, action) => {
+    switch (action.type) {
+      case 'increment': return state + 1;
+      default: return state;
+    }
+  }, 0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      dispatch({ type: 'increment' }); // ✅ dispatch 是稳定引用
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return <button onClick={() => dispatch({ type: 'increment' })}>{count}</button>;
+}
+```
+
+**原理**：`dispatch` 是稳定引用，不会随渲染变化，闭包捕获的 `dispatch` 始终有效。
+
+### 常见场景总结
+
+| 场景 | 推荐方案 |
+|------|---------|
+| 新状态依赖旧状态 | 函数式更新 `setState(prev => prev + 1)` |
+| 需要在回调中读取最新状态 | `useRef` 保存最新值 |
+| 复杂状态逻辑 | `useReducer`（`dispatch` 是稳定引用） |
+| 依赖外部变量变化 | 正确设置 `deps` |
+
+### 如何避免闭包陷阱
+
+1. **理解闭包**：回调函数捕获的是创建时的变量值，不是最新值
+2. **lint 规则**：启用 `eslint-plugin-react-hooks` 的 `exhaustive-deps` 规则
+3. **优先使用函数式更新**：当新状态依赖旧状态时
+4. **谨慎使用空 deps**：确保回调中不依赖会变化的变量
+5. **必要时用 ref**：当需要在稳定回调中访问最新值时

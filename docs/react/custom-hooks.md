@@ -168,6 +168,8 @@ function InfiniteList() {
 ```jsx
 function usePrevious(value) {
   const ref = useRef();
+  // useEffect 在 render 之后才执行，所以 render 期间 ref.current 还是上一次的值
+  // 如果直接在 render 里赋值 ref.current = value，返回的就是当前值而非上一个值
   useEffect(() => {
     ref.current = value;
   });
@@ -233,6 +235,18 @@ function SearchBox() {
   );
 }
 ```
+
+**Tips**：React 18+ 的 `useDeferredValue` 可以替代大部分防抖场景，由 React 调度器自动处理优先级，无需手动设置延迟时间：
+
+```jsx
+// 以前：手动防抖
+const debouncedQuery = useDebounce(query, 300);
+
+// React 18+：React 自动延迟低优先级更新
+const deferredQuery = useDeferredValue(query);
+```
+
+`useDeferredValue` 的优势是 React 会根据浏览器空闲时间动态调整延迟，比固定 300ms 更灵活。如果只需要延迟渲染（如搜索结果列表），优先用 `useDeferredValue`；如果需要延迟执行副作用（如 API 请求），`useDebounce` 仍然适用。
 
 ---
 

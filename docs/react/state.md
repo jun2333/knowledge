@@ -35,9 +35,24 @@ React 的状态更新机制经历了多个模式的演进：
 
 合成事件配合"批量更新锁"控制批量更新。
 
-**缺陷**：JS 异步下的 setState 会逃脱 React 的管控。因此 setState 表现可以是异步，也可以是同步：
-- 在同步上下文（如事件处理）中调用 → 批量处理，表现是异步的
-- 在 Promise/setTimeout 等异步 API 中调用 → 非批量，即同步
+**缺陷**：JS 异步回调中的 setState 会逃脱 React 的管控，导致无法批量更新：
+
+- **React 能管控的上下文**（事件处理、生命周期）→ 批量更新，多次 setState 合并为一次渲染
+- **React 管控不到的上下文**（setTimeout、Promise 回调）→ 非批量，每次 setState 立即触发渲染
+
+```jsx
+// 事件处理中 — 批量更新
+function handleClick() {
+  setCount(c => c + 1);
+  setFlag(f => !f);  // 两次更新合并，只渲染一次
+}
+
+// setTimeout 中 — 非批量（React 17 及以前）
+setTimeout(() => {
+  setCount(c => c + 1);  // 立即渲染
+  setFlag(f => !f);      // 又渲染一次
+}, 1000);
+```
 
 React 提供了 `batchedUpdates` API 解决异步场景下无法批量更新的问题：
 
@@ -107,10 +122,20 @@ flushSync(() => {
 
 **2. 函数（reducer 形式）**
 
-打破批量规则，每次调用都会触发更新：
+与直接传值的行为一致，仍然是批量更新。区别在于计算方式：函数式更新基于前一个状态计算，多次调用会累积效果。
 
 ```jsx
-setCount(c => c + 1); // 函数式更新，基于前一个状态计算
+// 批量更新，只渲染一次
+setCount(c => c + 1);
+setCount(c => c + 1);
+setCount(c => c + 1);
+// 最终 count +3（每次基于前一个状态累加）
+
+// 对比：直接传值会被覆盖
+setCount(1);
+setCount(2);
+setCount(3);
+// 最终 count = 3（最后一次覆盖前面的）
 ```
 
 ---
@@ -120,7 +145,6 @@ setCount(c => c + 1); // 函数式更新，基于前一个状态计算
 | | setState（Class） | useState（Function） |
 |---|---|---|
 | **更新方式** | 倾向于将新值与旧值合并（对象浅合并） | 主张重新赋值（完全替换） |
-| **浅比较** | 非 PureComponent 下不会浅比较，只要调用就更新 | 会浅比较，无变化则跳过更新（eagerState） |
 | **回调函数** | 有专门的回调函数监听数据变化 | 只能依赖 useEffect 监听状态变化 |
 | **执行时机** | 回调函数在 commit 的 Layout 阶段执行 | useEffect 回调在 commit 的 Layout 阶段之后异步执行 |
 

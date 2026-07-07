@@ -32,6 +32,9 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
+# Qoder
+.qoder/
+
 # OS
 Thumbs.db
 .DS_Store
