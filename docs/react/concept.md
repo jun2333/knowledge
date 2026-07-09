@@ -169,7 +169,7 @@ function MyInput({ ref, ...props }) {
 
 ### 5. Document Metadata 支持
 
-可以直接在组件中渲染 `<title>`、`<meta>` 等文档元数据，无需借助 `react-helmet` 等第三方库：
+可以直接在组件中渲染 `title`、`meta` 等文档元数据，无需借助 `react-helmet` 等第三方库：
 
 ```jsx
 function Page() {

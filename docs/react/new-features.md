@@ -275,7 +275,7 @@ function MyInput({ ref, ...props }) {
 }
 ```
 
-**文档元数据支持**：React 19 原生支持在组件中渲染 `<title>`、`<meta>` 和 `<link>` 标签，自动提升至文档的 `<head>`。
+**文档元数据支持**：React 19 原生支持在组件中渲染 `title`、`meta` 和 `link` 标签，自动提升至文档的 `head`。
 
 ```jsx
 function Page() {

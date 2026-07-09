@@ -172,10 +172,10 @@ Vue.prototype.$watch = function (
     }
   }
 function createWatcher (
-  vm: `Component`,
-  expOrFn: `string | Function`,
-  handler: `any`,
-  options?: `Object`
+  vm: Component,
+  expOrFn: string | Function,
+  handler: any,
+  options?: Object
 ) {
   if (isPlainObject(handler)) {
     options = handler
@@ -192,7 +192,7 @@ function createWatcher (
 
 给Vue原型添加$on、$emit、$once、$off方法
 
-事件实现主要是在vue实例上添加_events属性用于存储事件，结构为eventName->Array<fn>，当调用$on时注册事件，将回调函数存在数组中，当$emit时将数组中的回调函数全部遍历调用，$off根据入参删除相应eventName的回调函数，不传参则清空 _events对象，$once则改写回调函数，执行之前先调$off
+事件实现主要是在vue实例上添加_events属性用于存储事件，结构为 eventName -&gt; fn数组，当调用$on时注册事件，将回调函数存在数组中，当$emit时将数组中的回调函数全部遍历调用，$off根据入参删除相应eventName的回调函数，不传参则清空 _events对象，$once则改写回调函数，执行之前先调$off
 
 ### lifecycleMixin
 

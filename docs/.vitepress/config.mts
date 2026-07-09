@@ -39,6 +39,7 @@ export default defineConfig({
           text: 'JavaScript 核心',
           items: [
             { text: '⭐⭐⭐ 数据类型与内存管理', link: '/javascript/memory' },
+            { text: '⭐⭐ 事件循环', link: '/javascript/event-loop' },
             { text: '⭐⭐ ES6+ 新特性', link: '/javascript/es6' },
             { text: '⭐⭐ 发布订阅模式', link: '/javascript/pubsub' },
           ]
@@ -165,6 +166,15 @@ export default defineConfig({
             { text: '渲染优化实践', link: '/react/render-optimization' },
             { text: '异步渲染', link: '/react/async-render' },
           ]
+        },
+        {
+          text: '最佳实践',
+          items: [
+            { text: '组件设计原则', link: '/react/best-practices/component-design' },
+            { text: 'Hook 设计原则', link: '/react/best-practices/hook-design' },
+            { text: '状态管理实践', link: '/react/best-practices/state-management' },
+            { text: '性能优化清单', link: '/react/best-practices/performance-checklist' },
+          ]
         }
       ],
 
@@ -184,12 +194,14 @@ export default defineConfig({
             { text: 'HTTP Methods', link: '/browser/http-methods' },
             { text: '⭐ HTTPS', link: '/browser/https' },
             { text: 'WebSocket', link: '/browser/websocket' },
+            { text: 'SSE', link: '/browser/sse' },
           ]
         },
         {
           text: '存储与缓存',
           items: [
             { text: '⭐ 存储与缓存', link: '/browser/storage-cache' },
+            { text: '应用更新实践', link: '/browser/app-update' },
           ]
         },
         {
@@ -214,6 +226,13 @@ export default defineConfig({
           items: [
             { text: 'BFC 概念', link: '/css/bfc' },
             { text: 'IFC 概念', link: '/css/ifc' },
+            { text: 'Flex & Grid 布局', link: '/css/flex-grid' },
+            { text: '常见布局最佳实践', link: '/css/layout-best-practices' },
+          ]
+        },
+        {
+          text: '移动端',
+          items: [
             { text: '移动端适配', link: '/css/mobile-adaptation' },
           ]
         },
@@ -239,7 +258,7 @@ export default defineConfig({
           items: [
             { text: 'Web 性能优化', link: '/performance/web' },
             { text: '如何让网页更丝滑', link: '/performance/smooth' },
-            { text: '⭐ 大文件上传思路', link: '/performance/upload-idea' },
+            { text: '⭐ 大文件上传', link: '/performance/upload-idea' },
           ]
         },
         {
@@ -247,6 +266,12 @@ export default defineConfig({
           items: [
             { text: '⭐ 性能指标', link: '/performance/metrics' },
             { text: '错误监控', link: '/performance/error-monitoring' },
+          ]
+        },
+        {
+          text: '最佳实践',
+          items: [
+            { text: '⭐⭐ 性能优化清单', link: '/performance/best-practices' },
           ]
         }
       ],
@@ -260,6 +285,15 @@ export default defineConfig({
             { text: 'PWA 方案', link: '/engineering/pwa' },
             { text: '国际化方案', link: '/engineering/i18n' },
             { text: '渲染方式', link: '/engineering/rendering' },
+            { text: 'BFF 层设计', link: '/engineering/bff' },
+            { text: 'Server Components', link: '/engineering/server-components' },
+          ]
+        },
+        {
+          text: '团队协作',
+          items: [
+            { text: 'Git Flow 最佳实践', link: '/engineering/git-flow' },
+            { text: '团队管理最佳实践', link: '/engineering/team-management' },
           ]
         }
       ],

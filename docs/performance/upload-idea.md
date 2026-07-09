@@ -1,85 +1,255 @@
-## 基本功能实现步骤
-1. 得到文件，计算文件哈希值(取样计算、rIC、web worker、sync)，文件较大的话计算完整计算哈希值很耗时，建议按照一定算法取样计算
-2. 带着文件哈希值询问服务器此文件是否存在，服务器返回是否存在和和已经上传的分片文件数组(检测断点)
-3. 若文件已经存在则提示上传成功(秒传),否则进入第4步
-4. 文件分片，计算每片文件的状态、formData、chunkName、hash等相关信息，并过滤出未上传的chunks
-5. 并发控制上传(带失败重试机制)
-6. 全部上传完毕发起合并请求，服务端将chunk文件合并
-chunk info包含文件片的上传状态，可制作方块进度条，每个方块代表文件片的进度，提升用户体验
+---
+title: 大文件上传
+date: 2023-03-08
+---
 
-### 暂停/恢复和chunk进度条
-暂停：将每个xhr对象存起来，暂停则遍历xhr数组调用abort函数即可取消请求
-恢复：从上面第2步开始执行
-进度条：监听xhr的onprogress事件，计算上传进度比例值存在chunk info里面
+# 大文件上传
 
-### 并发的设计
-入参：上传列表urls、并发数max、重试次数retrys
-内置一个函数start
-max作为通道数，一次放max个请求出去，成功了就释放通道，失败了就重试(记录重试次数,若重试retrys次还是失败则记录上传失败)
+大文件上传的核心思路：**分片 + 并发 + 断点续传 + 秒传**。
+
+## 基本流程
+
+```mermaid
+graph TD
+    A[选择文件] --> B[计算文件哈希]
+    B --> C[询问服务器文件是否存在]
+    C --> D{文件已存在？}
+    D -->|是 | E[秒传成功]
+    D -->|否 | F[文件分片]
+    F --> G[过滤未上传的分片]
+    G --> H[并发上传分片]
+    H --> I{全部上传完成？}
+    I -->|否 | H
+    I -->|是 | J[发起合并请求]
+    J --> K[上传完成]
+```
+
+## 实现步骤
+
+### 1. 计算文件哈希
+
 ```javascript
-async function sendRequest(urls, max = 4, retrys = 3) {
-    return new Promise((resolve, reject) => {
-        const len = urls.length;
-        console.log(urls);
-        let idx = 0;
-        let counter = 0;
-        const retryArr = [];
-        const start = async () => {
-            // 有请求，有通道
-            while (counter < len && max > 0) {
-                max--; // 占用通道
-                console.log(idx, 'start');
-                const i = urls.findIndex(
-                    v => v.status == Status.wait || v.status == Status.error
-                ); // 等待或者error
-                if (i < 0) return;
-                urls[i].status = Status.uploading;
-                const form = urls[i].form;
-                const index = urls[i].index;
-                if (typeof retryArr[index] == 'number') {
-                    console.log(index, '开始重试');
-                }
-                request({
-                    url: '/upload',
-                    data: form,
-                    onProgress: createProgresshandler(chunks.value[index]),
-                    requestList: requestList.value,
-                })
-                    .then(() => {
-                        urls[i].status = Status.done;
-                        max++; // 释放通道
-                        urls[counter].done = true;
-                        counter++;
-                        if (counter === len) {
-                            resolve();
-                        } else {
-                            start();
-                        }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        console.log(urls);
-                        // 初始值
-                        urls[i].status = Status.error;
-                        if (typeof retryArr[index] !== 'number') {
-                            retryArr[index] = 0;
-                        }
-                        // 次数累加
-                        retryArr[index]++;
-                        // 一个请求报错3次的
-                        if (retryArr[index] >= retrys) {
-                            return reject(); // 考虑abort所有别的请求
-                        }
-                        console.log(index, retryArr[index], '次报错');
-                        // 3次报错以内的 重启
-                        chunks.value[index].progress = -1; // 报错的进度条
-                        max++; // 释放当前占用的通道，但是counter不累加
-
-                        start();
-                    });
-            }
-        };
-        start();
-    });
+// 使用 Web Worker + requestIdleCallback 计算哈希
+function calculateHash(file) {
+  return new Promise((resolve) => {
+    const worker = new Worker('hash-worker.js');
+    worker.postMessage(file);
+    worker.onmessage = (e) => {
+      resolve(e.data);
+    };
+  });
 }
 ```
+
+**优化**：
+- 文件较大时，完整计算哈希很耗时
+- 建议**取样计算**（如每 100KB 取一个样本）
+- 使用 **Web Worker** 避免阻塞主线程
+- 使用 **requestIdleCallback** 在空闲时计算
+
+### 2. 秒传检测
+
+```javascript
+// 带着文件哈希询问服务器
+const response = await fetch('/check', {
+  method: 'POST',
+  body: JSON.stringify({ hash: fileHash }),
+});
+
+const { exists, uploadedChunks } = await response.json();
+
+if (exists) {
+  // 文件已存在，秒传成功
+  console.log('秒传成功');
+} else {
+  // 文件不存在，需要上传
+  // uploadedChunks: 已上传的分片（断点续传）
+}
+```
+
+### 3. 文件分片
+
+```javascript
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB 每片
+const chunks = [];
+
+for (let i = 0; i < file.size; i += CHUNK_SIZE) {
+  chunks.push({
+    file: file.slice(i, i + CHUNK_SIZE),
+    hash: `${fileHash}-${i}`,
+    index: i / CHUNK_SIZE,
+    status: 'wait', // wait | uploading | done | error
+    progress: 0,
+  });
+}
+
+// 过滤出未上传的分片（断点续传）
+const unuploadedChunks = chunks.filter(
+  chunk => !uploadedChunks.includes(chunk.hash)
+);
+```
+
+### 4. 并发上传
+
+```javascript
+async function uploadChunks(chunks, max = 4, retrys = 3) {
+  let idx = 0;
+  let counter = 0;
+  const retryCount = new Array(chunks.length).fill(0);
+
+  const start = async () => {
+    while (counter < chunks.length && max > 0) {
+      max--; // 占用通道
+      
+      const i = chunks.findIndex(
+        v => v.status === 'wait' || v.status === 'error'
+      );
+      if (i < 0) return;
+      
+      chunks[i].status = 'uploading';
+      
+      try {
+        await uploadChunk(chunks[i]);
+        chunks[i].status = 'done';
+        counter++;
+        max++; // 释放通道
+        
+        if (counter === chunks.length) {
+          return; // 全部完成
+        }
+        start(); // 继续上传
+      } catch (err) {
+        retryCount[i]++;
+        
+        if (retryCount[i] >= retrys) {
+          throw new Error(`分片 ${i} 上传失败`);
+        }
+        
+        chunks[i].status = 'error';
+        max++; // 释放通道
+        start(); // 重试
+      }
+    }
+  };
+
+  start();
+}
+```
+
+### 5. 合并分片
+
+```javascript
+await fetch('/merge', {
+  method: 'POST',
+  body: JSON.stringify({
+    hash: fileHash,
+    chunks: chunks.map(c => c.hash),
+  }),
+});
+```
+
+## 暂停/恢复
+
+### 暂停
+
+```javascript
+// 存储所有 XHR 请求
+const xhrList = [];
+
+// 暂停：取消所有请求
+xhrList.forEach(xhr => xhr.abort());
+```
+
+### 恢复
+
+从第 2 步（秒传检测）开始重新执行，服务器会返回已上传的分片，继续上传未完成的分片。
+
+## 进度条
+
+### 单分片进度
+
+```javascript
+xhr.upload.onprogress = (e) => {
+  if (e.lengthComputable) {
+    chunk.progress = (e.loaded / e.total) * 100;
+  }
+};
+```
+
+### 整体进度
+
+```javascript
+const totalProgress = chunks.reduce((sum, chunk) => {
+  return sum + chunk.progress;
+}, 0) / chunks.length;
+```
+
+### 方块进度条
+
+每个方块代表一个分片的上传状态：
+
+```
+□ □ □ ■ ■ ■ □ □ □ □
+0%  20%  40%  60%  80%  100%
+```
+
+```css
+.chunk-progress {
+  display: flex;
+  gap: 4px;
+}
+
+.chunk-block {
+  width: 20px;
+  height: 20px;
+  background: #e0e0e0;
+}
+
+.chunk-block.done {
+  background: #52c41a;
+}
+
+.chunk-block.uploading {
+  background: #1890ff;
+}
+
+.chunk-block.error {
+  background: #f5222d;
+}
+```
+
+## 关键设计
+
+### 并发控制
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `max` | 最大并发数 | 4 |
+| `retrys` | 失败重试次数 | 3 |
+
+**原理**：
+- 维护一个"通道池"，最多同时上传 `max` 个分片
+- 上传成功/失败后释放通道，继续上传下一个
+- 失败重试，超过 `retrys` 次标记为失败
+
+### 断点续传
+
+- 每个分片有独立的 hash
+- 服务器记录已上传的分片 hash
+- 重新上传时，只上传未完成的分片
+
+### 秒传
+
+- 计算整个文件的 hash
+- 服务器检查文件是否已存在
+- 已存在则直接返回成功，无需上传
+
+## 优化建议
+
+| 优化 | 说明 |
+|------|------|
+| **取样哈希** | 大文件不要完整计算哈希，取样计算 |
+| **Web Worker** | 哈希计算放到 Worker，避免阻塞 UI |
+| **分片大小** | 根据网络情况动态调整（通常 1-5MB） |
+| **并发数** | 根据设备性能调整（通常 3-6） |
+| **进度反馈** | 实时更新进度条，提升用户体验 |

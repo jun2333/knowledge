@@ -1,69 +1,312 @@
-# 存储
+## 存储方式对比
+
+| 特性 | Cookie | localStorage | sessionStorage | IndexedDB |
+|------|--------|--------------|----------------|-----------|
+| 容量 | ~4KB | ~5MB | ~5MB | 较大（通常 50MB+） |
+| 生命周期 | 可设置过期时间 | 永久（需手动清除） | 页面关闭即清除 | 永久（需手动清除） |
+| 作用域 | 同源 + 子域共享 | 同源共享 | 标签页独享 | 同源共享 |
+| 与服务端通信 | 每次请求自动携带 | 不参与 | 不参与 | 不参与 |
+| 数据类型 | 字符串 | 字符串 | 字符串 | 键值对（支持多种类型） |
+| API | 原生不友好 | 简单易用 | 简单易用 | 异步 API，较复杂 |
+
+---
+
 ## Cookie
-作用域：同源共享，子域也共享
-缺点：
-1. 容量缺陷。大小限制4k
-2. 性能缺陷。请求头上带着数据，导致流量增加
-3. 安全缺陷。由于 Cookie 以纯文本的形式在浏览器和服务器中传递，很容易被非法用户截获，然后进行一系列的篡改，在 Cookie 的有效期内重新发送给服务器，这是相当危险的。另外，在HttpOnly为 false 的情况下，Cookie 信息能直接通过 JS 脚本来读取
-4. 操作缺陷。Cookie的原生api不友好，需要自行封装
 
-## Web Storage(localStorage和sessionStorage)
+### 基本用法
+
+```js
+// 设置 Cookie
+document.cookie = 'name=value; expires=Thu, 01 Jan 2026 00:00:00 GMT; path=/';
+
+// 读取 Cookie（所有 Cookie 拼成的字符串，需自行解析）
+console.log(document.cookie);
+```
+
+### 属性
+
+| 属性 | 说明 |
+|------|------|
+| `expires` | 过期时间（绝对时间），不设置则会话结束即失效 |
+| `max-age` | 过期时间（相对秒数），优先级高于 `expires` |
+| `path` | 生效路径，默认当前路径 |
+| `domain` | 生效域名，可设置父域（如 `.example.com`） |
+| `secure` | 仅 HTTPS 传输 |
+| `HttpOnly` | JS 无法读取，防止 XSS 窃取 |
+| `SameSite` | 跨站请求是否发送（`Strict`/`Lax`/`None`） |
+
+### 缺点
+
+- **容量小**：仅 4KB
+- **性能开销**：每次 HTTP 请求都会携带，浪费带宽
+- **操作复杂**：原生 API 不友好，需自行封装
+- **安全风险**：明文传输，`HttpOnly` 为 false 时可被 JS 读取
+
+---
+
+## Web Storage
+
 ### localStorage
-作用域：同源共享
-以键值对(Key-Value)的方式存储，永久存储，永不失效，除非手动删除。IE8+支持，每个域名限制5M 打开同域的新页面也能访问得到。可以存储数组、数字、对象等可以被序列化为字符串的内容
+
+```js
+localStorage.setItem('user', JSON.stringify({ name: 'Jun' }));
+const user = JSON.parse(localStorage.getItem('user'));
+localStorage.removeItem('user');
+localStorage.clear(); // 清除所有
+```
+
+- 永久存储，除非手动清除
+- 同源共享（同协议 + 同域名 + 同端口）
+- 存储的是字符串，复杂数据需 `JSON.stringify` / `JSON.parse`
+
 ### sessionStorage
-作用域：本页面独享，即使新开相同页面也无法共享
-sessionStorage 在关闭页面后即被清空，而 localStorage 则会一直保存。很多时候数据只需要在用户浏览一组页面期间使用，关闭窗口后数据就可以丢弃了，这种情况使用 sessionStorage 就比较方便。 **注意，刷新页面 sessionStorage 不会清除，但是打开同域新页面访问不到**
 
-## indexed DB
-作用域：同源共享
-适用于存储大量数据，可以为应用创建离线版本
-特点:
-1. 键值对存储。内部采用对象仓库存放数据，在这个对象仓库中数据采用键值对的方式来存储。
-2. 异步操作。数据库的读写属于 I/O 操作, 浏览器中对异步 I/O 提供了支持。
-3. 受同源策略限制，即无法访问跨域的数据库。
+```js
+sessionStorage.setItem('temp', 'data');
+```
 
-# 缓存
-## 强缓存200(优先级高)
-强缓存涉及响应headers字段：Expires、Cache-Control
-返回200
-### Expires(http1.0)
-指定一个过期时间(绝对时间)
-### Cache-Control(http1.1)
-字段：
-1. no-store:禁止所有缓存(强缓存与协商缓存)
-2. no-cache:禁止强缓存
-3. private:私有缓存（响应只能用于浏览器私有缓存中）中间人(CDN,代理不能缓存), 如果要求 HTTP 认证，响应会自动设置为 private
-4. public:公共缓存（可以被任何中间人缓存）, 多用户间共享。
-5. max-age:单位：秒(s)。资源能够被缓存（保持新鲜）的最大时间；相对于Expires，是一个相对时间，优先级高于 Expires，max-age是距离请求发起的时间的秒数，针对那些不会改变的文件(静态资源)，可手动设置一定的时长缓存
-6. s-maxage:单位：秒(s)。只用于共享缓存(如：CDN缓存)。s-maxage有效期内不请求CDN。 max-age 用于普通缓存，而 s-maxage 用于代理缓存。如果存在 s-maxage，则会覆盖掉 max-age 和 Expires
-7. must-revalidate:缓存使用陈旧资源时必须先验证状态，已过期的缓存不被使用
-## 协商缓存304(优先级低)
-顾名思义，先问服务器资源是否更新，服务器返回未更新或者更新后的资源，若未更新则取浏览器缓存资源
-返回304
-request headers: If-Modified-Since、If-None-Match
-response headers: Last-Modified、Etag
-If-Modified-Since/Last-Modified：记录文件修改时间(优先级低于Etag组合)
-If-None-Match/Etag：记录文件内容
+- 页面关闭即清除（注意：**刷新页面不会清除**）
+- **标签页独享**：即使同域的新标签页也无法访问
+- 适合临时数据，如表单填写中途关闭可恢复
 
-## 缓存最佳实践
-由于在精度上Etag优于Last-Modified，但性能上后者较强；并且考虑到分布式集群每台机器生成的Etag不一致，所以不适合Etag方案；
-因此如果Last-Modified使用上没问题的话就用它吧~
+---
 
-html文件建议协商缓存，css,js等资源文件建议采取强缓存~
-webpack打包的文件指纹跟缓存没关系，它是用于解除强缓存的!
+## IndexedDB
+
+浏览器内置的**结构化数据库**，适合存储大量数据。
+
+```js
+// 打开数据库
+const request = indexedDB.open('myDB', 1);
+
+request.onupgradeneeded = (event) => {
+  const db = event.target.result;
+  // 创建对象仓库（类似表）
+  if (!db.objectStoreNames.contains('users')) {
+    db.createObjectStore('users', { keyPath: 'id' });
+  }
+};
+
+request.onsuccess = (event) => {
+  const db = event.target.result;
+  const tx = db.transaction('users', 'readwrite');
+  const store = tx.objectStore('users');
+
+  // 写入数据
+  store.put({ id: 1, name: 'Jun' });
+
+  // 读取数据
+  const getRequest = store.get(1);
+  getRequest.onsuccess = () => {
+    console.log(getRequest.result);
+  };
+};
+```
+
+### 特点
+
+- **大容量**：通常 50MB+，远超 Web Storage
+- **异步操作**：不阻塞主线程
+- **支持索引**：可高效查询
+- **同源策略**：跨域无法访问
+
+### 适用场景
+
+- 离线应用（PWA）
+- 大量结构化数据（如邮件客户端、文档编辑器）
+- 文件/Blob 存储
+
+---
+
+## 选择指南
+
+```mermaid
+flowchart TD
+    A["需要存储数据"] --> B{"数据量大小?"}
+    B -->|"小 (< 5MB)"| C{"需要服务端读取?"}
+    B -->|"大 (> 5MB)"| D["IndexedDB"]
+    C -->|是| E["Cookie"]
+    C -->|否| F{"需要跨页面共享?"}
+    F -->|是| G["localStorage"]
+    F -->|否| H{"仅当前页面?"}
+    H -->|是| I["sessionStorage"]
+    H -->|否| G
+
+    style D fill:#4ade80,color:#000
+    style E fill:#4ade80,color:#000
+    style G fill:#4ade80,color:#000
+    style I fill:#4ade80,color:#000
+```
+
+---
+
+## HTTP 缓存
+
+浏览器收到响应后，根据响应头决定是否缓存、缓存多久、如何使用缓存。
+
+```mermaid
+flowchart TD
+    A["请求资源"] --> B{"Service Worker<br/>命中?"}
+    B -->|是| C["使用 Service Worker 缓存"]
+    B -->|否| D{"Memory Cache<br/>命中?"}
+    D -->|是| E["使用内存缓存<br/>200 (from memory cache)"]
+    D -->|否| F{"Disk Cache<br/>命中?"}
+    F -->|是| G{"强缓存有效?"}
+    F -->|否| H["发起网络请求"]
+    G -->|是| I["使用磁盘缓存<br/>200 (from disk cache)"]
+    G -->|否| J{"协商缓存<br/>有效?"}
+    J -->|是| K["使用缓存<br/>304 Not Modified"]
+    J -->|否| H
+    H --> L["服务器返回新资源"]
+
+    style C fill:#4ade80,color:#000
+    style E fill:#4ade80,color:#000
+    style I fill:#4ade80,color:#000
+    style K fill:#fb923c,color:#000
+    style L fill:#60a5fa,color:#000
+```
+
+> 缓存查找优先级：Service Worker → Memory Cache → Disk Cache → 网络请求
+
+---
+
+## 强缓存
+
+命中强缓存时，浏览器直接使用本地缓存，**不发送请求**，状态码显示 `200 (from cache)`。
+
+| 响应头 | 说明 |
+|--------|------|
+| `Cache-Control: max-age=31536000` | 相对时间（秒），优先级高 |
+| `Expires: Thu, 01 Jan 2026 00:00:00 GMT` | 绝对时间，HTTP/1.0 产物 |
+
+### Cache-Control 常用指令
+
+| 指令 | 说明 |
+|------|------|
+| `max-age=秒数` | 缓存有效期（秒），相对于请求时间 |
+| `s-maxage=秒数` | 仅用于共享缓存（CDN），优先级高于 `max-age` |
+| `no-cache` | 跳过强缓存，每次都要向服务器**验证**（不是不缓存） |
+| `no-store` | 完全不缓存，每次都要请求新资源 |
+| `public` | 任何中间节点（CDN、代理）都可缓存 |
+| `private` | 仅浏览器可缓存，中间节点不可缓存（默认值） |
+| `must-revalidate` | 缓存过期后必须向服务器验证 |
+| `immutable` | 内容永不变化（配合文件指纹使用） |
+
+---
+
+## 协商缓存
+
+强缓存失效后，浏览器携带标识向服务器验证，若资源未更新则返回 `304 Not Modified`，使用本地缓存。
+
+| 请求头 | 响应头 | 说明 |
+|--------|--------|------|
+| `If-Modified-Since` | `Last-Modified` | 基于最后修改时间 |
+| `If-None-Match` | `ETag` | 基于内容哈希（优先级高） |
+
+### ETag vs Last-Modified
+
+| 维度 | ETag | Last-Modified |
+|------|------|---------------|
+| 精度 | 高（基于内容哈希） | 低（秒级时间戳） |
+| 性能 | 需计算哈希，略慢 | 直接读取文件属性，快 |
+| 适用场景 | 内容变化需立即感知 | 对精度要求不高 |
+
+> 两者同时存在时，ETag 优先级更高。
+
+---
 
 ## 缓存存储位置
-1. service worker:
-Service Worker 借鉴了 Web Worker 的 思路，即让 JS 运行在主线程之外，由于它脱离了浏览器的窗体，因此无法直接访问 DOM。虽然如此，但它仍然能帮助我们完成很多有用的功能，比如离线缓存、消息推送和网络代理等功能。其中的离线缓存就是 Service Worker Cache。Service Worker 同时也是 PWA 的重要实现机制。
 
-Service Worker 是运行在浏览器背后的独立线程，一般可以用来实现缓存功能。使用 Service Worker的话，传输协议必须为 HTTPS。因为 Service Worker 中涉及到请求拦截，所以必须使用 HTTPS 协议来保障安全。
+| 位置 | 说明 |
+|------|------|
+| **Service Worker** | 可编程的缓存层，自由控制缓存策略，需 HTTPS |
+| **Memory Cache** | 内存缓存，速度最快，进程结束即失效 |
+| **Disk Cache** | 磁盘缓存，速度较慢，持久化存储 |
+| **Push Cache** | HTTP/2 服务器推送的缓存，会话结束即失效 |
 
-Service Worker 的缓存与浏览器其他内建的缓存机制不同，它可以让我们自由控制缓存哪些文件、如何匹配缓存、如何读取缓存，并且缓存是持续性的。
+### 存储位置的关系
 
-Service Worker 实现缓存功能一般分为三个步骤：首先需要先注册 Service Worker，然后监听到 install 事件以后就可以缓存需要的文件，那么在下次用户访问的时候就可以通过拦截请求的方式查询是否存在缓存，存在缓存的话就可以直接读取缓存文件，否则就去请求数据。
+- **Service Worker 缓存**是独立的存储，通过 Cache API 手动管理，不属于浏览器的 Memory/Disk Cache
+- **Memory Cache 和 Disk Cache** 是浏览器内建的自动缓存，根据 HTTP 响应头（Cache-Control 等）自动决定缓存策略和存储位置
+- 浏览器根据资源大小、访问频率、内存压力等因素自动决定放 Memory 还是 Disk，开发者无法控制
 
-当 Service Worker 没有命中缓存的时候，我们需要去调用 fetch 函数获取数据。也就是说，如果我们没有在 Service Worker 命中缓存的话，会根据缓存查找优先级去查找数据。但是不管我们是从 Memory Cache 中还是从网络请求中获取的数据，浏览器都会显示我们是从 Service Worker 中获取的内容。
-2. memory cache:内存缓存，读取速度快
-3. disk cache:磁盘缓存，读取速度慢点
-4. push cache:Push Cache（推送缓存）是 HTTP/2 中的内容，当以上三种缓存都没有命中时，它才会被使用
+```mermaid
+flowchart LR
+    A["HTTP 响应"] --> B{"Service Worker<br/>拦截?"}
+    B -->|是| C["Service Worker Cache<br/>（独立存储，手动管理）"]
+    B -->|否| D{"浏览器自动缓存"}
+    D --> E["Memory Cache<br/>（小资源、频繁访问）"]
+    D --> F["Disk Cache<br/>（大资源、偶尔访问）"]
+```
+
+### Service Worker 缓存
+
+Service Worker 是运行在浏览器背后的独立线程，可以拦截请求、自定义缓存策略。
+
+```js
+// 注册 Service Worker
+navigator.serviceWorker.register('/sw.js');
+```
+
+```js
+// sw.js
+const CACHE_NAME = 'v1';
+const urlsToCache = ['/', '/style.css', '/app.js'];
+
+// 安装时缓存资源
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+// 拦截请求，优先返回缓存
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
+});
+```
+
+> Service Worker 必须使用 HTTPS，防止恶意脚本劫持请求。
+
+---
+
+## 缓存策略实践
+
+### HTML 文件
+
+使用**协商缓存**，确保用户总能获取最新内容：
+
+```http
+Cache-Control: no-cache
+```
+
+### 静态资源（JS/CSS/图片）
+
+使用**强缓存 + 文件指纹**，实现长期缓存与即时更新：
+
+```http
+Cache-Control: public, max-age=31536000, immutable
+```
+
+文件名带 hash（如 `app.a1b2c3.js`），内容变化时生成新 URL，浏览器会请求新资源而非命中旧缓存。
+
+```html
+<!-- 打包前 -->
+<script src="app.js"></script>
+
+<!-- 打包后（带文件指纹） -->
+<script src="app.a1b2c3.js"></script>
+```
+
+### 典型配置
+
+| 资源类型 | 缓存策略 | 说明 |
+|---------|---------|------|
+| HTML | `no-cache` | 协商缓存，确保最新 |
+| JS/CSS（带 hash） | `max-age=31536000, immutable` | 强缓存，一年有效 |
+| 图片/字体（带 hash） | `max-age=31536000` | 强缓存 |
+| API 响应 | `no-store` 或短 `max-age` | 视业务需求 |

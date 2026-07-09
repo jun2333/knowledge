@@ -139,11 +139,16 @@ componentWillUnmount() {
 
 ### 已废弃的生命周期
 
-以下生命周期在 React 16.3 后被标记为不安全（UNSAFE），在 React 18 中已移除：
+以下生命周期在 React 16.3 后被标记为不安全（UNSAFE），在 React 18 中已移除。
+
+**废弃的根本原因**：React 16 引入的 Fiber 架构将渲染拆分为 **Render 阶段**（可中断、可重试）和 **Commit 阶段**（不可中断）。这些废弃方法都在 Render 阶段调用，可能被多次执行，若包含副作用会导致重复执行产生 bug。
 
 - `componentWillMount` → 使用 `constructor` 或 `componentDidMount` 替代
+  - **废弃原因**：在 SSR 中会调用但 `componentDidMount` 不会，容易导致服务端/客户端行为不一致；且在 Fiber 架构下可能被多次调用
 - `componentWillReceiveProps` → 使用 `getDerivedStateFromProps` 替代
+  - **废弃原因**：容易被误用为"props 变了就更新 state"，导致不必要的重渲染和 bug；且在 Fiber 架构下可能被多次调用
 - `componentWillUpdate` → 使用 `getSnapshotBeforeUpdate` 替代
+  - **废弃原因**：在 Fiber 架构下可能被多次调用；且此时 DOM 还未更新，拿不到最新的 DOM 信息
 
 ---
 
@@ -155,15 +160,15 @@ componentWillUnmount() {
 
 | Hook | 执行阶段 | 执行时机 | 用途 |
 |------|---------|---------|------|
-| **useInsertionEffect** | Mutation | DOM 变更前同步执行 | CSS-in-JS 注入样式 |
-| **useLayoutEffect** | Layout | DOM 变更后同步执行 | 测量 DOM、同步修改 |
+| **useInsertionEffect** | Mutation | DOM 变更后同步执行（在 useLayoutEffect 之前） | CSS-in-JS 注入样式 |
+| **useLayoutEffect** | Layout | DOM 变更后同步执行（在 useInsertionEffect 之后） | 测量 DOM、同步修改 |
 | **useEffect** | Layout 之后 | 浏览器渲染后异步执行 | 数据请求、订阅等 |
 
-**执行顺序**：`useInsertionEffect` → DOM 变更 → `useLayoutEffect` → 浏览器绘制 → `useEffect`
+**执行顺序**：DOM 变更 → `useInsertionEffect` → `useLayoutEffect` → 浏览器绘制 → `useEffect`
 
 ```jsx
 function MyComponent() {
-  // 1. useInsertionEffect：DOM 变更前执行，访问不了 DOM
+  // 1. useInsertionEffect：DOM 变更后执行，在 useLayoutEffect 之前，适合注入样式
   useInsertionEffect(() => {
     const style = document.createElement('style');
     style.textContent = '.custom { color: red; }';
