@@ -79,6 +79,356 @@ graph LR
 | 格式统一 | 统一错误处理、数据格式 |
 | 逻辑下沉 | 数据聚合逻辑从前端移到 BFF |
 
+## 替代方案：前端数据构建层
+
+BFF 需要额外的服务器资源和维护成本。对于**单端项目**或**后端配合度高**的团队，可以在前端内部做分层，达到类似 BFF 的效果。
+
+### 核心思路
+
+将前端拆成**数据构建层**和**UI 层**。数据构建层按业务模块组织，每个模块封装 API 请求、缓存、数据适配，对外统一暴露 hook 函数。UI 层只负责渲染，不关心数据从哪来、怎么转换。
+
+```mermaid
+graph LR
+    subgraph 数据构建层
+        subgraph 订单模块
+            A1[API]
+            B1[缓存]
+            C1[Transformer]
+        end
+        subgraph 用户模块
+            A2[API]
+            B2[缓存]
+            C2[Transformer]
+        end
+    end
+
+    subgraph UI 层
+        D[组件通过 Hook 消费数据]
+    end
+
+    subgraph 后端服务
+        E[用户服务]
+        F[订单服务]
+        G[商品服务]
+    end
+
+    A1 --> F
+    A1 --> G
+    A2 --> E
+    C1 --> D
+    C2 --> D
+```
+
+数据流：**API 请求 → 缓存层 → Transformer 适配 → UI 层直接使用**
+
+### 目录结构
+
+按业务模块划分，每个模块自包含 api、transformer、hooks，缓存由全局 store 统一管理：
+
+```
+src/
+├── modules/
+│   ├── order/                  # 订单模块
+│   │   ├── api.ts              # API 请求定义
+│   │   ├── transformer.ts      # 数据适配（入参/出参转换）
+│   │   └── hooks.ts            # 对外暴露的 hook
+│   ├── user/                   # 用户模块
+│   │   ├── api.ts
+│   │   ├── transformer.ts
+│   │   └── hooks.ts
+│   └── product/                # 商品模块
+│       ├── api.ts
+│       ├── transformer.ts
+│       └── hooks.ts
+├── store/                      # 全局缓存（Zustand 等）
+│   └── cacheStore.ts
+├── components/                 # UI 层：只引用 hooks
+│   ├── OrderList.tsx
+│   └── UserCard.tsx
+└── shared/                     # 跨模块公共工具
+    └── request.ts              # 请求工具（baseUrl、token、错误处理）
+```
+
+### 各层职责
+
+#### 1. API 层 — 定义接口，不做任何业务逻辑
+
+```typescript
+// modules/order/api.ts
+import { request } from '@/shared/request';
+
+export function fetchOrderList(params: OrderListParams) {
+  return request<OrderRaw[]>('/api/orders', { method: 'GET', params });
+}
+
+export function fetchOrderDetail(orderId: string) {
+  return request<OrderDetailRaw>(`/api/orders/${orderId}`);
+}
+```
+
+#### 2. 缓存层 — 全局 store 统一管理
+
+缓存是全局共享的，不需要每个模块单独维护。通常用 Zustand 等轻量状态库实现，**只缓存 GET 请求**（POST/PUT/DELETE 会改变数据，缓存无意义）：
+
+```typescript
+// store/cacheStore.ts
+import { create } from 'zustand';
+
+interface CacheEntry {
+  data: unknown;
+  timestamp: number;
+}
+
+interface CacheState {
+  cache: Record<string, CacheEntry>;
+  get: <T>(key: string, ttl?: number) => T | null;
+  set: (key: string, data: unknown) => void;
+  invalidate: (key: string) => void;
+  invalidateByPrefix: (prefix: string) => void;
+}
+
+const DEFAULT_TTL = 60_000; // 1 分钟
+
+export const useCacheStore = create<CacheState>((set, get) => ({
+  cache: {},
+
+  get: <T>(key: string, ttl = DEFAULT_TTL): T | null => {
+    const entry = get().cache[key];
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > ttl) {
+      // 过期则清除
+      const { [key]: _, ...rest } = get().cache;
+      set({ cache: rest });
+      return null;
+    }
+    return entry.data as T;
+  },
+
+  set: (key: string, data: unknown) =>
+    set(state => ({
+      cache: { ...state.cache, [key]: { data, timestamp: Date.now() } },
+    })),
+
+  invalidate: (key: string) =>
+    set(state => {
+      const { [key]: _, ...rest } = state.cache;
+      return { cache: rest };
+    }),
+
+  invalidateByPrefix: (prefix: string) =>
+    set(state => {
+      const rest = Object.fromEntries(
+        Object.entries(state.cache).filter(([k]) => !k.startsWith(prefix))
+      );
+      return { cache: rest };
+    }),
+}));
+```
+
+#### 3. Transformer 层 — 入参和出参的适配
+
+这是数据构建层的核心。Transformer 负责两件事：
+
+- **入参转换**：UI 层的参数 → API 需要的参数
+- **出参转换**：API 返回的原始数据 → UI 可直接渲染的数据
+
+同一份原始数据可以通过不同的 Transformer 产出不同格式，适配不同 UI 场景：
+
+```typescript
+// modules/order/transformer.ts
+
+// ── 入参转换 ──
+export function transformOrderListParams(uiParams: UIOrderListParams): OrderListParams {
+  return {
+    page: uiParams.page,
+    pageSize: uiParams.pageSize,
+    status: uiParams.statusFilter,
+    sortBy: uiParams.sortField,
+    createTimeFrom: formatDate(uiParams.dateRange?.[0]),
+    createTimeTo: formatDate(uiParams.dateRange?.[1]),
+  };
+}
+
+// ── 出参转换：列表视图 ──
+export function transformOrderForList(raw: OrderRaw): OrderListItem {
+  return {
+    id: raw.id,
+    statusText: ORDER_STATUS_MAP[raw.status],
+    totalAmount: formatPrice(raw.totalAmount),
+    productCount: raw.items.length,
+    createTime: formatDateTime(raw.createTime),
+  };
+}
+
+// ── 出参转换：详情视图（同一份数据，不同格式）──
+export function transformOrderForDetail(raw: OrderDetailRaw): OrderDetail {
+  return {
+    id: raw.id,
+    status: { text: ORDER_STATUS_MAP[raw.status], color: ORDER_STATUS_COLOR[raw.status] },
+    buyer: { name: raw.buyerName, phone: maskPhone(raw.buyerPhone) },
+    seller: { name: raw.sellerName, shopName: raw.shopName },
+    items: raw.items.map(item => ({
+      name: item.productName,
+      spec: item.specText,
+      price: formatPrice(item.unitPrice),
+      quantity: item.quantity,
+      subtotal: formatPrice(item.unitPrice * item.quantity),
+    })),
+    amount: {
+      subtotal: formatPrice(raw.subtotal),
+      shipping: formatPrice(raw.shippingFee),
+      discount: formatPrice(raw.discount),
+      total: formatPrice(raw.totalAmount),
+    },
+    timeline: raw.statusLogs.map(log => ({
+      status: ORDER_STATUS_MAP[log.status],
+      time: formatDateTime(log.time),
+      remark: log.remark,
+    })),
+  };
+}
+```
+
+#### 4. Hook 层 — 组合前三层，对外暴露
+
+```typescript
+// modules/order/hooks.ts
+import { useCacheStore } from '@/store/cacheStore';
+
+export function useOrderList(params: UIOrderListParams) {
+  const [data, setData] = useState<OrderListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const cache = useCacheStore();
+
+  useEffect(() => {
+    const apiParams = transformOrderListParams(params);
+    const cacheKey = `orderList:${JSON.stringify(apiParams)}`;
+
+    // 读缓存
+    const cached = cache.get<OrderListItem[]>(cacheKey);
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+      return;
+    }
+
+    // GET 请求，结果写入缓存
+    fetchOrderList(apiParams).then(rawList => {
+      const result = rawList.map(transformOrderForList);
+      cache.set(cacheKey, result);
+      setData(result);
+      setLoading(false);
+    });
+  }, [params]);
+
+  return { data, loading };
+}
+
+export function useOrderDetail(orderId: string) {
+  const [data, setData] = useState<OrderDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const cache = useCacheStore();
+
+  useEffect(() => {
+    const cacheKey = `orderDetail:${orderId}`;
+    const cached = cache.get<OrderDetail>(cacheKey);
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+      return;
+    }
+
+    fetchOrderDetail(orderId).then(raw => {
+      const result = transformOrderForDetail(raw);
+      cache.set(cacheKey, result);
+      setData(result);
+      setLoading(false);
+    });
+  }, [orderId]);
+
+  return { data, loading };
+}
+
+// POST/PUT/DELETE 操作后，清除相关缓存，保证下次 GET 拿到最新数据
+export function useOrderMutations() {
+  const cache = useCacheStore();
+
+  const createOrder = async (params: CreateOrderParams) => {
+    const result = await createOrderApi(params);
+    cache.invalidateByPrefix('orderList'); // 清除列表缓存
+    return result;
+  };
+
+  const updateOrder = async (orderId: string, params: UpdateOrderParams) => {
+    const result = await updateOrderApi(orderId, params);
+    cache.invalidate(`orderDetail:${orderId}`); // 清除该订单详情缓存
+    cache.invalidateByPrefix('orderList');       // 清除列表缓存
+    return result;
+  };
+
+  return { createOrder, updateOrder };
+}
+```
+
+#### 5. UI 层 — 纯渲染，零数据逻辑
+
+```tsx
+// components/OrderList.tsx
+function OrderList({ filters }: { filters: UIOrderListParams }) {
+  const { data, loading } = useOrderList(filters);
+
+  if (loading) return <Spinner />;
+
+  return (
+    <table>
+      {data.map(order => (
+        <tr key={order.id}>
+          <td>{order.id}</td>
+          <td>{order.statusText}</td>
+          <td>{order.totalAmount}</td>
+          <td>{order.productCount} 件</td>
+        </tr>
+      ))}
+    </table>
+  );
+}
+```
+
+### 设计要点
+
+1. **UI 组件禁止直接调用 API** — 所有数据通过 hook 获取，保证数据逻辑集中
+2. **Transformer 是纯函数** — 不依赖 DOM 和组件状态，同一份数据可产出多种格式，方便单元测试
+3. **入参和出参都走 Transformer** — UI 参数和 API 参数解耦，后端接口变更时只改 transformer，不影响 UI 组件
+4. **缓存全局统一管理，只缓存 GET** — POST/PUT/DELETE 操作后主动 invalidate 相关缓存，避免脏数据
+5. **模块间通过 hook 通信** — 模块 A 需要模块 B 的数据时，引用 B 的 hook，而不是直接调用 B 的 api
+
+### BFF vs 前端数据构建层
+
+| 维度 | BFF（服务端） | 前端数据构建层 |
+|------|-------------|--------------|
+| **运行环境** | Node 服务器 | 浏览器 |
+| **接口聚合** | 服务端并行请求，一次返回 | `Promise.all` 并行请求，多次往返 |
+| **网络开销** | 前端只发 1 次请求 | 前端发 N 次请求（N = 微服务数量） |
+| **数据裁剪** | 服务端裁剪后传输，省带宽 | 全量传输，前端 pick 字段 |
+| **缓存** | 服务端缓存，所有用户共享 | 浏览器缓存，每用户独立 |
+| **SSR 支持** | 天然支持，服务端直接拿数据 | 不支持，数据在浏览器里获取 |
+| **多端复用** | 一套 BFF 服务多端 | 每端各自实现数据层 |
+| **维护成本** | 需要服务器、部署、监控 | 零额外成本，随前端一起部署 |
+| **适用场景** | 多端、SSR、接口碎片化严重 | 单端、CSR、后端配合度高 |
+
+### 如何选择
+
+| 项目特征 | 推荐方案 |
+|---------|---------|
+| 单端 H5 / 管理后台，CSR 渲染 | 前端数据构建层 |
+| 多端（Web + App + 小程序） | BFF |
+| 需要 SSR / SSG | BFF |
+| 后端接口粒度细，一个页面要调 5+ 接口 | BFF |
+| 团队小，没有 Node 服务运维能力 | 前端数据构建层 |
+| 弱网环境（移动端） | BFF（减少请求次数） |
+
+两者不是互斥的。常见做法是**核心聚合逻辑用 BFF，前端内部仍然做数据层分层** — BFF 负责跨服务的接口聚合和数据裁剪，前端数据层负责 Transformer 适配、缓存管理和业务状态。
+
 ## BFF vs 传统后端
 
 | 维度 | 传统后端 | BFF |

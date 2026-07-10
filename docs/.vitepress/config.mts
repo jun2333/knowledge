@@ -38,10 +38,10 @@ export default defineConfig({
         {
           text: 'JavaScript 核心',
           items: [
-            { text: '⭐⭐⭐ 数据类型与内存管理', link: '/javascript/memory' },
-            { text: '⭐⭐ 事件循环', link: '/javascript/event-loop' },
-            { text: '⭐⭐ ES6+ 新特性', link: '/javascript/es6' },
-            { text: '⭐⭐ 发布订阅模式', link: '/javascript/pubsub' },
+            { text: '数据类型与内存管理', link: '/javascript/memory' },
+            { text: '事件循环', link: '/javascript/event-loop' },
+            { text: 'ES6+ 新特性', link: '/javascript/es6' },
+            { text: '发布订阅模式', link: '/javascript/pubsub' },
           ]
         }
       ],
@@ -51,17 +51,17 @@ export default defineConfig({
           text: '响应系统',
           items: [
             { text: '双向绑定原理', link: '/vue/double-binding' },
-            { text: '⭐ Effect 实现原理', link: '/vue/effect' },
+            { text: 'Effect 实现原理', link: '/vue/effect' },
             { text: '原始值的响应式', link: '/vue/primitive-reactive' },
-            { text: '⭐⭐ 非原始值的响应式', link: '/vue/non-primitive-reactive' },
-            { text: '⭐ Computed 和 Watch', link: '/vue/computed-watch' },
+            { text: '非原始值的响应式', link: '/vue/non-primitive-reactive' },
+            { text: 'Computed 和 Watch', link: '/vue/computed-watch' },
           ]
         },
         {
           text: '渲染器',
           items: [
             { text: 'Diff 算法的前世今生', link: '/vue/diff-history' },
-            { text: '⭐ Vue2 vs Vue3 Diff', link: '/vue/diff-compare' },
+            { text: 'Vue2 vs Vue3 Diff', link: '/vue/diff-compare' },
             { text: 'Vue2 vs Vue3 Patch', link: '/vue/patch-compare' },
             { text: '渲染器的设计', link: '/vue/renderer-design' },
           ]
@@ -77,7 +77,7 @@ export default defineConfig({
         {
           text: '组件化',
           items: [
-            { text: '⭐ Vue2 生命周期', link: '/vue/lifecycle-v2' },
+            { text: 'Vue2 生命周期', link: '/vue/lifecycle-v2' },
             { text: 'Vue3 生命周期', link: '/vue/lifecycle-v3' },
             { text: '组件实例', link: '/vue/component-instance' },
             { text: '异步组件', link: '/vue/async-component' },
@@ -87,7 +87,7 @@ export default defineConfig({
         {
           text: '生态',
           items: [
-            { text: '⭐ Vuex 实现原理', link: '/vue/vuex' },
+            { text: 'Vuex 实现原理', link: '/vue/vuex' },
             { text: 'Vue Router 实现', link: '/vue/vue-router' },
           ]
         }
@@ -104,16 +104,16 @@ export default defineConfig({
         {
           text: 'Hooks',
           items: [
-            { text: '⭐⭐ FC 组件与 Hook', link: '/react/fc-hook' },
+            { text: 'FC 组件与 Hook', link: '/react/fc-hook' },
             { text: 'Hooks 用法总结', link: '/react/hooks-summary' },
-            { text: '⭐ 自定义 Hook 案例', link: '/react/custom-hooks' },
+            { text: '自定义 Hook 案例', link: '/react/custom-hooks' },
           ]
         },
         {
           text: 'Reconciler 协调器',
           items: [
             { text: 'Reconciler 协调器', link: '/react/reconciler' },
-            { text: '⭐ Reconcile 算法 (Diff)', link: '/react/reconcile-algorithm' },
+            { text: 'Reconcile 算法 (Diff)', link: '/react/reconcile-algorithm' },
             { text: 'Commit 阶段', link: '/react/commit' },
             { text: '状态更新流程', link: '/react/state-update' },
             { text: '性能优化', link: '/react/performance' },
@@ -129,7 +129,7 @@ export default defineConfig({
         {
           text: 'Scheduler 调度器',
           items: [
-            { text: '⭐ Scheduler', link: '/react/scheduler' },
+            { text: 'Scheduler', link: '/react/scheduler' },
             { text: 'React 优先级', link: '/react/priority' },
             { text: '批量更新', link: '/react/batched-update' },
           ]
@@ -137,11 +137,11 @@ export default defineConfig({
         {
           text: '其他核心概念',
           items: [
-            { text: '⭐ Context', link: '/react/context' },
+            { text: 'Context', link: '/react/context' },
             { text: 'JSX', link: '/react/jsx' },
             { text: 'State', link: '/react/state' },
             { text: 'Ref', link: '/react/ref' },
-            { text: '⭐ 逻辑复用', link: '/react/logic-reuse' },
+            { text: '逻辑复用', link: '/react/logic-reuse' },
             { text: '错误处理', link: '/react/error-handling' },
             { text: 'CSS 模块化', link: '/react/css-modules' },
             { text: '新版本内容', link: '/react/new-features' },
@@ -192,7 +192,7 @@ export default defineConfig({
             { text: 'HTTP 协议演进', link: '/browser/http-history' },
             { text: 'TCP 协议', link: '/browser/tcp' },
             { text: 'HTTP Methods', link: '/browser/http-methods' },
-            { text: '⭐ HTTPS', link: '/browser/https' },
+            { text: 'HTTPS', link: '/browser/https' },
             { text: 'WebSocket', link: '/browser/websocket' },
             { text: 'SSE', link: '/browser/sse' },
           ]
@@ -200,7 +200,7 @@ export default defineConfig({
         {
           text: '存储与缓存',
           items: [
-            { text: '⭐ 存储与缓存', link: '/browser/storage-cache' },
+            { text: '存储与缓存', link: '/browser/storage-cache' },
             { text: '应用更新实践', link: '/browser/app-update' },
           ]
         },
@@ -258,20 +258,20 @@ export default defineConfig({
           items: [
             { text: 'Web 性能优化', link: '/performance/web' },
             { text: '如何让网页更丝滑', link: '/performance/smooth' },
-            { text: '⭐ 大文件上传', link: '/performance/upload-idea' },
+            { text: '大文件上传', link: '/performance/upload-idea' },
           ]
         },
         {
           text: '监控',
           items: [
-            { text: '⭐ 性能指标', link: '/performance/metrics' },
+            { text: '性能指标', link: '/performance/metrics' },
             { text: '错误监控', link: '/performance/error-monitoring' },
           ]
         },
         {
           text: '最佳实践',
           items: [
-            { text: '⭐⭐ 性能优化清单', link: '/performance/best-practices' },
+            { text: '性能优化清单', link: '/performance/best-practices' },
           ]
         }
       ],
@@ -280,7 +280,7 @@ export default defineConfig({
         {
           text: '架构设计',
           items: [
-            { text: '⭐ 微前端架构', link: '/engineering/micro-frontend' },
+            { text: '微前端架构', link: '/engineering/micro-frontend' },
             { text: 'Islands 架构', link: '/engineering/islands' },
             { text: 'PWA 方案', link: '/engineering/pwa' },
             { text: '国际化方案', link: '/engineering/i18n' },
@@ -303,13 +303,13 @@ export default defineConfig({
           text: '算法基础',
           items: [
             { text: '算法基础', link: '/algorithms/basic' },
-            { text: '⭐ 二分查找', link: '/algorithms/binary-search' },
+            { text: '二分查找', link: '/algorithms/binary-search' },
             { text: '变形二分法', link: '/algorithms/binary-search-variations' },
             { text: '堆', link: '/algorithms/heap' },
             { text: '散列表', link: '/algorithms/hash-table' },
             { text: '二叉查找树', link: '/algorithms/bst' },
             { text: '二叉树', link: '/algorithms/binary-tree' },
-            { text: '⭐⭐⭐ 字符串匹配算法', link: '/algorithms/string-matching' },
+            { text: '字符串匹配算法', link: '/algorithms/string-matching' },
           ]
         },
         {
@@ -326,7 +326,7 @@ export default defineConfig({
         {
           text: '你不知道的 JS',
           items: [
-            { text: '⭐⭐ 你不知道的 JS', link: '/books/js-you-dont-know' },
+            { text: '你不知道的 JS', link: '/books/js-you-dont-know' },
             { text: '作用域闭包', link: '/books/scope-closure' },
             { text: '对象', link: '/books/objects' },
           ]
@@ -334,7 +334,7 @@ export default defineConfig({
         {
           text: '重学前端',
           items: [
-            { text: '⭐ Class 语法糖原理', link: '/books/class-sugar' },
+            { text: 'Class 语法糖原理', link: '/books/class-sugar' },
             { text: '函数分类和 this', link: '/books/function-this' },
             { text: '类型转换', link: '/books/type-coercion' },
           ]
@@ -351,7 +351,7 @@ export default defineConfig({
         {
           text: '其他',
           items: [
-            { text: '⭐⭐ 现代前端技术解析', link: '/books/modern-frontend' },
+            { text: '现代前端技术解析', link: '/books/modern-frontend' },
           ]
         }
       ],
@@ -372,7 +372,7 @@ export default defineConfig({
         {
           text: '框架对比',
           items: [
-            { text: '⭐ React vs Vue', link: '/mvvm/react-vs-vue' },
+            { text: 'React vs Vue', link: '/mvvm/react-vs-vue' },
           ]
         }
       ],
@@ -381,21 +381,21 @@ export default defineConfig({
         {
           text: 'Spec-First 开发',
           items: [
-            { text: '⭐ 核心思想', link: '/ai-agent/spec-first/overview' },
+            { text: '核心思想', link: '/ai-agent/spec-first/overview' },
             { text: '工作流程', link: '/ai-agent/spec-first/workflow' },
           ]
         },
         {
           text: 'Harness 工程',
           items: [
-            { text: '⭐ 核心思想', link: '/ai-agent/harness-engineering/core-concepts' },
+            { text: '核心思想', link: '/ai-agent/harness-engineering/core-concepts' },
             { text: '最佳实践', link: '/ai-agent/harness-engineering/best-practices' },
           ]
         },
         {
           text: 'Qoder 实践',
           items: [
-            { text: '⭐ 优化实践', link: '/ai-agent/qoder/optimization' },
+            { text: '优化实践', link: '/ai-agent/qoder/optimization' },
           ]
         },
         {
@@ -408,7 +408,7 @@ export default defineConfig({
         {
           text: 'RAG 检索增强',
           items: [
-            { text: '⭐ RAG 入门', link: '/ai-agent/rag/introduction' },
+            { text: 'RAG 入门', link: '/ai-agent/rag/introduction' },
           ]
         }
       ]

@@ -11,7 +11,7 @@ date: 2023-03-01
 | SSR | Server Side Rendering | 服务器返回完整 HTML，客户端激活交互 | Next.js、Nuxt.js |
 | SSG | Static Site Generation | 构建时预渲染静态 HTML，部署到 CDN | Hugo、Hexo、VitePress |
 | ISR | Incremental Site Rendering | SSG 升级版，按需逐页增量构建 | Next.js (getStaticProps + revalidate) |
-| DPR | Distributed Persistent Rendering | ISR 改进版，去除 fallback，按需构建器响应 | Vercel |
+| DPR | Distributed Persistent Rendering | ISR 改进版，去除 fallback，按需构建器响应 | Netlify |
 
 ## CSR 客户端渲染
 
@@ -78,7 +78,7 @@ SSG 的升级版，解决海量页面构建慢的问题。
 
 ## DPR 分布式持续渲染
 
-在 ISR 基础上改进，由 Vercel 提出：
+在 ISR 基础上改进，由 Netlify 提出：
 
 | 改进点 | ISR | DPR |
 |--------|-----|-----|
@@ -124,6 +124,8 @@ graph TD
 ```
 
 **核心价值**：结合 CSR + SSR 的优势——首屏用 SSR 提高速度和 SEO，后续交互用 CSR 保证体验。
+
+> **同构 ≠ SSR**：SSR 只描述"渲染发生在服务端"，不关心代码是否共享；同构强调"同一套代码在服务端和客户端都能执行"。传统 JSP/PHP 模板渲染也是 SSR，但不是同构。现代框架（Next.js、Nuxt.js）是同构 + SSR 的组合——同构是手段，SSR 是结果。
 
 ### 主流同构框架
 

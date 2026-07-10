@@ -125,7 +125,7 @@ iframe 是浏览器原生的硬隔离方案，但有以下问题：
 
 **缺点**：
 - 改造成本较高（需要配置 webpack）
-- 不支持保活（切换子应用会销毁）
+- 不支持保活（切换子应用会销毁，但社区已有 [qiankun-keep-alive](https://github.com/chenbj5515/qiankun-keep-alive) 等方案可实现子应用缓存）
 - JS 沙箱有性能损耗（快照/代理）
 - CSS 隔离不彻底（严格模式有兼容问题）
 
@@ -162,7 +162,8 @@ iframe 是浏览器原生的硬隔离方案，但有以下问题：
 ### 无界（wujie）
 
 **出品**：腾讯  
-**基础**：Web Component + iframe
+**基础**：Web Component + iframe  
+**官网**：https://wujie-micro.github.io/doc/
 
 **优点**：
 - 改造成本最低（只需支持跨域）
