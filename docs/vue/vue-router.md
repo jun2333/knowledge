@@ -1,53 +1,322 @@
-## vue-router实现原理
+# Vue Router 实现原理
 
-SPA(Single Page Application)单页面程序主要是通过一个页面中更新视图容器来达到目的，前端路由则是SPA的必备技术。
+SPA（Single Page Application）通过更新视图容器实现页面切换，前端路由是 SPA 的核心技术。
 
-前端路由：
+## 前端路由核心
 
-1. 修改url，页面不会重新请求服务器，只是前端控制更新容器视图，不同的url对应不同的视图
-2. 目前实现前端路由有三种模式：Hash、History、Abstract
+1. **URL 变化不请求服务器**：前端控制视图更新，不同 URL 对应不同视图
+2. **三种实现模式**：Hash、History、Abstract
 
-### 路由模式
+## 路由模式对比
 
-1. hash：利用浏览器修改url的hash部分内容不会进行请求的特性
-2. history：HTML5新增history的pushState、replaceState方法操作history的状态，浏览器也不会进行请求
-3. abstract：支持所有JavaScript运行环境，如node.js
+| 模式 | 原理 | URL 变化 | 服务器请求 | 适用场景 |
+|------|------|---------|-----------|---------|
+| **Hash** | `location.hash` | `#/path` | 无 | 兼容老浏览器 |
+| **History** | `history.pushState` | `/path` | 需服务器配置 | 现代浏览器 |
+| **Abstract** | 内存数组模拟 | 无 | 无 | Node.js 环境 |
 
-### hash模式
+## Hash 模式
 
-通过修改url中#后面内容，浏览器会新增一条历史记录，点击后退按钮浏览器会退到上个记录；监听hash值的变化(即监听hashchange事件)重新渲染容器视图的内容
+利用 URL 的 hash 部分（`#` 后面）变化不会触发服务器请求的特性。
 
-### history模式
+```typescript
+class HashHistory extends History {
+  constructor(router: Router, base?: string) {
+    super(router, base);
+    // 监听 hash 变化
+    window.addEventListener('hashchange', () => {
+      this.transitionTo(getHash(), route => {
+        replaceHash(route.fullPath);
+      });
+    });
+  }
 
-HTML5中history API中提供了对history状态的修改能力，通过pushState方法向history栈中推入一条状态，浏览器不会进行更新。
+  push(location: RawLocation): void {
+    const currentRoute = this.current;
+    this.transitionTo(location, route => {
+      pushHash(route.fullPath);
+    });
+  }
 
-一般切换url分三种情况
+  replace(location: RawLocation): void {
+    const currentRoute = this.current;
+    this.transitionTo(location, route => {
+      replaceHash(route.fullPath);
+    });
+  }
+}
 
-1. 点击routeLink组件切换页面
+function pushHash(path: string): void {
+  window.location.hash = path;
+}
 
-   router直接封装routeLink点击事件，更新视图并调用pushState修改地址栏的url
+function replaceHash(path: string): void {
+  const href = window.location.href;
+  const i = href.indexOf('#');
+  const base = i >= 0 ? href.slice(0, i) : href;
+  window.location.replace(`${base}#${path}`);
+}
+```
 
-2. 修改url切换页面
+### 特点
 
-   服务器统一返回首页，router获取localtion.pathname进行渲染相应视图
+- URL 变化会新增历史记录，后退按钮可用
+- 监听 `hashchange` 事件更新视图
+- URL 带 `#`，不够美观
 
-3. 浏览器前进后退按钮以及history提供的go()、back()、forward()等方法
+## History 模式
 
-   history切换状态会触发popstate事件，router监听popstate事件，更新相应视图
+利用 HTML5 History API 的 `pushState`、`replaceState` 方法，修改 URL 不触发服务器请求。
 
-注意：由于修改url地址回车之后浏览器会请求服务器，所以服务器需要将匹配不到的前端路由进行统一处理，返回首页让前端路由进行处理
+```typescript
+class HTML5History extends History {
+  constructor(router: Router, base?: string) {
+    super(router, base);
+    // 监听 popstate（前进/后退）
+    window.addEventListener('popstate', e => {
+      const current = this.current;
+      this.transitionTo(getLocation(), route => {
+        if (expectScroll) {
+          handleScroll(router, route, current, true);
+        }
+      });
+    });
+  }
 
-### abstract
+  push(location: RawLocation): void {
+    const { current: fromRoute } = this;
+    this.transitionTo(location, route => {
+      pushState(cleanPath(this.base + route.fullPath));
+      handleScroll(router, route, fromRoute, false);
+    });
+  }
 
-流程和hashHistory一样，通过一个数组模拟浏览器history栈，同时也提供go、back、forward、pushState、replaceState等方法，主要用于非浏览器环境
+  replace(location: RawLocation): void {
+    const { current: fromRoute } = this;
+    this.transitionTo(location, route => {
+      replaceState(cleanPath(this.base + route.fullPath));
+      handleScroll(router, route, fromRoute, false);
+    });
+  }
+}
 
-### hash VS history
+function pushState(url: string): void {
+  window.history.pushState({ key: _key }, '', url);
+}
 
-1. history没有丑陋的#，看起来更美观
-2. history会请求服务器，因此需要服务器特殊处理匹配不到的页面
-3. pushState设置与当前url相同的url也会把记录添加到history栈中，而hash必须要发生变化才会添加进去
-4. pushState可以设置同源的任何url，而hash只能修改#后面部分内容(即只可以设置当前同文档的url)
+function replaceState(url: string): void {
+  window.history.replaceState({ key: _key }, '', url);
+}
+```
 
-### 总结
+### 三种 URL 变化场景
 
-其实所谓响应式属性，即当_route值改变时，会自动调用Vue实例的render()方法，更新视图。 $router.push()-->HashHistory.push()-->History.transitionTo()-->History.updateRoute()-->{app._route=route}-->vm.render()
+```mermaid
+graph TD
+    A[URL 变化] --> B[点击 RouterLink]
+    A --> C[修改 URL 回车]
+    A --> D[浏览器前进/后退]
+
+    B --> E[router.push]
+    E --> F[pushState + 更新视图]
+
+    C --> G[服务器返回首页]
+    G --> H[前端路由匹配渲染]
+
+    D --> I[popstate 事件]
+    I --> J[更新视图]
+```
+
+1. **点击 RouterLink**：调用 `pushState` 修改 URL，更新视图
+2. **修改 URL 回车**：服务器返回首页，前端路由匹配渲染
+3. **前进/后退按钮**：触发 `popstate` 事件，更新视图
+
+### 服务器配置
+
+History 模式需要服务器配置，将匹配不到的路由返回首页：
+
+```nginx
+# Nginx 配置
+location / {
+  try_files $uri $uri/ /index.html;
+}
+```
+
+```apache
+# Apache 配置
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+```
+
+## Abstract 模式
+
+用数组模拟浏览器 History 栈，用于非浏览器环境（如 Node.js）。
+
+```typescript
+class AbstractHistory extends History {
+  private stack: Route[] = [];
+  private index: number = 0;
+
+  constructor(router: Router, base?: string) {
+    super(router, base);
+  }
+
+  push(location: RawLocation): void {
+    this.transitionTo(location, route => {
+      this.stack = this.stack.slice(0, this.index + 1).concat(route);
+      this.index++;
+    });
+  }
+
+  replace(location: RawLocation): void {
+    this.transitionTo(location, route => {
+      this.stack = this.stack.slice(0, this.index).concat(route);
+    });
+  }
+
+  go(n: number): void {
+    const targetIndex = this.index + n;
+    if (targetIndex < 0 || targetIndex >= this.stack.length) return;
+    this.index = targetIndex;
+    this.transitionTo(this.stack[this.index], route => {
+      // 更新视图
+    });
+  }
+
+  back(): void {
+    this.go(-1);
+  }
+
+  forward(): void {
+    this.go(1);
+  }
+}
+```
+
+## 路由切换核心流程
+
+```mermaid
+sequenceDiagram
+    participant U as 用户操作
+    participant R as Router
+    participant H as History
+    participant T as transitionTo
+    participant M as 匹配路由
+    participant V as 更新视图
+
+    U->>R: $router.push('/path')
+    R->>H: push(location)
+    H->>T: transitionTo(location)
+    T->>M: 匹配路由配置
+    M-->>T: 返回 route
+    T->>T: 触发导航守卫
+    T->>H: 更新 URL
+    T->>V: app._route = route
+    V->>V: vm.render()
+```
+
+### transitionTo 核心逻辑
+
+```typescript
+transitionTo(location: RawLocation, onComplete?: Function): void {
+  const route = this.router.match(location, this.current);
+  
+  // 导航守卫队列
+  const queue: NavigationGuard[] = [].concat(
+    this.router.beforeHooks,
+    route.matched.flatMap(m => m.beforeEnter),
+    this.router.afterHooks
+  );
+
+  // 执行守卫队列
+  runQueue(queue, (guard, next) => {
+    guard(route, this.current, next);
+  }, () => {
+    // 所有守卫执行完毕
+    this.confirmTransition(route, onComplete);
+  });
+}
+
+confirmTransition(route: Route, onComplete?: Function): void {
+  const current = this.current;
+  this.current = route;
+  
+  // 更新 app._route，触发响应式更新
+  if (this.router.app) {
+    this.router.app._route = route;
+  }
+  
+  onComplete?.(route);
+}
+```
+
+## Vue Router 4 变化（Vue3 配套）
+
+| 维度 | Vue Router 3 (Vue2) | Vue Router 4 (Vue3) |
+|------|---------------------|---------------------|
+| **创建方式** | `new Router()` | `createRouter()` |
+| **安装方式** | `Vue.use(Router)` | `app.use(router)` |
+| **路由模式** | `mode: 'history'` | `createWebHistory()` |
+| **响应式** | `this.$route` | `useRoute()` |
+| **导航** | `this.$router.push()` | `useRouter().push()` |
+| **懒加载** | `() => import()` | 同左 |
+| **TypeScript** | 支持不完善 | 原生 TypeScript |
+
+### Vue Router 4 使用示例
+
+```typescript
+import { createRouter, createWebHistory } from 'vue-router';
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/',
+      component: () => import('./views/Home.vue'),
+    },
+    {
+      path: '/about',
+      component: () => import('./views/About.vue'),
+    },
+  ],
+});
+
+export default router;
+```
+
+```vue
+<template>
+  <nav>
+    <router-link to="/">Home</router-link>
+    <router-link to="/about">About</router-link>
+  </nav>
+  <router-view />
+</template>
+
+<script setup>
+import { useRoute, useRouter } from 'vue-router';
+
+const route = useRoute();
+const router = useRouter();
+
+// 导航
+router.push('/about');
+</script>
+```
+
+## Hash vs History 详细对比
+
+| 维度 | Hash | History |
+|------|------|---------|
+| **URL 美观度** | 带 `#`，不美观 | 无 `#`，美观 |
+| **服务器请求** | 无 | 需服务器配置 |
+| **历史记录** | hash 变化才新增 | `pushState` 相同 URL 也新增 |
+| **URL 范围** | 只能修改 `#` 后内容 | 可设置同源任何 URL |
+| **兼容性** | 兼容所有浏览器 | 需 IE10+ |
+| **SEO** | 不友好 | 相对友好 |

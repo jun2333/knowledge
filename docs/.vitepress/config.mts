@@ -41,7 +41,9 @@ export default defineConfig({
             { text: '数据类型与内存管理', link: '/javascript/memory' },
             { text: '事件循环', link: '/javascript/event-loop' },
             { text: 'ES6+ 新特性', link: '/javascript/es6' },
-            { text: '发布订阅模式', link: '/javascript/pubsub' },
+            { text: '设计模式', link: '/javascript/pubsub' },
+            { text: '原型与继承', link: '/javascript/prototype' },
+            { text: '闭包、作用域与 this', link: '/javascript/closure' },
           ]
         }
       ],
@@ -287,6 +289,7 @@ export default defineConfig({
             { text: '渲染方式', link: '/engineering/rendering' },
             { text: 'BFF 层设计', link: '/engineering/bff' },
             { text: 'Server Components', link: '/engineering/server-components' },
+            { text: 'Product Feature', link: '/engineering/product-feature' },
           ]
         },
         {
