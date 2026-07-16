@@ -1,7 +1,9 @@
 import DefaultTheme from 'vitepress/theme'
+import Layout from './Layout.vue'
 
 export default {
-  ...DefaultTheme,
+  extends: DefaultTheme,
+  Layout: Layout,
   async enhanceApp({ app, router }) {
     // 只在客户端初始化 mermaid
     if (typeof window !== 'undefined') {

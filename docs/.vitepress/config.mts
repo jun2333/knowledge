@@ -6,7 +6,6 @@ export default defineConfig({
 
   themeConfig: {
     nav: [
-      { text: '写作指南', link: '/GUIDE' },
       { text: 'JavaScript', link: '/javascript/memory' },
       { text: 'Vue', link: '/vue/double-binding' },
       { text: 'React', link: '/react/concept' },
