@@ -1,12 +1,11 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: '前端面试知识库',
-  description: '系统化整理的前端面试知识点',
+  title: '知识库',
+  description: '个人知识库',
 
   themeConfig: {
     nav: [
-      { text: '首页', link: '/' },
       { text: '写作指南', link: '/GUIDE' },
       { text: 'JavaScript', link: '/javascript/memory' },
       { text: 'Vue', link: '/vue/double-binding' },
@@ -18,6 +17,7 @@ export default defineConfig({
       { text: '架构', link: '/engineering/micro-frontend' },
       { text: '算法', link: '/algorithms/basic' },
       { text: '读书笔记', link: '/books/js-you-dont-know' },
+      { text: '运动', link: '/sports/breaststroke-for-beginners' },
       { text: '杂项', link: '/misc/notes' },
     ],
 
@@ -44,6 +44,7 @@ export default defineConfig({
             { text: '设计模式', link: '/javascript/pubsub' },
             { text: '原型与继承', link: '/javascript/prototype' },
             { text: '闭包、作用域与 this', link: '/javascript/closure' },
+            { text: 'TypeScript 核心', link: '/javascript/typescript' },
           ]
         }
       ],
@@ -296,6 +297,7 @@ export default defineConfig({
           text: '团队协作',
           items: [
             { text: 'Git Flow 最佳实践', link: '/engineering/git-flow' },
+            { text: 'CI/CD 持续集成与部署', link: '/engineering/cicd' },
             { text: '团队管理最佳实践', link: '/engineering/team-management' },
           ]
         }
@@ -359,6 +361,15 @@ export default defineConfig({
         }
       ],
 
+      '/sports/': [
+        {
+          text: '游泳',
+          items: [
+            { text: '蛙泳入门：从零开始', link: '/sports/breaststroke-for-beginners' },
+          ]
+        }
+      ],
+
       '/misc/': [
         {
           text: '杂项',
@@ -393,6 +404,7 @@ export default defineConfig({
           items: [
             { text: '核心思想', link: '/ai-agent/harness-engineering/core-concepts' },
             { text: '最佳实践', link: '/ai-agent/harness-engineering/best-practices' },
+            { text: '质量控制对比', link: '/ai-agent/harness-engineering/quality-control-comparison' },
           ]
         },
         {
