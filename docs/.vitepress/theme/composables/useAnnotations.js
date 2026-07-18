@@ -150,10 +150,8 @@ export function useAnnotations() {
   
   // 清空所有批注
   function clearAllAnnotations() {
-    if (confirm('确定要清空所有批注吗？此操作不可恢复。')) {
-      annotations.value = []
-      localStorage.removeItem(STORAGE_KEY)
-    }
+    annotations.value = []
+    localStorage.removeItem(STORAGE_KEY)
   }
   
   // 获取批注统计

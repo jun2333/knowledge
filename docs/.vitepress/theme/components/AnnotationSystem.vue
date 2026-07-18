@@ -118,7 +118,7 @@
     <div class="annotation-panel">
       <button 
         class="panel-toggle" 
-        @click="showPanel = !showPanel"
+        @click.stop="showPanel = !showPanel"
         :class="{ active: showPanel }"
       >
          批注 ({{ annotationStats.total }})
@@ -235,14 +235,21 @@ watch(() => route.path, () => {
 // 监听鼠标选择事件
 onMounted(() => {
   document.addEventListener('mouseup', handleMouseUp)
-  // 移除 mousedown 监听，避免过早清空选区
-  // document.addEventListener('mousedown', handleMouseDown)
+  document.addEventListener('click', handleDocumentClick)
 })
 
 onUnmounted(() => {
   document.removeEventListener('mouseup', handleMouseUp)
-  // document.removeEventListener('mousedown', handleMouseDown)
+  document.removeEventListener('click', handleDocumentClick)
 })
+
+function handleDocumentClick(e) {
+  // 点击面板外部时关闭面板
+  const panel = document.querySelector('.annotation-panel')
+  if (panel && !panel.contains(e.target)) {
+    showPanel.value = false
+  }
+}
 
 function handleMouseDown(e) {
   // 已移除 mousedown 监听器，此函数不再使用
@@ -377,12 +384,9 @@ function updateEditingAnnotation() {
 
 function deleteEditingAnnotation() {
   if (!editingAnnotation.value) return
-  
-  if (confirm('确定要删除这条批注吗？')) {
-    deleteAnnotation(editingAnnotation.value.id)
-    closeEditDialog()
-    showToast('批注已删除')
-  }
+  deleteAnnotation(editingAnnotation.value.id)
+  closeEditDialog()
+  showToast('批注已删除')
 }
 
 function showTooltip(anno) {
@@ -433,10 +437,8 @@ function startEditAnnotation(anno) {
 }
 
 function deleteAnnotationById(id) {
-  if (confirm('确定要删除这条批注吗？')) {
-    deleteAnnotation(id)
-    showToast('批注已删除')
-  }
+  deleteAnnotation(id)
+  showToast('批注已删除')
 }
 
 function showToast(message) {

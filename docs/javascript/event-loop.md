@@ -167,7 +167,9 @@ async function async1() {
 }
 
 async function async2() {
-  console.log('async2');
+  console.log('async2 start');
+  await Promise.resolve();
+  console.log('async2 end');
 }
 
 console.log('script start');
@@ -196,15 +198,20 @@ console.log('script end');
    ├─ setTimeout → 宏任务队列
    ├─ async1()
    │  ├─ 输出：async1 start
-   │  ├─ async2() → 输出：async2
-   │  └─ await 后面的代码 → 微任务队列
+   │  ├─ 调用 async2()
+   │  │  ├─ 输出：async2 start
+   │  │  ├─ await Promise.resolve() → async2 后续代码 → 微任务①
+   │  │  └─ async2 暂停，返回 Promise
+   │  ├─ await async2() → async1 后续代码 → 微任务②
+   │  └─ async1 暂停
    ├─ Promise 构造函数 → 输出：promise1
-   ├─ .then → 微任务队列
+   ├─ .then → 微任务③
    └─ 输出：script end
 
 2. 清空微任务队列
-   ├─ 执行 await 后的代码 → 输出：async1 end
-   └─ 执行 Promise.then → 输出：promise2
+   ├─ 微任务① → 输出：async2 end
+   ├─ 微任务② → 输出：async1 end
+   └─ 微任务③ → 输出：promise2
 
 3. 宏任务 2（setTimeout）
    └─ 输出：setTimeout
@@ -214,9 +221,10 @@ console.log('script end');
 ```
 script start
 async1 start
-async2
+async2 start
 promise1
 script end
+async2 end
 async1 end
 promise2
 setTimeout

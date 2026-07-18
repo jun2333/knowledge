@@ -43,6 +43,7 @@ export default defineConfig({
             { text: '设计模式', link: '/javascript/pubsub' },
             { text: '原型与继承', link: '/javascript/prototype' },
             { text: '闭包、作用域与 this', link: '/javascript/closure' },
+            { text: '模块化进化史', link: '/javascript/module' },
             { text: 'TypeScript 核心', link: '/javascript/typescript' },
           ]
         }

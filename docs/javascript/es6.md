@@ -173,17 +173,19 @@ for (const key of [1, 2, 3].keys()) console.log(key);
 for (const value of [1, 2, 3].values()) console.log(value);
 for (const [key, value] of [1, 2, 3].entries()) console.log(key, value);
 
-// [].flat() / [].flatMap() - 扁平化
+// [].flat() - 扁平化嵌套数组
 [1, [2, [3]]].flat(2);  // [1, 2, 3]
+// [].flatMap() - 先 map 再 flat（只扁平一层），等价于 arr.map(fn).flat(1)
 [1, 2, 3].flatMap(x => [x, x * 2]);  // [1, 2, 2, 4, 3, 6]
 ```
 
 ## 对象新增方法
 
 ```typescript
-// Object.is() - 精确相等
+// Object.is() - 精确相等（可比较任意类型，对象比较引用地址而非内容）
 Object.is(NaN, NaN);  // true
 Object.is(0, -0);     // false
+Object.is({}, {});    // false — 不同引用
 
 // Object.assign() - 浅合并
 Object.assign({ a: 1 }, { b: 2 }, { c: 3 });  // { a: 1, b: 2, c: 3 }
@@ -197,12 +199,17 @@ Object.entries({ a: 1, b: 2 }); // [['a', 1], ['b', 2]]
 Object.fromEntries([['a', 1], ['b', 2]]);  // { a: 1, b: 2 }
 Object.fromEntries(new URLSearchParams('a=1&b=2'));  // { a: '1', b: '2' }
 
-// Object.getOwnPropertyDescriptors() - 获取属性描述符
-const descriptors = Object.getOwnPropertyDescriptors({ a: 1 });
+// Object.getOwnPropertyDescriptors() - 获取属性的完整描述符（含 get/set、enumerable 等）
+const source = {
+  get name() { return 'hello' }
+}
 
-// 深拷贝 get/set 属性
-const shallowMerge = (target: any, source: any) =>
-  Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+// Object.assign 会调用 getter，只拷贝值，getter 丢失
+const a = Object.assign({}, source)  // { name: 'hello' } — getter 没了
+
+// getOwnPropertyDescriptors + defineProperties 完整保留 getter/setter
+const b = Object.defineProperties({}, Object.getOwnPropertyDescriptors(source))
+b.name  // 'hello' — 仍然是 getter
 ```
 
 ## Symbol
@@ -352,17 +359,17 @@ gen.next();  // { value: 2, done: false }
 gen.next();  // { value: 3, done: false }
 gen.next();  // { value: undefined, done: true }
 
-// 带参数的 yield
+// 带参数的 yield — next(x) 的参数 x 会作为上一个 yield 表达式的返回值
 function* echo() {
-  const a = yield 1;
-  const b = yield 2;
+  const a = yield 1;  // 向外输出 1，等待 next(x) 把 x 赋给 a
+  const b = yield 2;  // 向外输出 2，等待 next(x) 把 x 赋给 b
   return a + b;
 }
 
 const gen2 = echo();
-gen2.next();       // { value: 1, done: false }
-gen2.next(10);     // { value: 2, done: false } (a=10)
-gen2.next(20);     // { value: 30, done: true } (b=20)
+gen2.next();       // { value: 1, done: false }  启动，yield 1 暂停
+gen2.next(10);     // { value: 2, done: false }  10 赋给 a，yield 2 暂停
+gen2.next(20);     // { value: 30, done: true }  20 赋给 b，return 10+20
 
 // 应用：实现 Iterator
 function* range(start: number, end: number) {
@@ -411,6 +418,32 @@ async function add(a: number, b: number) {
   return a + b;
 }
 add(1, 2).then(console.log);  // 3
+```
+
+### await 原理
+
+`await` 本质是 **Generator + Promise 的语法糖**。`async` 函数执行时：
+
+1. 遇到 `await expr`，先执行 `expr` 拿到一个 Promise
+2. 将 `await` 之后的代码包装为微任务（等价于 `.then()` 的回调）
+3. 暂停当前函数，让出执行权
+4. Promise resolve 后，微任务执行，恢复函数后续代码
+
+```typescript
+// 你写的
+async function foo() {
+  const res = await fetchData()
+  console.log(res)
+}
+
+// 引擎实际做的（简化）
+function foo() {
+  return Promise.resolve().then(() => {
+    return fetchData()
+  }).then((res) => {
+    console.log(res)
+  })
+}
 ```
 
 ## 类（Class）

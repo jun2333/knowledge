@@ -370,6 +370,83 @@ console.log(decorated.operation());  // DecoratorB(DecoratorA(ConcreteComponent)
 
 ---
 
+## 命令模式（Command）
+
+### 核心概念
+
+将**请求封装为对象**，使请求的发送者和接收者解耦。每个命令对象包含执行操作所需的全部信息，支持撤销、排队、日志等扩展能力。
+
+```mermaid
+graph LR
+    A[调用者 Invoker] -->|执行命令| B[命令对象 Command]
+    B -->|调用| C[接收者 Receiver]
+```
+
+### 实现
+
+```typescript
+// 接收者：真正执行操作的对象
+class Light {
+  turnOn(): void {
+    console.log('灯亮了');
+  }
+  turnOff(): void {
+    console.log('灯灭了');
+  }
+}
+
+// 命令接口
+interface Command {
+  execute(): void;
+  undo(): void;
+}
+
+// 具体命令
+class LightOnCommand implements Command {
+  constructor(private light: Light) {}
+  execute() { this.light.turnOn(); }
+  undo() { this.light.turnOff(); }
+}
+
+class LightOffCommand implements Command {
+  constructor(private light: Light) {}
+  execute() { this.light.turnOff(); }
+  undo() { this.light.turnOn(); }
+}
+
+// 调用者：触发命令，不关心具体操作
+class RemoteControl {
+  private history: Command[] = [];
+
+  press(command: Command): void {
+    command.execute();
+    this.history.push(command);
+  }
+
+  undo(): void {
+    const cmd = this.history.pop();
+    cmd?.undo();
+  }
+}
+
+// 使用示例
+const light = new Light();
+const remote = new RemoteControl();
+
+remote.press(new LightOnCommand(light));   // 灯亮了
+remote.press(new LightOffCommand(light));  // 灯灭了
+remote.undo();                              // 灯亮了（撤销上一步）
+```
+
+### 应用场景
+
+- **撤销/重做**：编辑器、绘图工具
+- **宏命令**：批量操作组合
+- **任务队列**：命令排队执行
+- **前端按钮绑定**：按钮不直接绑定业务逻辑，而是绑定命令对象
+
+---
+
 ## 设计模式对比
 
 | 模式 | 目的 | 核心思想 | 典型应用 |
@@ -380,3 +457,4 @@ console.log(decorated.operation());  // DecoratorB(DecoratorA(ConcreteComponent)
 | **工厂** | 创建对象 | 封装创建逻辑 | 组件创建、请求封装 |
 | **策略** | 算法替换 | 封装算法族 | 验证、排序、支付 |
 | **装饰器** | 动态扩展 | 包装原有对象 | HOC、Mixin |
+| **命令** | 请求封装 | 命令对象封装操作 | 撤销/重做、任务队列 |

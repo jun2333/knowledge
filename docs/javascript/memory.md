@@ -253,20 +253,24 @@ b.ref = a;  // b 引用 a
 | **全局变量** | 未声明的变量成为全局属性 | 使用 `let/const` |
 | **定时器** | `setInterval` 未清除 | 组件卸载时 `clearInterval` |
 | **事件监听** | 未移除的事件监听器 | 组件卸载时 `removeEventListener` |
-| **闭包** | 闭包引用外部变量 | 及时解除引用 |
+| **闭包** | 闭包引用外部变量 | 长生命周期闭包中手动解除引用 |
 | **DOM 引用** | 已删除 DOM 的引用 | 设置为 `null` |
 
 ## 最佳实践
 
 ```typescript
-// 1. 及时解除引用
-let data = fetchData();
-processData(data);
-data = null;  // 解除引用，允许 GC 回收
+// 1. 长生命周期作用域中手动解除引用（局部变量无需此操作，函数返回后自动回收）
+let cache = null;
+function loadData() {
+  cache = fetchLargeData();
+}
+function unloadData() {
+  cache = null;  // 模块级变量不会自动回收，需手动解除引用
+}
 
 // 2. 使用 WeakMap/WeakSet
-const cache = new WeakMap();
-cache.set(obj, value);  // obj 被 GC 时，cache 中的条目自动移除
+const weakCache = new WeakMap();
+weakCache.set(obj, value);  // obj 被 GC 时，weakCache 中的条目自动移除
 
 // 3. 避免全局变量
 (function() {

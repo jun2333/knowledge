@@ -231,7 +231,7 @@ function createLargeClosure() {
   };
 }
 
-// 解决方案：及时解除引用
+// 解决方案：闭包长期持有大对象时，提供清理方法手动解除引用
 function createSafeClosure() {
   let largeData = new Array(1000000).fill('data');
 
