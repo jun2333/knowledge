@@ -347,9 +347,9 @@ function saveAnnotation() {
   if (!annotationText.value.trim() || !selectedTextSnapshot.value) return
   
   const annotation = {
-    pageUrl: currentPageUrl.value,
-    filePath: selectionInfo.value?.filePath || '',
-    selectedText: selectedTextSnapshot.value,  // 使用快照
+    pageUrl: window.location.href,
+    filePath: extractFilePathFromUrl(window.location.href),
+    selectedText: selectedTextSnapshot.value,
     annotation: annotationText.value.trim()
   }
   

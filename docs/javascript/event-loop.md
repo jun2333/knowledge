@@ -241,3 +241,48 @@ setTimeout
 | **微任务优先** | 每个宏任务执行完后，立即清空所有微任务 |
 
 **一句话记忆**：**一个宏任务配一轮微任务清空，微任务优先执行。**
+
+## 宏任务 / 微任务速查表
+
+### 宏任务（Macrotask）
+
+| API | 说明 |
+|-----|------|
+| 主脚本（`<script>`） | 每个 script 标签是一个独立的宏任务 |
+| `setTimeout` | 定时器回调 |
+| `setInterval` | 间隔定时器回调 |
+| `setImmediate` | Node.js 专属，当前宏任务结束后立即执行 |
+| `requestAnimationFrame` | 浏览器下一帧渲染前执行 |
+| I/O | 文件读写、网络请求回调 |
+| UI 渲染 | 浏览器渲染任务 |
+| 用户交互 | 点击、键盘、滚动等事件回调 |
+
+### 微任务（Microtask）
+
+| API | 说明 |
+|-----|------|
+| `Promise.then/.catch/.finally` | Promise 状态变化后的回调 |
+| `MutationObserver` | DOM 变化监听回调 |
+| `process.nextTick` | Node.js 专属，优先级最高的微任务 |
+| `queueMicrotask()` | 直接往微任务队列添加任务 |
+| `async/await` | 本质是 Promise，await 后的代码是微任务 |
+
+### 优先级排序（Node.js 环境）
+
+```
+process.nextTick > Promise.then > 宏任务
+```
+
+### 快速判断技巧
+
+- **看回调**：传进去的函数是宏任务还是微任务？
+  - `setTimeout(fn, 0)` → fn 是宏任务
+  - `Promise.resolve().then(fn)` → fn 是微任务
+
+- **看执行时机**：
+  - 宏任务：要等当前所有微任务清空后才执行
+  - 微任务：当前宏任务结束后立即执行，且会清空整个队列
+
+- **特殊情况**：
+  - `Promise` 构造函数里的代码是**同步**的，只有 `.then` 才是微任务
+  - `async` 函数本身同步执行，`await` 后面的代码才是微任务

@@ -191,13 +191,19 @@ Grid 是二维布局系统，可以**同时控制行和列**。
 
 `fr` 是 Grid 布局特有的比例单位，表示"剩余空间的一份"。
 
+**总份数 = 所有 `fr` 值相加**，每列占 `自己的 fr / 总 fr`。
+
 ```css
-/* 三列等宽，各占 1/3 */
+/* 总共 3 份，每列各占 1/3 */
 grid-template-columns: 1fr 1fr 1fr;
 
-/* 第一列固定 200px，剩余空间分成 3 份，第二列占 1 份，第三列占 2 份 */
+/* 总共 3 份，第一列占 1/3，第二列占 2/3 */
+grid-template-columns: 1fr 2fr;
+
+/* 有固定尺寸时：先减去固定值，剩余空间再按 fr 分配 */
+/* 容器 800px，减去 200px 剩 600px，总共 3 份 */
 grid-template-columns: 200px 1fr 2fr;
-/* 假设容器宽 800px，剩余 600px，第二列 200px，第三列 400px */
+/* 第二列：600 × 1/3 = 200px，第三列：600 × 2/3 = 400px */
 ```
 
 **repeat() 函数**：
@@ -289,6 +295,11 @@ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 .main { grid-area: main; }
 .footer { grid-area: footer; }
 ```
+
+**区域命名的好处**：
+- **直观**：`grid-template-areas` 像画表格一样，一眼看出布局结构
+- **易维护**：改响应式布局时，只需改区域定义，不用重新算行号列号
+- **解耦**：子元素只关心自己叫什么区域，不关心具体在第几行第几列
 
 #### 单独对齐：`justify-self` / `align-self`
 

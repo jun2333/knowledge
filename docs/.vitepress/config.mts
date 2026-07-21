@@ -39,6 +39,7 @@ export default defineConfig({
           items: [
             { text: '数据类型与内存管理', link: '/javascript/memory' },
             { text: '事件循环', link: '/javascript/event-loop' },
+            { text: '异步编程与 Promise', link: '/javascript/async' },
             { text: 'ES6+ 新特性', link: '/javascript/es6' },
             { text: '设计模式', link: '/javascript/pubsub' },
             { text: '原型与继承', link: '/javascript/prototype' },
