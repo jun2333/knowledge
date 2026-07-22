@@ -166,6 +166,33 @@ if (window.top !== window.self) {
 }
 ```
 
+### 与 CSRF 的区别
+
+点击劫持和 CSRF 都能达到"让用户非本意执行操作"的目的，但攻击手法不同：
+
+| | CSRF | 点击劫持 |
+|---|---|---|
+| **攻击对象** | 请求 | 界面 |
+| **请求来源** | 攻击者构造的假请求 | 用户点击的真实按钮 |
+| **用户操作** | 可能完全无感（自动触发） | 必须手动点击 |
+| **防御方式** | CSRF Token、SameSite Cookie | X-Frame-Options、CSP |
+
+**CSRF 示例**：
+```html
+<!-- 攻击者构造的请求，用户访问即触发 -->
+<img src="https://bank.com/transfer?to=attacker&amount=10000" />
+```
+用户什么都没点，请求就发出去了。
+
+**点击劫持示例**：
+```html
+<!-- 用户点的是真实银行页面的真实按钮 -->
+<iframe src="https://bank.com/transfer-confirm"></iframe>
+```
+用户确实点了"确认转账"，但不知道自己点在 iframe 里。
+
+两者经常结合使用：点击劫持是**手段**（诱导点击），CSRF 是**目的**（执行非本意操作）。
+
 ## 中间人攻击（MITM）
 
 ### 原理
