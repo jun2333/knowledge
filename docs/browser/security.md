@@ -213,6 +213,134 @@ if (window.top !== window.self) {
 // 浏览器收到后，365 天内该域名强制用 HTTPS
 ```
 
+## CSP（内容安全策略）
+
+### 是什么
+
+CSP（Content Security Policy）是一个**白名单机制**，告诉浏览器只允许加载和执行指定来源的资源。它是防御 XSS 和数据注入攻击的终极武器。
+
+### 能防什么
+
+| 攻击类型 | CSP 如何防御 |
+|---------|-------------|
+| **XSS** | 禁止执行非白名单的脚本 |
+| **数据注入** | 限制脚本能访问的 DOM API |
+| **点击劫持** | `frame-ancestors` 限制谁能嵌入你 |
+| **资源劫持** | 只允许加载指定来源的图片、样式、字体 |
+
+### 核心指令
+
+```http
+# 基础策略：只允许同源资源
+Content-Security-Policy: default-src 'self'
+
+# 脚本：只允许同源 + 指定 CDN
+Content-Security-Policy: script-src 'self' https://cdn.example.com
+
+# 样式：允许同源 + Google Fonts
+Content-Security-Policy: style-src 'self' https://fonts.googleapis.com
+
+# 图片：允许同源 + 数据 URI + 指定域名
+Content-Security-Policy: img-src 'self' data: https://images.example.com
+
+# 禁止内联脚本（防 XSS 关键）
+Content-Security-Policy: script-src 'self'  # 没有 'unsafe-inline'
+
+# 禁止 eval（防代码注入）
+Content-Security-Policy: script-src 'self'  # 没有 'unsafe-eval'
+```
+
+### 常用指令速查
+
+| 指令 | 控制对象 | 示例 |
+|------|---------|------|
+| `default-src` | 默认策略（其他指令的 fallback） | `default-src 'self'` |
+| `script-src` | JavaScript 来源 | `script-src 'self' 'nonce-xxx'` |
+| `style-src` | CSS 来源 | `style-src 'self' 'unsafe-inline'` |
+| `img-src` | 图片来源 | `img-src 'self' data: blob:` |
+| `font-src` | 字体来源 | `font-src 'self' https://fonts.gstatic.com` |
+| `connect-src` | XHR/fetch/WebSocket | `connect-src 'self' https://api.example.com` |
+| `frame-ancestors` | 谁能嵌入我（防点击劫持） | `frame-ancestors 'self'` |
+| `base-uri` | `<base>` 标签的 URL | `base-uri 'self'` |
+| `form-action` | 表单能提交到哪里 | `form-action 'self'` |
+
+### 特殊值
+
+| 值 | 含义 |
+|----|------|
+| `'self'` | 同源（协议 + 域名 + 端口都相同） |
+| `'unsafe-inline'` | 允许内联脚本/样式（降低安全性） |
+| `'unsafe-eval'` | 允许 `eval()` 等动态代码（降低安全性） |
+| `'none'` | 禁止任何来源 |
+| `data:` | 允许 data URI（如 `data:image/png;base64,...`） |
+| `blob:` | 允许 blob URL |
+| `'nonce-xxx'` | 允许带指定 nonce 的脚本（推荐替代 unsafe-inline） |
+| `'sha256-xxx'` | 允许哈希匹配的内联脚本 |
+
+### 实战配置
+
+```javascript
+// Node.js + Express 示例
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self' 'nonce-random123'",
+    "style-src 'self' 'unsafe-inline'",  // 样式通常允许内联
+    "img-src 'self' data: https:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://api.example.com",
+    "frame-ancestors 'self'",  // 防点击劫持
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; '))
+  next()
+})
+```
+
+```html
+<!-- 使用 nonce 允许特定内联脚本 -->
+<script nonce="random123">
+  // 这个脚本会被执行
+  console.log('safe inline script')
+</script>
+
+<script>
+  // 没有 nonce，会被 CSP 拦截
+  alert('blocked by CSP')
+</script>
+```
+
+### 报告模式（只报告不拦截）
+
+调试 CSP 时可以用 `Content-Security-Policy-Report-Only`，违规时只报告不拦截：
+
+```http
+Content-Security-Policy-Report-Only: default-src 'self'; report-uri /csp-report
+```
+
+浏览器会 POST 违规详情到 `/csp-report`：
+
+```json
+{
+  "csp-report": {
+    "document-uri": "https://example.com/page",
+    "violated-directive": "script-src",
+    "blocked-uri": "https://evil.com/malicious.js"
+  }
+}
+```
+
+### 常见误区
+
+❌ **CSP 设置了就万事无忧**
+> CSP 是纵深防御的一层，不能替代输入转义、HttpOnly Cookie 等其他措施。
+
+❌ **为了省事直接加 `'unsafe-inline'`**
+> 这会让 CSP 防 XSS 的效果大打折扣。优先用 `nonce` 或 `hash` 替代。
+
+❌ **CSP 能防 CSRF**
+> CSP 主要防 XSS 和资源加载，CSRF 需要 Token 或 SameSite Cookie 来防。
+
 ## 常见误区
 
 ❌ **前端做安全校验就够了**
