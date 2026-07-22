@@ -217,6 +217,12 @@ export default defineConfig({
           ]
         },
         {
+          text: '安全',
+          items: [
+            { text: 'Web 安全常见攻击', link: '/browser/security' },
+          ]
+        },
+        {
           text: '其他',
           items: [
             { text: '浏览器兼容性', link: '/browser/compatibility' },
