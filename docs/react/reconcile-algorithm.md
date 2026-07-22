@@ -136,6 +136,60 @@ graph LR
     style N3 fill:#fff4e1
 ```
 
+### Commit 阶段如何移动？
+
+diff 阶段标记 Placement 时，**并没有记录新列表中的索引**，而是通过 Fiber 的链表结构隐式确定了新位置。
+
+#### 关键机制
+
+1. **Fiber 链表顺序就是新顺序**：diff 过程中，复用的 Fiber 会被重新排列成新的链表，链表顺序就是新列表的顺序
+2. **Commit 阶段遍历链表**：按链表顺序遍历子 Fiber，遇到 Placement 标记就执行 DOM 移动
+3. **移动目标**：将节点插入到父容器的正确位置（根据链表中的前一个兄弟节点）
+
+#### 具体流程
+
+```javascript
+// Commit 阶段伪代码
+function commitPlacement(childFiber) {
+  // 找到父 DOM 节点
+  const parent = childFiber.return.stateNode
+  
+  // 找到前一个兄弟 DOM 节点（链表中的前一个）
+  const before = getHostSibling(childFiber)
+  
+  if (before) {
+    // 有前一个兄弟，插入到它后面
+    parent.insertBefore(childFiber.stateNode, before.nextSibling)
+  } else {
+    // 没有前一个兄弟，插入到最前面
+    parent.appendChild(childFiber.stateNode)
+  }
+}
+```
+
+#### 示例解析
+
+回到上面的例子 `[a, b, c, d]` → `[a, d, b, c]`：
+
+```
+diff 后的 Fiber 链表（新顺序）：
+a → d → b → c
+    ↑     ↑
+   不移动  Placement
+
+Commit 阶段：
+1. 遍历到 a → 无 Placement，跳过
+2. 遍历到 d → 无 Placement，跳过
+3. 遍历到 b → 有 Placement，移动到 d 后面
+   - 找到前一个兄弟 d
+   - parent.insertBefore(b, d.nextSibling)  // 即插入到 d 后面
+4. 遍历到 c → 有 Placement，移动到 b 后面
+   - 找到前一个兄弟 b
+   - parent.insertBefore(c, b.nextSibling)
+```
+
+**关键**：不需要记录 newIndex，因为 Fiber 链表的顺序已经隐含了新位置，Commit 阶段只需要"把节点插到前一个兄弟后面"即可。
+
 ---
 
 ## 常见问题
