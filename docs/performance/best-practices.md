@@ -1,9 +1,9 @@
 ---
-title: 性能优化最佳实践
+title: 性能优化最佳清单
 date: 2023-03-08
 ---
 
-# 性能优化最佳实践
+# 性能优化最佳清单
 
 本文总结网站性能优化最有效的方法，按优先级排序。
 
@@ -467,18 +467,3 @@ import(/* webpackPreload: true */ './module.js');
 - [ ] 预留广告位
 - [ ] 白屏监控
 
-### 监控
-
-- [ ] 接入性能监控（LCP、INP、CLS）
-- [ ] 接入错误监控（JS 错误、Promise 错误、HTTP 错误）
-- [ ] 定期使用 Lighthouse 审计
-
-## 工具推荐
-
-| 工具 | 用途 |
-|------|------|
-| **Lighthouse** | 性能审计 |
-| **PageSpeed Insights** | 在线性能测试 |
-| **web-vitals** | 代码中测量核心指标 |
-| **Webpack Bundle Analyzer** | 打包分析 |
-| **Chrome DevTools** | 性能分析 |

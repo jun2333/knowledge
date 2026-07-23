@@ -112,6 +112,53 @@ iframe 是浏览器原生的硬隔离方案，但有以下问题：
 
 ## 主流方案对比
 
+### single-spa
+
+**定位**：微前端**路由框架**（不是完整解决方案）  
+**官网**：https://single-spa.js.org/
+
+**核心能力**：
+
+| 能力 | 说明 |
+|------|------|
+| **路由分发** | 根据 URL 加载/卸载对应的子应用 |
+| **子应用生命周期** | 定义 `bootstrap`、`mount`、`unmount` 钩子 |
+| **技术栈无关** | 支持 Vue、React、Angular 等混用 |
+| **懒加载** | 按需加载子应用资源 |
+
+**不提供的能力**（需要自己实现或借助其他库）：
+
+- ❌ JS 沙箱隔离
+- ❌ 样式隔离
+- ❌ 主子应用通信机制
+- ❌ 预加载/预执行
+
+**简单示例**：
+
+```javascript
+import { registerApplication, start } from 'single-spa'
+
+// 注册子应用
+registerApplication({
+  name: 'vueApp',
+  app: () => import('./vue-app/main.js'),
+  activeWhen: '/vue'  // 路由匹配时加载
+})
+
+registerApplication({
+  name: 'reactApp',
+  app: () => import('./react-app/main.js'),
+  activeWhen: '/react'
+})
+
+// 启动
+start()
+```
+
+**适用场景**：想要完全自定义隔离方案、通信机制的团队。
+
+**与 qiankun 的关系**：qiankun 在 single-spa 基础上封装了 JS 沙箱、样式隔离、预加载等能力，开箱即用。
+
 ### qiankun（乾坤）
 
 **出品**：蚂蚁集团  
@@ -251,12 +298,14 @@ class Sandbox {
 
 ### 多实例沙箱
 
-**方案**：维护状态池（fakeWindow）
+**方案**：每个子应用维护独立的 fakeWindow
+
+**核心思路**：每个子应用创建独立的 `MultiSandbox` 实例，每个实例有自己的 `fakeWindow`，互不干扰。
 
 ```javascript
 class MultiSandbox {
   constructor() {
-    this.fakeWindow = {}; // 子应用的独立上下文
+    this.fakeWindow = {}; // 每个子应用独立的上下文
   }
   
   getProxy() {
@@ -273,7 +322,31 @@ class MultiSandbox {
     });
   }
 }
+
+// 使用：每个子应用创建独立的沙箱实例
+const app1Sandbox = new MultiSandbox()  // app1 的 fakeWindow
+const app2Sandbox = new MultiSandbox()  // app2 的 fakeWindow
+
+const app1Proxy = app1Sandbox.getProxy()
+const app2Proxy = app2Sandbox.getProxy()
+
+app1Proxy.name = 'App1'  // 设置到 app1 的 fakeWindow
+app2Proxy.name = 'App2'  // 设置到 app2 的 fakeWindow
+
+console.log(app1Proxy.name)  // 'App1'
+console.log(app2Proxy.name)  // 'App2'
 ```
+
+### 为什么多实例方案更优？
+
+| 对比项 | 单实例（快照） | 多实例（fakeWindow） |
+|--------|--------------|---------------------|
+| **性能** | 需要快照/还原，有开销 | 无需快照，性能更好 |
+| **并发** | 同一时间只能运行一个子应用 | 多个子应用可同时运行 |
+| **实现** | 需要记录修改、还原逻辑 | 天然隔离，逻辑简单 |
+| **现代框架** | 仅作为降级方案 | qiankun、micro-app 默认方案 |
+
+**结论**：优先使用多实例 fakeWindow 方案，单实例快照方案仅在浏览器不支持 Proxy 时作为降级使用。
 
 ### 降级方案
 
@@ -305,6 +378,268 @@ class LegacySandbox {
 ```
 
 **注意**：降级方案只能支持单实例（多个子应用会冲突）。
+
+## 样式隔离实现
+
+### 方案对比
+
+| 方案 | 原理 | 隔离性 | 性能 | 兼容性 |
+|------|------|--------|------|--------|
+| **CSS Modules** | 类名哈希化 | 中 | 高 | 好 |
+| **CSS Scoped** | 属性选择器 | 中 | 高 | 好 |
+| **Shadow DOM** | 浏览器原生隔离 | 高 | 中 | 一般 |
+| **CSS 前缀** | 手动加命名空间 | 低 | 高 | 好 |
+| **动态加载/卸载** | 子应用激活时插入样式，卸载时移除 | 中 | 中 | 好 |
+
+### CSS Modules
+
+**原理**：编译时给类名加哈希，避免冲突。
+
+```css
+/* 源码 */
+.title { color: red; }
+
+/* 编译后 */
+.title_abc123 { color: red; }
+```
+
+**实现方式**：依赖构建工具（Webpack、Vite、Rollup 等）
+
+```javascript
+// Webpack 配置
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            options: {
+              modules: {
+                localIdentName: '[name]_[hash:base64:5]'  // 类名格式
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**React 中使用**：
+
+```jsx
+// styles.module.css
+.title { color: red; }
+.btn { background: blue; }
+
+// Component.jsx
+import styles from './styles.module.css'
+
+function Component() {
+  return (
+    <div>
+      <h1 className={styles.title}>Hello</h1>  {/* 编译后：title_abc123 */}
+      <button className={styles.btn}>Click</button>
+    </div>
+  )
+}
+```
+
+**Vite 中**：开箱即用，无需配置，`.module.css` 文件自动启用 CSS Modules。
+
+**优点**：性能好，兼容性强，React 生态标配  
+**缺点**：只能隔离类名，无法隔离标签选择器（如 `div`、`h1`）
+
+### CSS Scoped（Vue 风格）
+
+**原理**：给 DOM 元素加唯一属性，CSS 选择器也加对应属性选择器。
+
+```html
+<!-- 编译前 -->
+<div class="title">Hello</div>
+<style>.title { color: red; }</style>
+
+<!-- 编译后 -->
+<div class="title" data-v-abc123>Hello</div>
+<style>.title[data-v-abc123] { color: red; }</style>
+```
+
+**Vue 中**：开箱即用，`<style scoped>` 自动处理。
+
+```vue
+<template>
+  <div class="title">Hello</div>
+</template>
+
+<style scoped>
+.title { color: red; }  /* 自动变成 .title[data-v-xxx] */
+</style>
+```
+
+**非 Vue 应用如何实现**：
+
+方案 1：**PostCSS 插件**（推荐）
+
+```javascript
+// postcss.config.js
+module.exports = {
+  plugins: [
+    require('postcss-scoped')({
+      attribute: 'data-scope',  // 自定义属性名
+      hash: 'abc123'            // 唯一标识
+    })
+  ]
+}
+```
+
+方案 2：**Webpack 插件**
+
+```javascript
+// webpack.config.js
+const ScopedCssPlugin = require('scoped-css-webpack-plugin')
+
+module.exports = {
+  plugins: [
+    new ScopedCssPlugin({
+      attribute: 'data-scope',
+      hash: 'abc123'
+    })
+  ]
+}
+```
+
+方案 3：**运行时动态添加**（微前端框架常用）
+
+```javascript
+function scopeStyles(container, styles, scopeId) {
+  // 给容器加属性
+  container.setAttribute(`data-scope-${scopeId}`, '')
+  
+  // 重写 CSS 选择器
+  const scopedStyles = styles.replace(/([^{}]+)\{/g, (match, selector) => {
+    const scoped = selector.split(',').map(s => 
+      `${s.trim()}[data-scope-${scopeId}]`
+    ).join(', ')
+    return `${scoped} {`
+  })
+  
+  // 插入样式
+  const styleEl = document.createElement('style')
+  styleEl.textContent = scopedStyles
+  container.appendChild(styleEl)
+}
+
+// 使用
+scopeStyles(
+  document.getElementById('app'),
+  '.title { color: red; }',
+  'abc123'
+)
+```
+
+**优点**：实现简单，兼容性好  
+**缺点**：无法隔离全局样式（如 `body`、`*`），子应用无法影响父应用样式
+
+### Shadow DOM
+
+**原理**：浏览器原生的 DOM 隔离机制，样式天然隔离。
+
+```javascript
+// 创建 Shadow DOM
+const shadow = element.attachShadow({ mode: 'open' })
+
+// 样式只作用于 Shadow DOM 内部
+shadow.innerHTML = `
+  <style>
+    .title { color: red; }  /* 只影响 Shadow 内的 .title */
+  </style>
+  <div class="title">Hello</div>
+`
+```
+
+**优点**：隔离性最强，样式完全独立  
+**缺点**：
+- 弹窗、下拉框等无法突破 Shadow 边界显示
+- 部分全局样式（如字体、重置样式）需要手动穿透
+- 旧浏览器兼容性差
+
+**样式穿透**（让父应用样式影响子应用）：
+
+```css
+/* 父应用 */
+::slotted(.title) {
+  color: blue;  /* 影响子应用中 slot 里的 .title */
+}
+```
+
+### 动态加载/卸载
+
+**原理**：子应用激活时插入 `<style>` 或 `<link>`，卸载时移除。
+
+```javascript
+class StyleIsolation {
+  constructor() {
+    this.styleElements = new Map()  // 记录每个子应用的样式
+  }
+  
+  // 子应用激活时
+  mount(appName, styles) {
+    const styleEl = document.createElement('style')
+    styleEl.textContent = styles
+    document.head.appendChild(styleEl)
+    this.styleElements.set(appName, styleEl)
+  }
+  
+  // 子应用卸载时
+  unmount(appName) {
+    const styleEl = this.styleElements.get(appName)
+    if (styleEl) {
+      styleEl.remove()  // 移除样式
+      this.styleElements.delete(appName)
+    }
+  }
+}
+```
+
+**优点**：实现简单，兼容性好  
+**缺点**：
+- 多个子应用同时激活时样式会冲突
+- 只能隔离样式文件，无法隔离内联样式
+
+### qiankun 的样式隔离方案
+
+qiankun 提供两种模式：
+
+```javascript
+// 1. 实验性严格模式（基于 Shadow DOM）
+start({ sandbox: { strictStyleIsolation: true } })
+
+// 2. 实验性 Scoped 模式（基于属性选择器）
+start({ sandbox: { experimentalStyleIsolation: true } })
+```
+
+**严格模式**：
+- 每个子应用包裹在 Shadow DOM 中
+- 隔离性最强，但有 Shadow DOM 的所有限制
+
+**Scoped 模式**：
+- 给子应用容器加唯一类名（如 `.qiankun-micro-app`）
+- 重写 CSS 选择器，加上容器类名前缀
+- 例如 `.title` → `.qiankun-micro-app .title`
+
+### 选型建议
+
+| 场景 | 推荐方案 |
+|------|---------|
+| **需要最强隔离** | Shadow DOM |
+| **兼容旧浏览器** | CSS Scoped 或动态加载/卸载 |
+| **Vue 项目** | CSS Scoped（内置支持） |
+| **React 项目** | CSS Modules 或 Shadow DOM |
+| **快速接入** | qiankun 的 Scoped 模式 |
 
 ## 选型建议
 

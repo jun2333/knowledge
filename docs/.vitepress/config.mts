@@ -14,6 +14,7 @@ export default defineConfig({
       { text: 'CSS', link: '/css/bfc' },
       { text: '性能优化', link: '/performance/web' },
       { text: '架构', link: '/engineering/micro-frontend' },
+      { text: '前端构建', link: '/engineering/build-optimization' },
       { text: '算法', link: '/algorithms/basic' },
       { text: '读书笔记', link: '/books/js-you-dont-know' },
       { text: '运动', link: '/sports/breaststroke-for-beginners' },
@@ -282,6 +283,7 @@ export default defineConfig({
           text: '最佳实践',
           items: [
             { text: '性能优化清单', link: '/performance/best-practices' },
+            { text: '前端监控最佳实践', link: '/performance/monitoring' },
           ]
         }
       ],
@@ -301,10 +303,17 @@ export default defineConfig({
           ]
         },
         {
+          text: '前端构建',
+          items: [
+            { text: '工程构建优化', link: '/engineering/build-optimization' },
+            { text: 'Monorepo 介绍与实践', link: '/engineering/monorepo' },
+            { text: 'CI/CD 持续集成与部署', link: '/engineering/cicd' },
+          ]
+        },
+        {
           text: '团队协作',
           items: [
             { text: 'Git Flow 最佳实践', link: '/engineering/git-flow' },
-            { text: 'CI/CD 持续集成与部署', link: '/engineering/cicd' },
             { text: '团队管理最佳实践', link: '/engineering/team-management' },
           ]
         }

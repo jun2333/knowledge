@@ -1,5 +1,6 @@
 import DefaultTheme from 'vitepress/theme'
 import Layout from './Layout.vue'
+import './custom.css'
 
 export default {
   extends: DefaultTheme,
@@ -45,14 +46,24 @@ async function renderMermaid() {
         // 使用合法的 ID 格式（只包含字母、数字、下划线、连字符）
         const id = `mermaid-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
         const { svg } = await mermaid.render(id, code)
+        const wrapper = document.createElement('div')
+        wrapper.className = 'mermaid-wrapper'
+
         const container = document.createElement('div')
         container.className = 'mermaid'
         container.innerHTML = svg
-        
-        // 安全地替换 pre 标签
-        // 先验证 diagram 是否仍然是 parent 的子节点
+
+        const btn = document.createElement('button')
+        btn.className = 'mermaid-zoom-btn'
+        btn.title = '放大查看'
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>'
+        btn.addEventListener('click', () => openMermaidModal(svg))
+
+        wrapper.appendChild(container)
+        wrapper.appendChild(btn)
+
         if (diagram.parentNode === parent) {
-          parent.replaceChild(container, diagram)
+          parent.replaceChild(wrapper, diagram)
         }
       } catch (err) {
         console.error('Mermaid render error:', err)
@@ -61,4 +72,39 @@ async function renderMermaid() {
   } catch (err) {
     console.error('Failed to load mermaid:', err)
   }
+}
+
+function openMermaidModal(svg) {
+  const overlay = document.createElement('div')
+  overlay.className = 'mermaid-modal-overlay'
+
+  const content = document.createElement('div')
+  content.className = 'mermaid-modal-content'
+
+  const closeBtn = document.createElement('button')
+  closeBtn.className = 'mermaid-modal-close'
+  closeBtn.innerHTML = '&times;'
+  closeBtn.addEventListener('click', () => overlay.remove())
+
+  const body = document.createElement('div')
+  body.className = 'mermaid-modal-body'
+  body.innerHTML = svg
+
+  content.appendChild(closeBtn)
+  content.appendChild(body)
+  overlay.appendChild(content)
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove()
+  })
+
+  const onKeydown = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove()
+      document.removeEventListener('keydown', onKeydown)
+    }
+  }
+  document.addEventListener('keydown', onKeydown)
+
+  document.body.appendChild(overlay)
 }

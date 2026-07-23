@@ -39,6 +39,9 @@
           
           <div class="dialog-footer">
             <button class="btn-secondary" @click="closeDialog">取消</button>
+            <button class="btn-copy" @click="copyCurrentAnnotation" :disabled="!annotationText.trim()">
+              复制
+            </button>
             <button class="btn-primary" @click="saveAnnotation" :disabled="!annotationText.trim()">
               保存批注
             </button>
@@ -360,6 +363,35 @@ function saveAnnotation() {
   showToast('批注已保存')
 }
 
+function copyCurrentAnnotation() {
+  if (!annotationText.value.trim() || !selectedTextSnapshot.value) return
+  
+  const filePath = extractFilePathFromUrl(window.location.href)
+  const fileName = filePath.split('/').pop() || filePath
+  const now = new Date()
+  const timeStr = now.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  
+  const text = `【批注】
+文件：${filePath}
+选中文本：${selectedTextSnapshot.value}
+批注内容：${annotationText.value.trim()}
+时间：${timeStr}
+---`
+  
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('已复制到剪贴板')
+    closeDialog()
+  }).catch(() => {
+    showToast('复制失败')
+  })
+}
+
 function openEditDialog(anno) {
   editingAnnotation.value = { ...anno }
   showEditDialog.value = true
@@ -602,7 +634,7 @@ function clearSelection() {
   margin-top: 16px;
 }
 
-.btn-primary, .btn-secondary, .btn-danger {
+.btn-primary, .btn-secondary, .btn-danger, .btn-copy {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -641,6 +673,20 @@ function clearSelection() {
 
 .btn-danger:hover {
   background: #ff7875;
+}
+
+.btn-copy {
+  background: #1890ff;
+  color: white;
+}
+
+.btn-copy:hover:not(:disabled) {
+  background: #40a9ff;
+}
+
+.btn-copy:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 /* 高亮文本 */
