@@ -14,7 +14,7 @@ export default defineConfig({
       { text: 'CSS', link: '/css/bfc' },
       { text: '性能优化', link: '/performance/web' },
       { text: '架构', link: '/engineering/micro-frontend' },
-      { text: '前端构建', link: '/engineering/build-optimization' },
+      { text: '大前端', link: '/frontend/hybrid' },
       { text: '算法', link: '/algorithms/basic' },
       { text: '读书笔记', link: '/books/js-you-dont-know' },
       { text: '运动', link: '/sports/breaststroke-for-beginners' },
@@ -315,6 +315,18 @@ export default defineConfig({
           items: [
             { text: 'Git Flow 最佳实践', link: '/engineering/git-flow' },
             { text: '团队管理最佳实践', link: '/engineering/team-management' },
+          ]
+        }
+      ],
+
+      '/frontend/': [
+        {
+          text: '大前端场景',
+          items: [
+            { text: 'Hybrid App 开发', link: '/frontend/hybrid' },
+            { text: '小程序开发', link: '/frontend/mini-program' },
+            { text: '桌面端应用', link: '/frontend/desktop' },
+            { text: '原生 App 对比', link: '/frontend/native-app' },
           ]
         }
       ],
