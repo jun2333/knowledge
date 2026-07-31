@@ -2,7 +2,6 @@
 node_modules/
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
 
 # Build output
 dist/
@@ -43,6 +42,9 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# Chroma local data
+server/data/chroma/
 
 # Environment variables
 .env

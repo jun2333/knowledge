@@ -1,26 +1,14 @@
 {
-  "name": "summary",
-  "version": "1.0.0",
-  "description": "个人总结和笔记",
-  "main": "index.js",
+  "name": "front-end-knowledge-summary",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vitepress dev docs",
-    "build": "vitepress build docs",
-    "preview": "vitepress preview docs",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://gitee.com/jun2333/front-end-knowledge-summary.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "devDependencies": {
-    "mermaid": "^11.15.0",
-    "vitepress": "^1.6.4"
+    "dev": "pnpm --parallel -r run dev",
+    "dev:docs": "pnpm --filter @knowledge/docs dev",
+    "dev:server": "pnpm --filter @knowledge/server dev",
+    "build": "pnpm --filter @knowledge/docs build",
+    "rag:index": "pnpm --filter @knowledge/server rag:index",
+    "chroma:start": "docker run -d -p 8000:8000 --name chroma -v ./server/data/chroma:/chroma/chroma chromadb/chroma:latest",
+    "chroma:stop": "docker stop chroma && docker rm chroma"
   }
 }

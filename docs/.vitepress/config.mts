@@ -15,6 +15,7 @@ export default defineConfig({
       { text: '性能优化', link: '/performance/web' },
       { text: '架构', link: '/engineering/micro-frontend' },
       { text: '大前端', link: '/frontend/hybrid' },
+      { text: 'Service', link: '/service/roadmap' },
       { text: '算法', link: '/algorithms/basic' },
       { text: '读书笔记', link: '/books/js-you-dont-know' },
       { text: '运动', link: '/sports/breaststroke-for-beginners' },
@@ -331,6 +332,52 @@ export default defineConfig({
         }
       ],
 
+      '/service/': [
+        {
+          text: '学习路线',
+          items: [
+            { text: '前端转全栈学习路线', link: '/service/roadmap' },
+          ]
+        },
+        {
+          text: 'Node.js 基础',
+          items: [
+            { text: 'Node.js 核心模块', link: '/service/node-core' },
+            { text: '数据库基础', link: '/service/database' },
+          ]
+        },
+        {
+          text: 'API 与安全',
+          items: [
+            { text: 'RESTful API 设计', link: '/service/restful-api' },
+            { text: '认证与授权', link: '/service/auth' },
+          ]
+        },
+        {
+          text: 'Node.js 框架',
+          items: [
+            { text: 'Koa 入门', link: '/service/koa' },
+            { text: 'Egg.js 入门', link: '/service/egg' },
+            { text: 'NestJS 入门', link: '/service/nest' },
+          ]
+        },
+        {
+          text: '架构设计',
+          items: [
+            { text: 'BFF 架构设计', link: '/service/bff' },
+            { text: 'GraphQL 入门', link: '/service/graphql' },
+            { text: 'Serverless 入门', link: '/service/serverless' },
+          ]
+        },
+        {
+          text: '工程化与部署',
+          items: [
+            { text: 'Docker 入门', link: '/service/docker' },
+            { text: '后端测试实践', link: '/service/backend-testing' },
+          ]
+        }
+      ],
+
       '/algorithms/': [
         {
           text: '算法基础',
@@ -407,6 +454,12 @@ export default defineConfig({
             { text: 'SSH 快速登录配置', link: '/misc/ssh-quick-login' },
             { text: '开发插件归纳', link: '/misc/dev-plugins-summary' },
           ]
+        },
+        {
+          text: '个人记录',
+          items: [
+            { text: '自研模板编辑器', link: '/misc/template-editor' },
+          ]
         }
       ],
 
@@ -421,24 +474,13 @@ export default defineConfig({
 
       '/ai-agent/': [
         {
-          text: 'Spec-First 开发',
+          text: 'AI 应用开发',
           items: [
-            { text: '核心思想', link: '/ai-agent/spec-first/overview' },
-            { text: '工作流程', link: '/ai-agent/spec-first/workflow' },
-          ]
-        },
-        {
-          text: 'Harness 工程',
-          items: [
-            { text: '核心思想', link: '/ai-agent/harness-engineering/core-concepts' },
-            { text: '最佳实践', link: '/ai-agent/harness-engineering/best-practices' },
-            { text: '质量控制对比', link: '/ai-agent/harness-engineering/quality-control-comparison' },
-          ]
-        },
-        {
-          text: 'Qoder 实践',
-          items: [
-            { text: '优化实践', link: '/ai-agent/qoder/optimization' },
+            { text: '名词解释', link: '/ai-agent/glossary' },
+            { text: 'LLM API 调用基础', link: '/ai-agent/llm-api-basics' },
+            { text: 'Function Calling 与工具调用', link: '/ai-agent/function-calling' },
+            { text: 'AI 应用架构模式', link: '/ai-agent/app-architecture' },
+            { text: 'AI 应用工程化实践', link: '/ai-agent/app-engineering' },
           ]
         },
         {
@@ -452,6 +494,26 @@ export default defineConfig({
           text: 'RAG 检索增强',
           items: [
             { text: 'RAG 入门', link: '/ai-agent/rag/introduction' },
+          ]
+        },
+        {
+          text: 'Spec-First 开发',
+          items: [
+            { text: 'Spec-First 指南', link: '/ai-agent/spec-first/guide' },
+          ]
+        },
+        {
+          text: 'Harness 工程',
+          items: [
+            { text: '核心思想', link: '/ai-agent/harness-engineering/core-concepts' },
+            { text: '最佳实践', link: '/ai-agent/harness-engineering/best-practices' },
+            { text: '质量控制对比', link: '/ai-agent/harness-engineering/quality-control' },
+          ]
+        },
+        {
+          text: '案例研究',
+          items: [
+            { text: 'Qoder 优化实践', link: '/ai-agent/case-studies/qoder' },
           ]
         }
       ]

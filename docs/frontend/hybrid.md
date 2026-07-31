@@ -95,6 +95,14 @@ webView.evaluateJavascript("handleScanResult({'code': '123456'})", null);
 
 Capacitor 是 Ionic 团队推出的现代 Hybrid 方案，替代 Cordova。
 
+> **Ionic 团队简介：**
+> Ionic 是一家专注于移动应用开发的开源软件公司，2013 年成立。核心产品包括：
+> - **Ionic Framework**：基于 Web 技术的 UI 组件库（早期基于 Angular，现支持 React/Vue）
+> - **Capacitor**：现代 Hybrid 运行时，替代 Cordova
+> - **Appflow**：云端 CI/CD 平台
+>
+> Ionic 团队在 Hybrid 开发领域有深厚积累，Cordova 的许多核心维护者后来加入了 Ionic。
+
 ### 项目结构
 
 ```

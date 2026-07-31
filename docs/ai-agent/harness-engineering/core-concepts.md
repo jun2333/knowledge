@@ -413,30 +413,11 @@ Knowledge ──→ 让下次更好
 
 ---
 
-## 两个实践项目对比
-
-| 维度 | dev-agent-harness | spec-first |
-|------|------------------|------------|
-| **定位** | 轻量级 AI 工作流工具箱 | 工程化 AI 编程治理框架 |
-| **复杂度** | 轻量，5 个 skill | 重量，37 个 skill |
-| **依赖** | 零依赖，纯文件 | Node.js CLI，npm 包 |
-| **宿主支持** | 通用（任何 AI 工具） | 双宿主（Claude/Codex） |
-| **知识淘汰** | 三条件同时满足才归档：<br>1. 创建 > 90 天<br>2. use_count = 0<br>3. 无 source_refs<br><br>另有 confidence < 0.3 → 归档 | 失效条件 + 回源检查 |
-| **验证体系** | 阶段产出文件 | verification profile + honest closeout |
-| **适用场景** | 个人/小团队快速上手 | 大团队/企业级治理 |
-
-**共同点**：
-- 都强调确定性/判断分离
-- 都有反合理化机制
-- 都有知识沉淀闭环
-- 都用 Summary-first 交接协议
-
----
-
 ## 延伸阅读
 
 - [最佳实践](/ai-agent/harness-engineering/best-practices) - 通用 AI 工程实践
-- [Spec-First 核心思想](/ai-agent/spec-first/overview) - Spec-First 如何实践这些思想
+- [Spec-First 指南](/ai-agent/spec-first/guide) - Spec-First 如何实践这些思想
+- [质量控制对比](/ai-agent/harness-engineering/quality-control) - dev-agent-harness vs spec-first 详细对比
 
 ---
 

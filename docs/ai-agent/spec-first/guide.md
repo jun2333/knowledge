@@ -1,18 +1,126 @@
-# Spec-First 工作流程
+# Spec-First 指南
 
-::: tip 学习目标
-本文详细介绍 Spec-First 的完整工作流程，从需求分析到知识沉淀的每个阶段，以及各阶段的产物和验证方式。
+::: tip 什么是 Spec-First?
+Spec-First 是面向 AI Coding Agent（Claude Code/Codex）的工作流系统，核心理念是 **"Scripts prepare facts. LLM decides."**（脚本准备事实，LLM 做判断）。它将 AI coding 的关键中间态写回仓库，把一次性对话升级为工程化工作流。
 :::
+
+## 核心定位
+
+**产品形态**: Node.js CLI + workflow asset package
+
+**核心价值**: 
+- 把需求、计划、任务、实现证据、review 结果和可复用经验都成为**项目资产**
+- CLI 负责安装、生成和校验
+- LLM 与人负责语义判断、工程取舍和最终质量
+
+**不是什么**:
+- ❌ 不是 prompt 模板库
+- ❌ 不替代 Claude Code / Codex
+- ❌ 不接管项目构建、测试或 CI
+- ❌ 不让脚本替代工程判断
+- ❌ 不依赖外部 SaaS（全部 repo-local）
+
+---
+
+## 设计哲学
+
+### 三层工程模型
+
+```
+┌─────────────────────────┐
+│   Prompt Engineering    │  ← 改善单次回答
+├─────────────────────────┤
+│  Context Engineering    │  ← RAG/MCP servers
+├─────────────────────────┤
+│  Harness Engineering    │  ← Spec-First 所在层
+│  (治理 workflow、       │     治理 artifact 和
+│   artifact 和 review)   │     review loop
+└─────────────────────────┘
+```
+
+**关键洞察**: Prompt Engineering 解决单次交互质量，Context Engineering 解决信息检索，**Harness Engineering** 解决工程闭环——这才是企业级 AI 开发的核心。
+
+> 六层模型详解见 [Harness Engineering 核心思想](/ai-agent/harness-engineering/core-concepts)
+
+### 关键边界原则
+
+#### Source/Runtime 边界
+
+```
+Source truth (手动维护):
+- skills/           # workflow 定义
+- agents/           # agent 配置
+- templates/        # 产物模板
+- CLAUDE.md         # 入口指引
+
+Generated runtime (CLI 自动生成):
+- .claude/          # Claude Code 入口
+- .codex/           # Codex 入口
+- .agents/skills/   # 运行时副本
+```
+
+**原则**: 永远不要手改 generated runtime，修改 source 后重新 init
+
+#### Script/LLM 边界
+
+```
+Scripts 负责（确定性动作）:
+- 文件发现、路径解析、git 状态读取
+- schema 校验、hash 计算、dependency/tool readiness 检查
+- runtime asset 同步与 source/runtime drift 检测
+
+LLM 负责（语义判断）:
+- 需求 framing
+- 方案权衡
+- 实现决策
+- Review 判断
+```
+
+**原则**: Scripts prepare facts. LLM decides.
+
+#### Provider/Source Truth 边界
+
+```
+Provider evidence (候选证据):
+- Claude/Codex 返回的结果
+- 需要验证
+
+Source truth (确认依据):
+- 源码读取
+- 测试结果
+- 运行日志
+- Git diff
+```
+
+**原则**: Provider evidence 只是候选，源码/测试/日志才是确认依据
+
+---
 
 ## 工作流概览
 
-Spec-First 的核心链路是：
+### 主链路（非强制线性状态机）
 
 ```
 Codebase → Spec → Plan → Tasks → Code → Review → Knowledge
 ```
 
-**这不是强制线性状态机**，可以根据任务大小和复杂度跳过某些阶段。
+可以根据任务大小和复杂度跳过某些阶段。
+
+### 入口治理（using-spec-first meta skill）
+
+根据当前缺口智能路由：
+
+| 当前状态 | 使用 Workflow | 目的 |
+|---------|--------------|------|
+| 环境/runtime/MCP 未就绪 | `spec-mcp-setup` | 搭建 harness runtime |
+| 需求不清楚 | `spec-brainstorm` | 明确需求 brief |
+| 存量系统增量需要 PRD | `spec-prd` | 生成 PRD-grade WHAT |
+| 方向选择或想法生成 | `spec-ideate` | ranked ideation |
+| HOW 不清楚 | `spec-plan` | 实现方案规划 |
+| 计划很大，需要交接 | `spec-write-tasks` | 任务拆解 |
+| 可执行工作 | `spec-work` / `spec-debug` | 执行/调试 |
+| 需要质量评审 | `spec-code-review` | 结构化评审 |
+| 已解决问题需沉淀 | `spec-compound` | 知识沉淀 |
 
 ---
 
@@ -82,7 +190,7 @@ Codebase → Spec → Plan → Tasks → Code → Review → Knowledge
 
 ---
 
-## 2️ Plan（方案规划）
+## 2️⃣ Plan（方案规划）
 
 ### 目标
 将需求转化为技术实现方案，明确文件清单、风险评估和测试策略。
@@ -98,12 +206,6 @@ Codebase → Spec → Plan → Tasks → Code → Review → Knowledge
 | `spec:plan` | 实现方案规划 | `docs/plans/` |
 
 ### 实践示例
-
-**使用 spec:plan**：
-
-```bash
-/spec:plan
-```
 
 **产物示例**（`docs/plans/2026-06-17-login-implementation.md`）：
 
@@ -227,7 +329,7 @@ task_pack:
 
 ---
 
-## 4️ Code（代码实现）
+## 4️⃣ Code（代码实现）
 
 ### 目标
 按照任务和计划实现代码，收集完成证据。
@@ -323,12 +425,6 @@ task_pack:
 
 ### 实践示例
 
-**使用 spec:code-review**：
-
-```bash
-/spec:code-review
-```
-
 **评审结果示例**：
 
 ```markdown
@@ -363,7 +459,7 @@ task_pack:
 
 ---
 
-## 6️ Knowledge（知识沉淀）
+## 6️⃣ Knowledge（知识沉淀）
 
 ### 目标
 将解决问题的经验沉淀为可复用知识，供后续任务参考。
@@ -381,12 +477,6 @@ task_pack:
 | `spec:compound-refresh` | 知识刷新 | 更新/合并/退役 |
 
 ### 实践示例
-
-**使用 spec:compound**：
-
-```bash
-/spec:compound
-```
 
 **产物示例**（`docs/solutions/authentication/jwt-stateless-auth.md`）：
 
@@ -416,7 +506,7 @@ last_used: 2026-07-10
 4. 使用 refresh tokens 进行轮换
 
 ## Pitfalls to Avoid
- 不要把 JWT 存在 localStorage（XSS 风险）
+❌ 不要把 JWT 存在 localStorage（XSS 风险）
 ❌ 不要使用长期有效的 access tokens
 ✅ 要实现 token 轮换
 ✅ 要使用短期 access tokens + refresh tokens
@@ -439,6 +529,22 @@ last_used: 2026-07-10
 | 重复合并 | 标签高度重合 → 合并 |
 | 晋升机制 | use_count >= 5 且 confidence >= 0.8 → 提升为 pattern |
 
+### Compound Workflow 协同
+
+```
+新 PR 进入 code-review
+  │
+  ▼
+spec-learnings-researcher
+  │  检索 docs/solutions/ 里的
+  │  根因、模式、过往坑
+  ▼
+把命中知识作为 reviewer 的证据输入
+  │
+  ▼
+PR review 自动复用过往团队经验
+```
+
 ### 关键要点
 
 ✅ **元数据完整**: title、domain、technologies、confidence 等  
@@ -459,6 +565,90 @@ last_used: 2026-07-10
 | **大型任务** | 新增 skill 或 agent 体系、CLI 重构 | 明确 goals/non-goals、artifact contracts、failure modes |
 
 **80/20 原则**：用最小 durable mechanism 解决高频、高价值、真实研发问题。
+
+---
+
+## 产物目录结构
+
+### Repo-Relative Artifact Roots
+
+```
+docs/
+├── ideation/        # ranked idea candidates
+├── brainstorms/     # requirements briefs
+├── plans/           # implementation plans
+├── tasks/           # derived task packs
+└── solutions/       # reusable learnings ⭐
+
+.spec-first/
+├── config/          # configuration (不提交)
+├── workspace/       # workspace facts (不提交)
+├── sessions/        # session history (不提交)
+├── providers/       # provider cache (不提交)
+└── app-audit/
+    └── runs/        # audit reports
+```
+
+### Git 策略（三类记忆）
+
+| 类型 | 路径 | 是否提交 | 生命周期 | 作用 |
+|-----|------|---------|---------|------|
+| **Durable 工程文档** | `docs/ideation/`<br>`docs/brainstorms/`<br>`docs/plans/`<br>`docs/tasks/`<br>`docs/solutions/` | ✅ 通常提交 | 跨会话<br>跨成员<br>跨版本 | 团队知识传承 |
+| **Control-plane facts** | `.spec-first/config/`<br>`.spec-first/workspace/`<br>`.spec-first/sessions/` | ❌ 不提交<br>本机重建 | 当前机器<br>当前 ready 状态 | 本地运行时状态 |
+| **Generated runtime** | `.claude/`<br>`.codex/`<br>`.agents/skills/` | ❌ 不提交<br>init 自动 ignore | 当前 spec-first<br>版本下的副本 | CLI 生成的入口 |
+
+---
+
+## 关键工程特性
+
+### 1. Artifact Summary
+
+每个产物携带来源、Freshness、限制和验证证据：
+
+```markdown
+---
+generated_by: spec-plan
+created_at: 2026-06-17T12:00:00Z
+updated_at: 2026-06-17T12:30:00Z
+verified_by:
+  - source_reads: [src/agent.ts, src/tools.ts]
+  - tests_passed: [unit-tests, integration-tests]
+  - review_approved: true
+limitations:
+  - 仅适用于单 Agent 场景
+  - 未考虑多租户隔离
+---
+```
+
+### 2. Verification Profile
+
+**防止 fake completion**: 完成声明应回到 source reads、diff、测试等证据
+
+```typescript
+// ❌ Bad: 只说"完成了"
+console.log('Task completed');
+
+// ✅ Good: 提供验证证据
+{
+  "status": "completed",
+  "evidence": {
+    "source_reads": ["src/handler.ts:45-89"],
+    "git_diff": "abc123...def456",
+    "tests_passed": ["test-handler.test.ts"],
+    "build_success": true,
+    "review_findings": []
+  }
+}
+```
+
+### 3. Honest Closeout
+
+对 unsupported 或仅自然语言声明的结论进行降级，不标记为 verified。
+
+**反 Cherry-pick 规则**：
+- 测试报告必须列出全部用例的真实状态（PASS/FAIL/NOT-RUN）
+- 存在 NOT-RUN 时结论强制为"未完成"（不是"部分通过"）
+- 存在 FAIL 时结论为"未通过"
 
 ---
 
@@ -513,67 +703,109 @@ last_used: 2026-07-10
 
 ---
 
+## 适用场景
+
+### ✅ 适合引入 Spec-First
+
+- 同一类需求反复解释，跨会话上下文经常丢失
+- PR review 只能看到改了什么，看不到为什么这样改
+- 大任务需要多人或多个 agent 分工，但缺少清晰交接边界
+- 解决过的工程问题没有沉淀，下次仍从头排查
+- 希望 Claude Code 与 Codex 共享一套项目级 workflow 约定
+
+### ❌ 不适合的场景
+
+- 只想一次性问答，不需要在项目里留下产物
+- 不能安装 Node.js 20+ 或不能写项目文件
+- 不使用 Claude Code 或 Codex 这类宿主
+- 希望工具全自动替代产品、架构、测试和 review 判断
+
+---
+
 ## 最佳实践
 
 ### ✅ Do's
 
-1. **从小处开始**
-   - 先为核心功能定义 spec
-   - 逐步扩展到其他功能
-
-2. **保持 spec 简洁**
-   - 避免过度设计
-   - 注重可读性
-
-3. **证据驱动**
-   - 完成声明必须附带证据
-   - 测试报告列出全部用例状态
-
-4. **知识沉淀**
-   - 解决问题后立即 compound
-   - 定期 compound-refresh 清理过时内容
-
-5. **边界清晰**
-   - Source vs Runtime 分离
-   - Script vs LLM 职责明确
+1. **从小处开始** - 先为核心功能定义 spec，逐步扩展
+2. **保持 spec 简洁** - 避免过度设计，注重可读性
+3. **证据驱动** - 完成声明必须附带证据，测试报告列出全部用例状态
+4. **知识沉淀** - 解决问题后立即 compound，定期 compound-refresh 清理过时内容
+5. **边界清晰** - Source vs Runtime 分离，Script vs LLM 职责明确
 
 ### ❌ Don'ts
 
-1. **不要跳过 spec 阶段**
-   - 即使小任务也要明确范围
+1. **不要跳过 spec 阶段** - 即使小任务也要明确范围
+2. **不要让 spec 与实际脱节** - 建立自动化验证
+3. **不要过度依赖工具** - 保持灵活性，必要时手动调整
+4. **不要手改 generated runtime** - 修改 source 后重新 init
+5. **不要忽略知识沉淀** - 每次解决问题都是团队资产
 
-2. **不要让 spec 与实际脱节**
-   - 建立自动化验证
+---
 
-3. **不要过度依赖工具**
-   - 保持灵活性
-   - 必要时手动调整
+## 思想提炼：对前端开发的启示
 
-4. **不要手改 generated runtime**
-   - 修改 source 后重新 init
+虽然 Spec-First 是为 Claude Code/Codex 设计的，但其核心思想对所有 AI Agent 开发都有借鉴意义：
 
-5. **不要忽略知识沉淀**
-   - 每次解决问题都是团队资产
+### 1. 工程闭环思维
+
+传统 AI 开发：
+```
+Prompt → Response → (结束，上下文丢失)
+```
+
+Harness Engineering：
+```
+Spec → Plan → Tasks → Code → Evidence → Review → Knowledge
+      ↑                                              ↓
+      └──────────── 知识沉淀，下次复用 ────────────────┘
+```
+
+**启示**: 把 AI 交互的中间态持久化，形成工程闭环
+
+### 2. 证据驱动而非直觉驱动
+
+- 所有结论都要有证据支撑
+- 代码改动要关联到需求和测试
+- Review 要基于事实，不只是主观判断
+
+**启示**: 建立 Verification Profile，防止"假完成"
+
+### 3. 知识沉淀自动化
+
+- 解决问题的过程自动记录
+- 经验自动检索和复用
+- 过时知识自动淘汰
+
+**启示**: 让团队每次解决问题都成为下次的基础
+
+### 4. 清晰的边界治理
+
+- Source vs Runtime: 知道什么是手写的，什么是生成的
+- Script vs LLM: 知道什么由脚本做，什么由 LLM 判断
+- Provider vs Source Truth: 知道什么是候选证据，什么是确认依据
+
+**启示**: 边界清晰才能可控演进
 
 ---
 
 ## 延伸阅读
 
-- [Spec-First 概述](/ai-agent/spec-first/overview) - 理论基础
-- [Harness Engineering 核心思想](/ai-agent/harness-engineering/core-concepts) - 六层模型
-- [最佳实践](/ai-agent/harness-engineering/best-practices) - 工程实践
+- [Harness Engineering 核心思想](/ai-agent/harness-engineering/core-concepts) - 六层模型详解
+- [质量控制对比](/ai-agent/harness-engineering/quality-control) - dev-agent-harness vs spec-first
+- [最佳实践](/ai-agent/harness-engineering/best-practices) - 通用 AI 工程实践
 
 ---
 
 ## 总结
 
-Spec-First 工作流的核心是：**先思考，再编码**。通过规范化的流程，确保：
+Spec-First 的本质不是某个具体工具，而是一种**工程化思维**：
 
+> **把 AI coding 从临时对话升级为工程化工作流，让每一次交互都成为可追溯、可复用、可验证的项目资产。**
+
+核心保障：
 1. **需求清晰** - Spec 阶段明确范围
 2. **方案可行** - Plan 阶段识别风险
 3. **执行可控** - Tasks 阶段分步执行
 4. **证据完整** - Code 阶段收集验证
 5. **质量保障** - Review 阶段结构化评审
 6. **知识传承** - Knowledge 阶段沉淀经验
-
-**下一步**: 学习 [Harness Engineering 核心思想](/ai-agent/harness-engineering/core-concepts)，深入理解六层模型。

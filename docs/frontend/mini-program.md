@@ -199,6 +199,88 @@ function Counter() {
 }
 ```
 
+### uni-app 示例
+
+```bash
+# 使用 HBuilderX 创建项目（推荐）
+# 或使用 CLI
+npm install -g @vue/cli
+vue create -p dcloudio/uni-preset-vue my-app
+```
+
+```vue
+<!-- Vue 语法写小程序 -->
+<template>
+  <view class="counter">
+    <text>计数：{{ count }}</text>
+    <button @click="increment">加 1</button>
+  </view>
+</template>
+
+<script>
+export default {
+  data() {
+    return { count: 0 };
+  },
+  methods: {
+    increment() {
+      this.count++;
+    }
+  }
+};
+</script>
+
+<style scoped>
+.counter {
+  padding: 20px;
+}
+</style>
+```
+
+### Remax 示例
+
+```bash
+# 安装
+npm install -g remax-cli
+
+# 创建项目
+remax init my-app
+
+# 运行
+npm run dev:weapp
+```
+
+```jsx
+// 真正的 React，无 DSL 限制
+import { View, Text, Button } from 'remax/wechat';
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <View className="counter">
+      <Text>计数：{count}</Text>
+      <Button onClick={() => setCount(count + 1)}>
+        加 1
+      </Button>
+    </View>
+  );
+}
+
+export default Counter;
+```
+
+**三者对比：**
+
+| 维度 | Taro | uni-app | Remax |
+|------|------|---------|-------|
+| **语法** | React | Vue | React |
+| **编译方式** | 编译时转换 | 运行时 + 编译时 | 运行时渲染 |
+| **DSL 限制** | 有（需遵循规范） | 有 | 无 |
+| **生态** | 京东生态 | DCloud 生态 | 蚂蚁生态 |
+| **学习成本** | 中 | 低（Vue 开发者） | 中 |
+
 ## 性能优化
 
 ### 首屏优化

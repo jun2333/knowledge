@@ -119,10 +119,16 @@
     
     <!-- 导出和统计面板 -->
     <div class="annotation-panel">
+      <!-- 遮罩层 -->
+      <Transition name="fade">
+        <div v-if="showPanel" class="annotation-overlay" @click="showPanel = false" />
+      </Transition>
+
       <button 
         class="panel-toggle" 
         @click.stop="showPanel = !showPanel"
-        :class="{ active: showPanel }"
+        :class="{ active: showPanel, 'panel-toggle-disabled': isBlocked }"
+        :disabled="isBlocked"
       >
          批注 ({{ annotationStats.total }})
       </button>
@@ -176,6 +182,9 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vitepress'
 import { useAnnotations } from '../composables/useAnnotations'
+import { usePanelState } from '../composables/usePanelState.js'
+
+const { isBlocked, tryOpen, close: closePanel } = usePanelState('annotation')
 
 const route = useRoute()
 const { 
@@ -202,6 +211,15 @@ const activeTooltip = ref(null)
 const tooltipPosition = ref({})
 const showPanel = ref(false)
 const isCopied = ref(false)
+
+// 面板打开时注册遮罩
+watch(showPanel, (val) => {
+  if (val) {
+    tryOpen()
+  } else {
+    closePanel()
+  }
+})
 
 // 新增：保存选中内容的快照（关键！）
 const selectedTextSnapshot = ref('')
@@ -764,12 +782,23 @@ function clearSelection() {
   border-bottom: 6px solid white;
 }
 
+/* 遮罩层 */
+.annotation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.15);
+  z-index: 999;
+}
+
 /* 批注面板 */
 .annotation-panel {
   position: fixed;
-  right: 20px;
+  left: 20px;
   bottom: 20px;
-  z-index: 1000;
+  z-index: 1001;
 }
 
 .panel-toggle {
@@ -782,6 +811,8 @@ function clearSelection() {
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 1003;
 }
 
 .panel-toggle:hover {
@@ -793,16 +824,27 @@ function clearSelection() {
   background: #2d8a63;
 }
 
+.panel-toggle-disabled {
+  opacity: 0.4;
+  cursor: not-allowed !important;
+}
+
+.panel-toggle-disabled:hover {
+  background: #3eaf7c;
+  transform: none;
+}
+
 .panel-content {
   position: absolute;
   bottom: 60px;
-  right: 0;
+  left: 0;
   width: 320px;
   max-height: 70vh;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   overflow-y: auto;
+  z-index: 1002;
 }
 
 .panel-header {
@@ -1039,6 +1081,6 @@ function clearSelection() {
 
 .slide-left-enter-from, .slide-left-leave-to {
   opacity: 0;
-  transform: translateX(20px);
+  transform: translateX(-20px);
 }
 </style>

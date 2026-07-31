@@ -1,0 +1,35 @@
+{
+  "name": "@knowledge/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "rag:index": "tsx src/rag/indexer.ts"
+  },
+  "dependencies": {
+    "koa": "^2.15.0",
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^13.1.0",
+    "koa-bodyparser": "^4.4.1",
+    "langchain": "^0.3.0",
+    "@langchain/community": "^0.3.0",
+    "@langchain/core": "^0.3.0",
+    "@langchain/openai": "^0.3.0",
+    "chromadb": "^1.9.2",
+    "dotenv": "^16.4.0",
+    "glob": "^11.0.0",
+    "gray-matter": "^4.0.3",
+    "openai": "^4.70.0"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.15.0",
+    "@types/koa__cors": "^5.0.0",
+    "@types/koa__router": "^12.0.4",
+    "@types/koa-bodyparser": "^4.3.12",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

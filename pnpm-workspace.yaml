@@ -1,0 +1,6 @@
+packages:
+  - 'docs'
+  - 'server'
+allowBuilds:
+  esbuild: true
+  protobufjs: true
