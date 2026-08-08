@@ -39,8 +39,8 @@ async function index() {
 
   const embeddings = new OpenAIEmbeddings({
     modelName: config.embeddingModel,
-    apiKey: config.dashscopeApiKey,
-    configuration: { baseURL: config.dashscopeBaseUrl },
+    apiKey: 'ollama',
+    configuration: { baseURL: config.ollamaBaseUrl },
     batchSize: 10,
   })
 

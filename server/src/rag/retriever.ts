@@ -5,8 +5,8 @@ import { config } from '../config/index.js'
 export async function getRetriever(topK: number = 5) {
   const embeddings = new OpenAIEmbeddings({
     modelName: config.embeddingModel,
-    apiKey: config.dashscopeApiKey,
-    configuration: { baseURL: config.dashscopeBaseUrl },
+    apiKey: 'ollama',
+    configuration: { baseURL: config.ollamaBaseUrl },
     batchSize: 10,
   })
 

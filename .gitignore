@@ -7,6 +7,7 @@ yarn.lock
 dist/
 build/
 .out/
+server/dist/
 
 # VitePress
 **/.vitepress/cache/
@@ -55,3 +56,6 @@ server/data/chroma/
 coverage/
 .nyc_output/
 mermaid-*.png
+
+# Playwright MCP debug artifacts
+.playwright-mcp/

@@ -1,6 +1,8 @@
 packages:
   - 'docs'
   - 'server'
+  - 'resume'
 allowBuilds:
   esbuild: true
   protobufjs: true
+  puppeteer: true

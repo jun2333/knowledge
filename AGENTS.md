@@ -9,9 +9,14 @@
 - 不要随意删除文件，需要请示用户
 
 ## 项目说明
-- 这是一个前端知识总结项目，使用 VitePress 构建
+- 这是一个 pnpm Monorepo 项目，包含两个子包：
+  - `docs/`：VitePress 知识库文档站点 + AI 聊天 UI 组件
+  - `server/`：Koa 后端服务，提供 RAG 向量检索和 AI 聊天 API
 - 文档目录：`docs/`
-- 启动开发服务器：`npm run dev`（端口 5173）
+- 后端代码：`server/src/`
+- 启动开发服务器：`pnpm dev`（前后端同时启动，文档端口 5173，API 端口 3000）
+- 启动 Chroma 数据库：`pnpm chroma:start`（需要 Docker）
+- 构建向量索引：`pnpm rag:index`
 - 旧版笔记归档在 `archive/` 目录
 
 ## 经验与方法
