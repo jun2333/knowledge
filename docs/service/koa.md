@@ -96,6 +96,50 @@ app.listen(3000);
 响应返回
 ```
 
+### 实现原理：compose 串起 Promise 链
+
+洋葱模型不是魔法，Koa 内部用 `koa-compose` 把中间件数组串成一条**嵌套的 Promise 链**：每个中间件都被包装成 `(ctx, next) => Promise`，`next` 就是"调用下一个中间件"的函数，`await next()` 等待的正是内层中间件返回的 Promise。
+
+```javascript
+// koa-compose 的简化实现（核心逻辑）
+function compose(middlewares) {
+  return function (ctx) {
+    let index = -1;
+    function dispatch(i) {
+      if (i <= index) {  // 防止同一个中间件里多次调用 next()
+        return Promise.reject(new Error('next() called multiple times'));
+      }
+      index = i;
+      const fn = middlewares[i];
+      if (!fn) return Promise.resolve();  // 走到最内层，Promise 开始逐层 resolve
+      try {
+        // 关键：把 dispatch(i + 1) 作为 next 传入
+        // 返回的 Promise 就是下一层中间件的执行结果
+        return Promise.resolve(fn(ctx, () => dispatch(i + 1)));
+      } catch (err) {
+        return Promise.reject(err);  // 同步异常也变成 rejected Promise
+      }
+    }
+    return dispatch(0);
+  };
+}
+```
+
+展开后等价于手动嵌套：
+
+```javascript
+const chain = () =>
+  mw1(ctx, () =>          // next 1
+    mw2(ctx, () =>        // next 2
+      mw3(ctx, () => Promise.resolve())  // next 3
+    )
+  );
+```
+
+- **"回程"的本质**：中间件的后半段代码挂在 `await next()` 上，内层 Promise resolve 后逐层返回，所以执行顺序是 外 → 内 → 外
+- **忘记 `await next()`**：Promise 链在这里断开，后续中间件（包括生成响应的路由）**永远不会执行**，请求会一直挂起直到超时——这是 bug，不是"安全的跳过"
+- **错误处理放最外层**：最外层的 `try { await next() } catch` 包住整条链，能接住所有内层中间件的同步异常和 rejected Promise；如果放中间，它外层中间件抛的错误就漏掉了
+
 ## Context 对象
 
 `ctx` 是 Koa 的核心，封装了 request 和 response。

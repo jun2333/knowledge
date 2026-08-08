@@ -12,7 +12,7 @@ export default defineConfig({
       { text: 'AI Agent', link: '/ai-agent/' },
       { text: '浏览器', link: '/browser/overview' },
       { text: 'CSS', link: '/css/bfc' },
-      { text: '性能优化', link: '/performance/web' },
+      { text: '性能优化', link: '/performance/best-practices' },
       { text: '架构', link: '/engineering/micro-frontend' },
       { text: '大前端', link: '/frontend/hybrid' },
       { text: 'Service', link: '/service/roadmap' },
@@ -167,6 +167,12 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Next.js',
+          items: [
+            { text: 'Next.js 入门', link: '/react/nextjs' },
+          ]
+        },
+        {
           text: '渲染优化',
           items: [
             { text: '渲染优化实践', link: '/react/render-optimization' },
@@ -268,9 +274,9 @@ export default defineConfig({
         {
           text: '性能优化',
           items: [
-            { text: 'Web 性能优化', link: '/performance/web' },
             { text: '如何让网页更丝滑', link: '/performance/smooth' },
             { text: '大文件上传', link: '/performance/upload-idea' },
+            { text: '长列表优化（虚拟滚动）', link: '/performance/virtual-list' },
           ]
         },
         {
@@ -307,6 +313,7 @@ export default defineConfig({
           text: '前端构建',
           items: [
             { text: '工程构建优化', link: '/engineering/build-optimization' },
+            { text: 'npm / yarn / pnpm 对比', link: '/engineering/package-managers' },
             { text: 'Monorepo 介绍与实践', link: '/engineering/monorepo' },
             { text: 'CI/CD 持续集成与部署', link: '/engineering/cicd' },
           ]
@@ -342,7 +349,7 @@ export default defineConfig({
         {
           text: 'Node.js 基础',
           items: [
-            { text: 'Node.js 核心模块', link: '/service/node-core' },
+            { text: 'Node.js 入门', link: '/service/node-core' },
             { text: '数据库基础', link: '/service/database' },
           ]
         },
@@ -494,6 +501,7 @@ export default defineConfig({
           text: 'RAG 检索增强',
           items: [
             { text: 'RAG 入门', link: '/ai-agent/rag/introduction' },
+            { text: 'AI 知识库实战', link: '/ai-agent/rag/knowledge-base' },
           ]
         },
         {
@@ -508,6 +516,7 @@ export default defineConfig({
             { text: '核心思想', link: '/ai-agent/harness-engineering/core-concepts' },
             { text: '最佳实践', link: '/ai-agent/harness-engineering/best-practices' },
             { text: '质量控制对比', link: '/ai-agent/harness-engineering/quality-control' },
+            { text: 'dev-agent-harness 项目介绍', link: '/ai-agent/harness-engineering/dev-agent-harness' },
           ]
         },
         {

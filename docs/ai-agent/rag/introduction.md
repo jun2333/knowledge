@@ -471,6 +471,101 @@ const docs = await multiQueryRetriever.getRelevantDocuments(question);
 
 ---
 
+## ⚡ 性能与成本优化
+
+RAG 的延迟和成本主要来自两个环节：
+
+```
+检索延迟: 向量库扫描候选集的时间 (文档越多越慢)
+生成延迟: LLM 生成 token 的时间 (上下文越长越慢,且按 token 计费)
+```
+
+### 1. 检索延迟: 从全量扫描到近似检索
+
+知识库只有几十篇文档时,直接全量扫描没问题。但文档数量增长到**上千篇**时,逐条计算相似度是 O(n),延迟线性上涨。
+
+解法是给向量库开 **近似最近邻(ANN)索引**——HNSW/IVF,牺牲一点点召回精度,换来**对数级**检索时间:
+
+| 检索方式 | 复杂度 | 说明 |
+|---------|--------|------|
+| **暴力扫描** (Flat) | O(n) | 逐条算相似度,最准但最慢 |
+| **IVF** | O(√n) | 先聚类分桶,只搜相近的桶 |
+| **HNSW** | O(log n) | 跳表式多层图结构,精度和速度平衡最好 |
+
+```javascript
+// Chroma 默认使用 HNSW,可通过 collectionMetadata 调参
+const vectorStore = await Chroma.fromDocuments(chunks, embeddings, {
+  collectionName: "api-docs",
+  collectionMetadata: {
+    "hnsw:space": "cosine",        // 距离度量
+    "hnsw:M": 16,                  // 每个节点的最大连接数(越大越准,索引越大)
+    "hnsw:search_ef": 100,         // 检索探索广度(越大越准,越慢)
+  },
+});
+```
+
+**配合手段:**
+- **元数据预过滤**: 先按 `category`/`version`/`时间` 缩小候选集,再向量检索(如只搜 `user-api` 分类,而不是全部文档)
+- **top-k 调小**: 检索 3-5 条足够,不需要 20 条
+- **分片/分库**: 按业务域拆多个 collection,或按时间分片,各查各的
+
+### 2. 生成延迟与成本: 控制上下文
+
+LLM 生成速度和成本与上下文长度强相关——**塞进 Prompt 的文档越多,首字越慢、越贵、越容易超限**。控制手段:
+
+```
+检索 10 条 → rerank 压缩到 3 条 → 精简后拼进 Prompt
+```
+
+```javascript
+// 先检索多一些,rerank 后只保留最相关的 3 条
+const initialResults = await retriever.getRelevantDocuments(question, 10);
+
+const reranker = new CohereRerank({ topN: 3 });  // 排序压缩
+const context = (await reranker.compressDocuments(initialResults, question))
+  .map(doc => doc.pageContent)
+  .join("\n\n");
+```
+
+**查询改写**也是成本优化: 用户口语化的长问题先让 LLM 改写成精炼的检索语句,减少无效检索和无效上下文。
+
+### 3. 缓存: 相同问题不重复花钱
+
+**语义缓存**是 RAG 场景的标配——用户问"如何登录"和"怎么登录"是同一个问题,不该重复调用 LLM:
+
+```javascript
+// 语义缓存: 问题向量相似度超过阈值直接命中,跳过检索 + LLM
+const cache = new Map()
+
+async function queryWithCache(question) {
+  const qVector = await embeddings.embedQuery(question)
+
+  for (const [cachedQ, cached] of cache) {
+    const score = cosineSimilarity(qVector, cachedQ.vector)
+    if (score > 0.95) return cached  // 相似度阈值命中
+  }
+
+  const answer = await generate(question)
+  cache.set({ text: question, vector: qVector }, answer)
+  return answer
+}
+```
+
+**其他缓存点:**
+- **embedding 结果缓存**: 同一段文本只算一次向量(入库 + 查询都复用)
+- **热点问题缓存**: 高频问题直接缓存完整回答
+- 缓存注意设置 TTL/容量上限,避免脏数据常驻(与知识库更新联动失效)
+
+### 4. 索引构建性能
+
+文档入库(向量化)是**离线任务**,但文档量大时也要优化:
+
+- **embedding 离线预计算**: 入库脚本提前算好向量存库,查询时只算问题向量
+- **分批 + 并发控制**: 每批 N 篇文档,用信号量限制 embedding 并发数(接口限流,也防内存暴涨)
+- **增量索引**: 只对新文档做 embedding,而不是全量重建
+
+---
+
 ## 🚫 常见陷阱
 
 ### 陷阱1: Chunk太大或太小

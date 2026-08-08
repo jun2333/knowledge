@@ -828,7 +828,7 @@ interface VariableRef {
 
 ### 设计要点
 
-- **不可变更新**：每次修改生成新树（配合快照 Undo/Redo），不做原地 mutate
+- **模型更新策略**：用户输入走"DOM 先变 → 同步回 DocNode"，工具操作走"Command 改 DocNode → reconcile 渲染"，DOM 不是模型，DocNode 才是 Single Source of Truth。历史独立性由快照深拷贝保证（见 Undo/Redo 章节），不依赖不可变更新
 - **ID 稳定**：节点 ID 在编辑过程中不变，用于 DOM diff 和选区锚定
 - **序列化友好**：树结构可直接 JSON 序列化存储，也可转换为 FreeMarker 模板字符串
 
@@ -1334,3 +1334,31 @@ restoreSelection(savedSelection)
   ▼
 完成
 ```
+
+### 恢复期间的 input 事件拦截（必踩的坑）
+
+Undo/Redo 恢复 DOM 时（`patchDOMElement` / `oldEl.remove()`），会触发 contentEditable 的 `input` 事件。如果没有拦截，`handleInput` 会把"恢复出来的内容"当作一次新的编辑，生成 `UpdateTextCommand` 推入历史栈——**undo 操作自己污染了历史**，连续按 Ctrl+Z 可能出现"撤销又被顶回去"的循环。
+
+解决：恢复期间设置 `isRestoring` 标志，`handleInput` 检测到直接跳过：
+
+```typescript
+let isRestoring = false;
+
+function performUndo() {
+  isRestoring = true;   // 恢复前上锁
+  try {
+    // ...diff + patch DOM + restoreSelection
+  } finally {
+    isRestoring = false;  // 恢复完解锁
+  }
+}
+
+function handleInput(e: InputEvent, ctx: CommandContext) {
+  if (isRestoring) return;  // 恢复 DOM 触发的 input 事件，不当作新编辑
+  const nodeId = e.target.closest('[data-node-id]').dataset.nodeId;
+  const newContent = e.target.textContent;
+  ctx.applyCommand(new UpdateTextCommand(nodeId, newContent));
+}
+```
+
+其他同样会触发 `input`/`change` 的恢复路径（redo、从外部 `setTemplate()` 加载）也要走同一把锁。

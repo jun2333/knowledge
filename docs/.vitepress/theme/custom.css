@@ -97,3 +97,90 @@
   max-width: none;
   max-height: none;
 }
+
+/* 修复 mermaid 节点多行文本被裁剪：
+   mermaid 的文本装在 foreignObject 里，高度按行数估算且固定，
+   加高节点背景 rect 无效，这里允许文本溢出并收紧行高 */
+.vp-doc .mermaid foreignObject {
+  overflow: visible !important;
+}
+
+.vp-doc .mermaid .nodeLabel {
+  line-height: 1.35 !important;
+}
+
+/* === highlight.js 主题（适配 VitePress 暗色模式）=== */
+:root {
+  --hljs-keyword: #d73a49;
+  --hljs-string: #032f62;
+  --hljs-number: #005cc5;
+  --hljs-title: #6f42c1;
+  --hljs-built-in: #e36209;
+  --hljs-comment: #6a737d;
+  --hljs-meta: #005cc5;
+  --hljs-attr: #005cc5;
+  --hljs-type: #d73a49;
+  --hljs-variable: #e36209;
+  --hljs-literal: #005cc5;
+  --hljs-addition: #22863a;
+  --hljs-deletion: #b31d28;
+}
+
+.dark {
+  --hljs-keyword: #ff7b72;
+  --hljs-string: #a5d6ff;
+  --hljs-number: #79c0ff;
+  --hljs-title: #d2a8ff;
+  --hljs-built-in: #ffa657;
+  --hljs-comment: #8b949e;
+  --hljs-meta: #79c0ff;
+  --hljs-attr: #79c0ff;
+  --hljs-type: #ff7b72;
+  --hljs-variable: #ffa657;
+  --hljs-literal: #79c0ff;
+  --hljs-addition: #7ee787;
+  --hljs-deletion: #ffa198;
+}
+
+.ai-chat .hljs-keyword,
+.ai-chat .hljs-selector-tag,
+.ai-chat .hljs-deletion { color: var(--hljs-keyword); }
+
+.ai-chat .hljs-string,
+.ai-chat .hljs-doctag,
+.ai-chat .hljs-addition { color: var(--hljs-string); }
+
+.ai-chat .hljs-number,
+.ai-chat .hljs-regexp { color: var(--hljs-number); }
+
+.ai-chat .hljs-title,
+.ai-chat .hljs-section { color: var(--hljs-title); }
+
+.ai-chat .hljs-built_in,
+.ai-chat .hljs-template-variable { color: var(--hljs-built-in); }
+
+.ai-chat .hljs-comment,
+.ai-chat .hljs-quote { color: var(--hljs-comment); font-style: italic; }
+
+.ai-chat .hljs-meta { color: var(--hljs-meta); }
+
+.ai-chat .hljs-attr,
+.ai-chat .hljs-attribute { color: var(--hljs-attr); }
+
+.ai-chat .hljs-type,
+.ai-chat .hljs-class .hljs-title { color: var(--hljs-type); }
+
+.ai-chat .hljs-variable,
+.ai-chat .hljs-name,
+.ai-chat .hljs-selector-class { color: var(--hljs-variable); }
+
+.ai-chat .hljs-literal { color: var(--hljs-literal); }
+
+.ai-chat .hljs-symbol,
+.ai-chat .hljs-bullet { color: var(--hljs-built-in); }
+
+.ai-chat .hljs-link { color: var(--hljs-meta); text-decoration: underline; }
+
+.ai-chat .hljs-params { color: var(--vp-c-text-1); }
+
+.ai-chat .hljs-property { color: var(--hljs-attr); }

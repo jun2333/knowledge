@@ -26,7 +26,7 @@ graph TD
 
 | 文章 | 核心内容 |
 |------|----------|
-| [Node.js 核心模块](./node-core) | `fs`、`path`、`stream`、`Buffer`、`events` 等内置模块 |
+| [Node.js 入门](./node-core) | `fs`、`path`、`stream`、`Buffer`、`events` 等内置模块 |
 
 **关键认知转变：**
 - 浏览器里操作 DOM，Node.js 里操作文件和进程

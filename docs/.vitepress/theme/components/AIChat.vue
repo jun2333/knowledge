@@ -1,7 +1,44 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useAIChat } from '../composables/useAIChat.ts'
 import { usePanelState } from '../composables/usePanelState.js'
+import hljs from 'highlight.js/lib/core'
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import python from 'highlight.js/lib/languages/python'
+import css from 'highlight.js/lib/languages/css'
+import xml from 'highlight.js/lib/languages/xml'
+import bash from 'highlight.js/lib/languages/bash'
+import json from 'highlight.js/lib/languages/json'
+import less from 'highlight.js/lib/languages/less'
+import scss from 'highlight.js/lib/languages/scss'
+import yaml from 'highlight.js/lib/languages/yaml'
+import markdown from 'highlight.js/lib/languages/markdown'
+import go from 'highlight.js/lib/languages/go'
+import rust from 'highlight.js/lib/languages/rust'
+import java from 'highlight.js/lib/languages/java'
+
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('js', javascript)
+hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage('ts', typescript)
+hljs.registerLanguage('python', python)
+hljs.registerLanguage('py', python)
+hljs.registerLanguage('css', css)
+hljs.registerLanguage('html', xml)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('bash', bash)
+hljs.registerLanguage('sh', bash)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('yaml', yaml)
+hljs.registerLanguage('markdown', markdown)
+hljs.registerLanguage('md', markdown)
+hljs.registerLanguage('less', less)
+hljs.registerLanguage('scss', scss)
+hljs.registerLanguage('go', go)
+hljs.registerLanguage('rust', rust)
+hljs.registerLanguage('java', java)
+hljs.registerLanguage('vue', xml)
 
 const { messages, isLoading, sendMessage, stopGeneration, resendMessage, clearMessages, registerStreamCallbacks } = useAIChat()
 const { isBlocked, tryOpen, close: closePanel } = usePanelState('ai-chat')
@@ -30,24 +67,46 @@ function handleClose() {
   isOpen.value = false
 }
 
-// 直接 DOM 操作：通过 data 属性查找流式内容容器
-let rawContent = ''
+function isError(content: string): boolean {
+  return content.startsWith('请求失败') || content.startsWith('错误:') || content.startsWith('连接失败')
+}
 
-function escapeHtml(text) {
+// 直接 DOM 操作：通过 data 属性查找流式内容容器
+let rafId: number | null = null
+let pendingContent = ''
+
+function escapeHtml(text: string) {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 }
 
-function renderMarkdown(text) {
-  // 先处理代码块
-  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g
-  let result = text.replace(codeBlockRegex, (match, lang, code) => {
-    const escapedCode = escapeHtml(code.trim())
+function renderMarkdown(text: string) {
+  // 处理完整代码块（有闭合 ```）
+  let result = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    const trimmedCode = code.trim()
+    const langAlias: Record<string, string> = { js: 'javascript', ts: 'typescript', py: 'python', sh: 'bash', md: 'markdown' }
+    const hljsLang = langAlias[lang] || lang || 'plaintext'
+    let highlighted: string
+    try {
+      if (hljs.getLanguage(hljsLang)) {
+        highlighted = hljs.highlight(trimmedCode, { language: hljsLang }).value
+      } else {
+        highlighted = escapeHtml(trimmedCode)
+      }
+    } catch {
+      highlighted = escapeHtml(trimmedCode)
+    }
     const borderRadius = lang ? '0 0 6px 6px' : '6px'
     const langLabel = lang ? `<div style="background: #e8e8e8; padding: 4px 12px; font-size: 12px; color: #666; border-radius: 6px 6px 0 0; font-family: var(--vp-font-family-base);">${lang}</div>` : ''
-    return `${langLabel}<pre class="code-block" style="background: #fafafa; padding: 12px 16px; border-radius: ${borderRadius}; overflow-x: auto; font-size: 13px; margin: 8px 0; font-family: var(--vp-font-family-mono, monospace); border-left: 3px solid var(--vp-c-brand-1);"><code>${escapedCode}</code></pre>`
+    return `${langLabel}<pre class="code-block" style="background: #fafafa; padding: 12px 16px; border-radius: ${borderRadius}; overflow-x: auto; font-size: 13px; margin: 8px 0; font-family: var(--vp-font-family-mono, monospace); border-left: 3px solid var(--vp-c-brand-1);"><code>${highlighted}</code></pre>`
+  })
+
+  // 处理未闭合的代码块（流式输出中）
+  result = result.replace(/```(\w*)\n([\s\S]*)$/g, (match, lang, code) => {
+    const escapedCode = escapeHtml(code.trim())
+    return `<pre class="code-block" style="background: #fafafa; padding: 12px 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; margin: 8px 0; font-family: var(--vp-font-family-mono, monospace); border-left: 3px solid var(--vp-c-brand-1);"><code>${escapedCode}</code></pre>`
   })
 
   // 再处理其他 markdown 语法
@@ -67,23 +126,22 @@ function getStreamSourcesEl() {
   return messagesContainer.value?.querySelector('[data-stream-sources]')
 }
 
-// 注册流式回调，直接操作 DOM
+function flushContent() {
+  const el = getStreamContentEl()
+  if (el) {
+    el.innerHTML = renderMarkdown(pendingContent)
+    scrollToBottom()
+  }
+  rafId = null
+}
+
+// 注册流式回调，直接操作 DOM + rAF 节流
 registerStreamCallbacks(
   (token) => {
-    rawContent += token
-    let el = getStreamContentEl()
-    if (!el) {
-      setTimeout(() => {
-        el = getStreamContentEl()
-        if (el) {
-          el.innerHTML = renderMarkdown(rawContent)
-          scrollToBottom()
-        }
-      }, 0)
-      return
+    pendingContent += token
+    if (rafId === null) {
+      rafId = requestAnimationFrame(flushContent)
     }
-    el.innerHTML = renderMarkdown(rawContent)
-    scrollToBottom()
   },
   (sources) => {
     const el = getStreamSourcesEl()
@@ -98,11 +156,16 @@ registerStreamCallbacks(
     }
   },
   () => {
+    // 确保最后的内容已渲染
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
+      flushContent()
+    }
     const lastMsg = messages.value[messages.value.length - 1]
     if (lastMsg?.role === 'assistant') {
-      lastMsg.content = rawContent
+      lastMsg.content = pendingContent
     }
-    rawContent = ''
+    pendingContent = ''
   }
 )
 
@@ -110,7 +173,7 @@ async function handleSend() {
   const text = inputText.value.trim()
   if (!text) return
   inputText.value = ''
-  rawContent = ''
+  pendingContent = ''
   await sendMessage(text)
 }
 
@@ -204,6 +267,18 @@ function scrollToBottom() {
                   <polyline points="1 4 1 10 7 10" />
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                 </svg>
+              </button>
+            </div>
+
+            <!-- 错误消息：显示重试按钮 -->
+            <div v-else-if="msg.role === 'assistant' && isError(msg.content)" class="ai-chat-error">
+              <span>{{ msg.content }}</span>
+              <button class="ai-chat-retry-btn" @click="resendMessage(index)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+                重试
               </button>
             </div>
 
@@ -446,6 +521,34 @@ function scrollToBottom() {
   align-items: center;
   justify-content: center;
   padding: 4px 0;
+}
+
+.ai-chat-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--vp-c-danger-1);
+  font-size: 13px;
+}
+
+.ai-chat-retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--vp-c-danger-1);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vp-c-danger-1);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ai-chat-retry-btn:hover {
+  background: var(--vp-c-danger-1);
+  color: #fff;
 }
 
 .ai-chat-resend-icon {

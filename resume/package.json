@@ -1,0 +1,12 @@
+{
+  "name": "@knowledge/resume",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "pdf2md": "source .venv/bin/activate && markitdown base_resume.pdf > resume.md",
+    "md2pdf": "md-to-pdf resume.md --css resume.css"
+  },
+  "devDependencies": {
+    "md-to-pdf": "^5.2.5"
+  }
+}
