@@ -1128,6 +1128,25 @@ container.appendChild(fragment);
 | 变量拖入 | 变量数据 + 插入位置 | 更新模型 + 在目标位置插入 chip 元素 |
 | 块级拖拽排序 | 源节点 + 目标位置 | 更新模型 + moveBefore/moveAfter |
 
+**DOM ↔ DocNode 怎么互相定位？** 事件处理器里拿到的只有 DOM 元素，如何找到对应的虚拟节点？答案是 `createNode` 时烙在元素上的 `dataset.nodeId` 双向桥：
+
+```typescript
+// 创建节点时烙上 ID（见 DOMHandler 章节的 createNode）
+el.dataset.nodeId = node.id;
+el.dataset.nodeType = node.type;
+
+// DOM → DocNode：事件里向上找最近带 ID 的祖先
+const nodeId = e.target.closest('[data-node-id]').dataset.nodeId;
+const node = doc.getNodeById(nodeId);
+
+// DocNode → DOM：定位某节点的元素
+const el = container.querySelector(`[data-node-id="${pos.nodeId}"]`);
+```
+
+- `closest` 处理深层元素：点击落在 text 节点的文本子节点上，向上找到最近带 ID 的容器
+- `dataset` 读取 O(1)，`querySelector` 浏览器原生实现很快；节点量大时可维护 `Map<nodeId, HTMLElement>`（createNode 注册、destroyNode 注销），双向都变 O(1)
+- 为什么不直接存 DOM 引用进 DocNode：`@editor/model` 是纯数据层（无 DOM 依赖，可单测、可序列化），dataset 桥接既保持纯数据、又拿到 O(1) 映射
+
 ```typescript
 // 示例：手动输入（contenteditable 下 DOM 已自动变化，只需同步模型）
 function handleInput(e: InputEvent, ctx: CommandContext) {

@@ -120,9 +120,11 @@ CMD ["node", "dist/server.js"]
 
 ### .dockerignore
 
-类似 `.gitignore`，避免把不需要的文件打包进镜像。
+**和 .gitignore 是两套独立机制**：`.gitignore` 管"git 提交什么"，`.dockerignore` 管"构建上下文装什么"——Docker 构建时**根本不看 .gitignore**。`docker build .` 时，Docker CLI 把 `.` 目录下**所有文件**打包成构建上下文发给 Docker daemon（node_modules、.env、.git 全在里面，哪怕被 gitignore 了），daemon 再按 Dockerfile 的 `COPY` 指令把文件复制进镜像。
 
-```
+所以 .dockerignore 的价值有三层：① 减小上下文 → 传输快（几百 MB 的 node_modules 也要压缩发送）；② 防止缓存失效——Docker 构建缓存按"指令 + 输入哈希"计算，`COPY . .` 的输入是整个上下文，node_modules 内容一变（装个包、换台机器权限位不同）缓存就失效，即使业务代码一行没动也要从这层重跑；③ **防止 COPY . . 时把 .env/.git 复制进镜像**——这是最核心的：密钥进镜像 = 谁拿到镜像谁拿到密钥。
+
+```dockerignore
 node_modules
 npm-debug.log
 .git
@@ -139,13 +141,17 @@ README.md
 容器删除后数据会丢失，需要挂载卷来持久化数据。
 
 ```bash
-# 绑定挂载（开发环境常用）
+# 绑定挂载（开发环境常用）:把宿主机当前目录 $(pwd) 挂进容器 /app,改代码即时生效
 docker run -v $(pwd):/app -p 3000:3000 my-app
 
-# 命名卷（生产环境推荐）
-docker volume create db-data
-docker run -v db-data:/var/lib/postgresql/data postgres
+# 命名卷（生产环境推荐）:数据存在 Docker 管理的目录,不关心物理路径
+docker volume create db-data     # 创建一个名为 db-data 的命名卷(先造保险箱)
+docker run -v db-data:/var/lib/postgresql/data postgres  # 把卷挂到容器内 postgres 数据目录,容器删了数据还在
 ```
+
+**命名卷 vs 绑定挂载**：绑定挂载是"把宿主机某个**路径**挂进去"（`$(pwd)` 你指定）；命名卷是"给 Docker 说我要个叫 db-data 的存储空间"（物理路径 Docker 管）。开发用绑定挂载（改代码即时生效），生产用命名卷（数据不依赖宿主机路径，方便迁移）。其实 `docker run -v db-data:...` 时卷不存在会自动创建，显式 `create` 是为了提前创建、明确管理。
+
+**`-v 左:右` 语法**：**左边**是外部（宿主机路径或卷名），**右边**永远是**容器内路径**。例：`-v db-data:/var/lib/postgresql/data` = 把 db-data 卷接入容器内 postgres 的数据目录，容器进程读写该目录 = 读写卷。数据最终存在宿主机 `/var/lib/docker/volumes/db-data/_data`，但容器视角只看得到 `/var/lib/postgresql/data`。
 
 ## docker-compose
 
@@ -170,7 +176,7 @@ services:
     depends_on:
       - postgres
       - redis
-    restart: unless-stopped
+    restart: unless-stopped   # 重启策略:崩溃自动重启;机器重启自动拉起;手动 stop 过的不复活
 
   postgres:
     image: postgres:16-alpine
@@ -181,7 +187,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - pg-data:/var/lib/postgresql/data   # 使用卷:挂到 postgres 数据目录(左=卷名,右=容器内路径)
     restart: unless-stopped
 
   redis:
@@ -191,7 +197,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  pg-data:
+  pg-data:                                  # 顶层声明:登记"pg-data 是本项目管理的卷",up 时自动创建(等价 docker volume create)
 ```
 
 启动和停止：

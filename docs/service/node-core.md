@@ -138,6 +138,8 @@ Node.js 是**单线程**的：JS 代码只有一个主线程在跑，但靠**事
 
 ### 事件循环的阶段
 
+事件循环从**主脚本同步代码执行完之后**才开始：V8 先加载并跑完整个模块（顶层同步代码不在任何阶段里），主脚本这个"回调"结束后清空 `nextTick` / 微任务队列，然后才进入事件循环的 timers 阶段。事件循环里跑的**全是回调**——定时器回调、I/O 回调、`setImmediate` 回调，每个回调内部的同步代码属于该回调的执行体。
+
 ```
 ┌─────────────┐
 │   timers    │  ← setTimeout / setInterval 回调
@@ -150,7 +152,16 @@ Node.js 是**单线程**的：JS 代码只有一个主线程在跑，但靠**事
 └─────────────┘
 ```
 
-**微任务（Promise.then、queueMicrotask、process.nextTick）在每个阶段之间执行**，其中 `nextTick` 优先级最高——它在微任务之前执行。
+**微任务（Promise.then、queueMicrotask、process.nextTick）在每个回调执行完之后执行**——不是"每个阶段之间"：同一阶段内每执行完一个回调，就清空一次微任务队列，再执行下一个回调。其中 `nextTick` 优先级最高——它在微任务之前执行。
+
+微任务实际是**两个队列**：
+
+| 队列 | 成员 | 优先级 |
+|------|------|--------|
+| nextTick 队列 | `process.nextTick` | 最高，先清空 |
+| 微任务队列（V8 维护） | `Promise.then`、`queueMicrotask`、async/await 续体 | 次之，按注册顺序 FIFO |
+
+`queueMicrotask(fn)` 和 `Promise.resolve().then(fn)` 执行时机完全相同，区别只是前者是全局函数、不产生 Promise、不能链式。浏览器也有 `queueMicrotask`（HTML 规范 API），但**没有** `process.nextTick`——优先级问题只在 Node 存在。
 
 ### 回调 → Promise → async/await
 
@@ -182,6 +193,15 @@ async function readAll() {
 因为 Node 的 I/O 是**非阻塞**的：发起读取后主线程立刻去做别的事，I/O 完成时事件循环再回调。等待网络/磁盘的时间不占 CPU（I/O 密集），一个线程就能处理成千上万个并发连接。
 
 **单线程的软肋是 CPU 密集任务**（压缩、加解密、复杂计算）：它们会长时间占住唯一的主线程，期间所有请求排队。解法见文末"多线程与多进程"章节。
+
+#### 为什么 CPU 密集任务不能"异步"？
+
+一句话：**异步省的是"等待时间"，不是"计算时间"**。
+
+- **I/O 是"内部员工，闲着也是闲着"**：等磁盘/网络时，真正干活的是内核和硬件（数据搬运），CPU 是**空闲**的。这些资源本来就在"工资单"上——干活也得花、不干活也得花，让闲置的自己人接手 = 不额外花钱
+- **CPU 计算是"干活才发工资"**：压缩、加解密每一毫秒都在烧 CPU，没有"外部设备替你算"的阶段。想"发起计算然后去干别的"？没有人在后台替你算——算的指令必须由你的代码在 CPU 上跑，一分钟都摸不了鱼
+
+所以：I/O 用的是**自己的闲置资源**（内部员工，工资照发，用不用都在），CPU 要么亲力亲为（卡主线程）、要么**额外雇人**（`worker_threads` 占用稀缺的 CPU 核 + 通信开销）。**雇人贵是因为核是稀缺资源，不是活复杂。**
 
 ## process 模块
 
@@ -610,6 +630,45 @@ const uuid = crypto.randomUUID()
 
 > 密码存储的正确姿势：不要直接存明文或单纯哈希，用 `crypto.scrypt`（或 bcrypt）做**加盐慢哈希**。注意 `crypto.scrypt` 是 CPU 密集操作，Node 会自动把它放到线程池执行，不阻塞事件循环。
 
+### 常用加密算法与选型
+
+| 算法 | 类型 | 特点 | 性能 | 典型用途 | Node API |
+|------|------|------|------|---------|---------|
+| **MD5** | 哈希 | 快，但已存在碰撞漏洞 | 极快（纳秒级） | 文件指纹、缓存 key（**不能用于安全**） | `createHash('md5')` |
+| **SHA-256** | 哈希 | 安全、不可逆、定长输出 | 快（微秒级） | 完整性校验、HMAC 底层 | `createHash('sha256')` |
+| **HMAC-SHA256** | 带密钥哈希 | 能验证"来源可信 + 未被篡改" | 快（≈SHA-256） | API 签名、Webhook 校验、JWT（HS256） | `createHmac` |
+| **scrypt / bcrypt** | 慢哈希 | 故意慢，抗暴力破解（GPU 无效） | **慢**（毫秒级，可调） | 密码存储（唯一正确姿势） | `scrypt` / bcryptjs |
+| **AES-256** | 对称加密 | 快，加密解密用同一密钥 | 很快（硬件加速，GB/s 级） | 数据加密存储、TLS 内容加密 | `createCipheriv` / `createDecipheriv` |
+| **RSA / ECC** | 非对称加密 | 公钥/私钥，慢，只能处理小数据 | 慢（毫秒级，ECC 快于 RSA） | TLS 握手交换密钥、数字签名、JWT（RS256/ES256） | `generateKeyPairSync` |
+
+**选型速记：**
+
+- 存密码 → `scrypt` / bcrypt（慢哈希）
+- 检测文件损坏/内容一致（**非对抗**） → SHA-256
+- 防篡改/防伪造（**对抗**） → HMAC（双方共享密钥，点对点）或 RSA/ECC 数字签名（私钥签名、公钥验证，一对多）
+- 加密一段数据（如登录态） → AES 对称加密（快）
+- HTTPS 的底层是**混合加密**：RSA/ECC 协商出临时对称密钥，后续内容全用 AES 加密——对称快 + 非对称安全分发密钥，各取所长
+
+**AES 对称加密最小闭环**（注意：`createCipheriv` 需要随机 IV，解密时用同一 IV）：
+
+```javascript
+const key = crypto.randomBytes(32)  // 32 字节 = AES-256
+const iv = crypto.randomBytes(12)   // GCM 模式要求 12 字节 IV
+
+// 加密
+const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+let enc = cipher.update('机密数据', 'utf8', 'hex')
+enc += cipher.final('hex')
+
+// 解密（用同一个 key 和 iv）
+const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+let dec = decipher.update(enc, 'hex', 'utf8')
+dec += decipher.final('utf8')
+console.log(dec)  // 机密数据
+```
+
+> 对称加密的密钥分发是难题（双方怎么安全地拿到同一把钥匙？），非对称加密正好解决分发——这就是 HTTPS 用混合加密的原因。
+
 ## os 模块
 
 获取操作系统信息，常用于集群部署、资源监控。
@@ -920,20 +979,34 @@ graph TD
     A[开始] --> B[timers<br/>setTimeout/setInterval 回调]
     B --> C[pending callbacks<br/>推迟到下一轮的 I/O 回调]
     C --> D[poll<br/>轮询 I/O 事件,执行回调]
-    D --> E[check<br/>setImmediate 回调]
+    D -->|无到期定时器| E[check<br/>setImmediate 回调]
     E --> F[close callbacks<br/>socket 关闭等清理]
-    F --> A
+    F -->|本轮结束,进入下一轮| B
+    D -->|有到期定时器<br/>提前离开 poll| H{check 有<br/>setImmediate?}
+    H -->|有, 本轮先执行 immediate| E
+    H -->|无, 直接回下一轮| B
 ```
 
-**微任务（Promise.then / queueMicrotask / process.nextTick）在每两个阶段之间执行**，其中 `nextTick` 又在微任务之前——它优先级最高。
+**循环关键**：事件循环不是走一遍就完，而是 `timers → ... → close callbacks → 回到 timers` 无限循环。其中 **poll 是唯一会"提前离场"的阶段**——它阻塞多久由"最近的定时器"和"check 队列"共同决定：
+
+| poll 进入时的状态 | poll 的行为 |
+|---|---|
+| 有 `setImmediate` 排队 | 不阻塞，立即离开，先走 check 执行 immediate |
+| 无 immediate，但有定时器到期 | 不阻塞，立即离开，check 无事可做，相当于直接回下一轮 timers |
+| 无 immediate，定时器未到期 | 阻塞到最近的定时器到期 |
+| 两者都没有 | 无限阻塞，等 I/O 事件到来 |
+
+关键点：**`setImmediate` 会在同一轮插队**——即使定时器已经到期，也要等 immediate 执行完、到**下一轮** timers 才轮到定时器回调（这就是 I/O 回调里 `setTimeout` 稳定晚于 `setImmediate` 的原因）。
+
+**微任务（Promise.then / queueMicrotask / process.nextTick）在每个回调执行完之后执行**（而不是"每两个阶段之间"：同一阶段内每执行完一个回调就清空一次微任务队列），其中 `nextTick` 又在微任务之前——它优先级最高。
 
 ### 各阶段作用
 
 | 阶段 | 作用 |
 |------|------|
 | **timers** | 执行到期的 `setTimeout` / `setInterval` 回调 |
-| **pending callbacks** | 执行被推迟到下一轮的 I/O 回调（如系统错误） |
-| **poll** | 最重要的阶段：轮询等待 I/O 事件；没有到期定时器时在此阻塞等待 |
+| **pending callbacks** | 执行上轮推迟的 I/O 回调，主要是**系统错误**（如 TCP connect 收到 ECONNREFUSED，某些 *nix 系统会延迟报告）；平时几乎为空，直接跳过 |
+| **poll** | 最重要的阶段：轮询等待 I/O 事件；阻塞时间由最近的定时器和 `setImmediate` 队列共同决定（有 `setImmediate` 或定时器到期则不阻塞，提前离开） |
 | **check** | 执行 `setImmediate` 回调（poll 之后立即执行） |
 | **close callbacks** | 执行关闭事件回调（如 socket 关闭） |
 
@@ -943,10 +1016,27 @@ graph TD
 
 | 对比 | `process.nextTick` | `setImmediate` |
 |------|-------------------|----------------|
-| **名字的含义** | 有误导性：不是"下一轮"，而是**当前阶段结束后立即** | 名字准确：在 check 阶段执行 |
-| **执行时机** | 当前阶段结束、下一阶段开始前 | 事件循环的 check 阶段 |
+| **名字的含义** | 有误导性：不是"下一轮"，而是**每个回调执行完之后立即** | 名字准确：在 check 阶段执行 |
+| **执行时机** | 当前回调执行完、下一个回调执行前（每执行完一个回调就清空一次） | 事件循环的 check 阶段 |
 | **优先级** | 最高（先于 Promise 微任务） | 低于微任务 |
 | **滥用后果** | 递归 `nextTick` 会**饿死事件循环**（永远轮不到 I/O） | 相对安全 |
+
+#### 微任务会饿死定时器吗
+
+**正常代码不会**：微任务只在单个回调结束后**一次性**清空，清空完立即回到宏任务调度，定时器回调（timers 阶段）总会轮到自己的轮次，微任务不会插队抢占。
+
+**但微任务无限递归会饿死**（Node 实测）：`Promise.resolve().then(f)` 里继续 `.then(f)` 无限递归时，微任务队列永远清不完，事件循环推进不到下一轮 timers，`setInterval` 一条回调都打不出；`process.nextTick` 无限递归同样如此。Node 的 `nextTick` 内部虽有 tickDepth 保护（超过 1000 层后把回调挪到 immediate 队列，防 nextTick 队列无限占内存），但**防不了饿死**——递归挪到 check 阶段后仍在阶段内继续。
+
+**让出事件循环的正确姿势：用 `setImmediate` 分批**——每轮 check 阶段只执行队列里已有的回调，执行完就推进下一轮，timers/poll 有机会运行：
+
+```javascript
+let count = 0
+function loop() {
+  count++
+  if (count < 1e6) setImmediate(loop)   // 分批跑，定时器照常执行
+}
+loop()
+```
 
 ### 经典输出顺序题
 
@@ -962,9 +1052,9 @@ console.log('sync');
 
 **为什么？**
 1. 同步代码最先执行：`sync`
-2. 主脚本执行完，当前阶段收尾：`nextTick` 队列优先于微任务 → `nextTick`
-3. 然后才是 Promise 微任务 → `promise`
-4. `timeout` 和 `immediate` 的顺序**不确定**：`setTimeout(..., 0)` 实际有约 1ms 的定时器阈值，主脚本执行完时事件循环可能已过了 timers 阶段，两个回调可能落在不同轮次
+2. **主脚本本身就是一个"回调"**——执行完的瞬间触发"回调结束后清空微任务队列"的规则，此时**还没进入事件循环**：`nextTick` 队列优先 → `nextTick`
+3. 然后是 Promise 微任务 → `promise`
+4. `timeout` 和 `immediate` 排在最后：它们是事件循环里的宏任务，而微任务清空发生在"回调结束 → 下一个宏任务开始"之间，主脚本结束正是第一个这样的边界。两者的顺序**不确定**：`setTimeout(..., 0)` 会被 libuv 钳制为最短约 1ms。主脚本执行完、进入第一轮事件循环时，第一个阶段就是 timers——但"注册后到现在是否已满 1ms"取决于启动开销：开销大（>1ms）则 timers 直接执行 `timeout`；开销小（<1ms）则 timers 检查时回调**还没到期**，跳过它继续走到 poll，而 check 队列里有 immediate 所以 poll 不阻塞，先执行 `immediate`。两个结果都可能出现
 
 **但有一个确定的场景：** 在 **I/O 回调内部**，`setImmediate` **一定先于** `setTimeout`——因为 poll 阶段结束后必先走 check 阶段，下一轮才轮到 timers：
 
@@ -996,6 +1086,15 @@ UV_THREADPOOL_SIZE=8 node app.js
 ```
 
 > 这也解释了为什么 `crypto.scrypt`（哈希）和 `fs` 的大文件操作不会卡死事件循环——它们被 libuv 分发到线程池了。而纯 JS 的 CPU 密集计算没处可去，才需要 worker_threads。
+
+但要注意，线程池里有两类"员工"，本质完全不同：
+
+| 操作 | 本质 | 线程池员工在干嘛 |
+|------|------|-----------------|
+| `fs` 大文件读取 | **I/O 密集**（等磁盘） | 自家员工排队等通知：阻塞在系统调用上等内核搬数据，等待不占 CPU 计算量 |
+| `crypto.scrypt` / `zlib` | **CPU 密集**（算哈希/压缩） | 额外雇人算东西：真正把烧 CPU 的活扔给别的线程 |
+
+> 一句话：**fs 走线程池是"让自家员工排队等磁盘"，不是"额外雇人算东西"**。读大文件本身不卡主线程，卡的是读完之后对数据的处理（比如 `JSON.parse` 一个 1GB 字符串）——那部分纯 JS 计算没处可去，只能自己扛或 `worker_threads` 雇人。
 
 ## 实战：用核心模块写一个静态文件服务器
 

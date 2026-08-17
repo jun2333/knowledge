@@ -245,4 +245,4 @@ function binarySearch(arr, target) {
 ## 🔗 相关资源
 
 - [学习路径](/guide/learning-path)
-- [LeetCode 题解](/algorithms/dp)
+- LeetCode 题解

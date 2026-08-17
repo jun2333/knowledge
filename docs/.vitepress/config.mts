@@ -198,7 +198,7 @@ export default defineConfig({
           ]
         },
         {
-          text: '网络协议',
+          text: '基础知识',
           items: [
             { text: 'DNS 域名系统', link: '/browser/dns' },
             { text: 'HTTP 协议演进', link: '/browser/http-history' },
@@ -207,6 +207,7 @@ export default defineConfig({
             { text: 'HTTPS', link: '/browser/https' },
             { text: 'WebSocket', link: '/browser/websocket' },
             { text: 'SSE', link: '/browser/sse' },
+            { text: '跨域通信', link: '/browser/cross-origin' },
           ]
         },
         {
@@ -274,6 +275,7 @@ export default defineConfig({
         {
           text: '性能优化',
           items: [
+            { text: '首屏优化详解', link: '/performance/first-screen' },
             { text: '如何让网页更丝滑', link: '/performance/smooth' },
             { text: '大文件上传', link: '/performance/upload-idea' },
             { text: '长列表优化（虚拟滚动）', link: '/performance/virtual-list' },
@@ -299,6 +301,7 @@ export default defineConfig({
         {
           text: '架构设计',
           items: [
+            { text: '什么是架构师', link: '/engineering/architect' },
             { text: '微前端架构', link: '/engineering/micro-frontend' },
             { text: 'Islands 架构', link: '/engineering/islands' },
             { text: 'PWA 方案', link: '/engineering/pwa' },
@@ -347,10 +350,34 @@ export default defineConfig({
           ]
         },
         {
-          text: 'Node.js 基础',
+          text: '后端基础',
           items: [
             { text: 'Node.js 入门', link: '/service/node-core' },
+            { text: 'Java 入门', link: '/service/java-basics' },
             { text: '数据库基础', link: '/service/database' },
+            { text: 'TypeORM 用法', link: '/service/typeorm' },
+            { text: 'MySQL 进阶', link: '/service/mysql-advanced' },
+            { text: 'MyBatis-Plus 入门', link: '/service/mybatis-plus' },
+          ]
+        },
+        {
+          text: 'Java 进阶',
+          items: [
+            { text: 'Java 并发编程', link: '/service/java-concurrency' },
+            { text: 'JVM 入门', link: '/service/java-jvm' },
+            { text: 'Java 集合源码', link: '/service/java-collections' },
+            { text: 'Spring 核心原理', link: '/service/spring-principles' },
+            { text: '设计模式', link: '/service/design-patterns' },
+            { text: '线上问题排查', link: '/service/troubleshooting' },
+          ]
+        },
+        {
+          text: '中间件与分布式',
+          items: [
+            { text: 'Redis 入门', link: '/service/redis-intro' },
+            { text: '消息队列（Kafka）入门', link: '/service/mq-intro' },
+            { text: '分布式基础', link: '/service/distributed-basics' },
+            { text: 'Spring Cloud 微服务', link: '/service/spring-cloud' },
           ]
         },
         {
@@ -361,17 +388,21 @@ export default defineConfig({
           ]
         },
         {
-          text: 'Node.js 框架',
+          text: '后端框架',
           items: [
+            { text: 'Express 入门', link: '/service/express' },
             { text: 'Koa 入门', link: '/service/koa' },
             { text: 'Egg.js 入门', link: '/service/egg' },
-            { text: 'NestJS 入门', link: '/service/nest' },
+            { text: 'NestJS 从入门到放弃', link: '/service/nest' },
+            { text: 'Spring Boot 入门', link: '/service/spring-boot' },
+            { text: 'Fastify 入门', link: '/service/fastify' },
           ]
         },
         {
           text: '架构设计',
           items: [
             { text: 'BFF 架构设计', link: '/service/bff' },
+            { text: '权限设计', link: '/service/permission-design' },
             { text: 'GraphQL 入门', link: '/service/graphql' },
             { text: 'Serverless 入门', link: '/service/serverless' },
           ]
@@ -381,6 +412,7 @@ export default defineConfig({
           items: [
             { text: 'Docker 入门', link: '/service/docker' },
             { text: '后端测试实践', link: '/service/backend-testing' },
+            { text: 'Linux 常用命令', link: '/service/linux-basics' },
           ]
         }
       ],
@@ -449,6 +481,15 @@ export default defineConfig({
           items: [
             { text: '蛙泳入门：从零开始', link: '/sports/breaststroke-for-beginners' },
           ]
+        },
+        {
+          text: '乒乓球',
+          items: [
+            { text: '专业术语入门', link: '/sports/table-tennis-glossary' },
+            { text: '胶皮选择指南', link: '/sports/table-tennis-rubber' },
+            { text: '底板选择指南', link: '/sports/table-tennis-blade' },
+            { text: '搭配与保养指南', link: '/sports/table-tennis-racket-setup' },
+          ]
         }
       ],
 
@@ -466,6 +507,8 @@ export default defineConfig({
           text: '个人记录',
           items: [
             { text: '自研模板编辑器', link: '/misc/template-editor' },
+            { text: '架构叙事：客服平台', link: '/misc/arch-narrative-customer-platform' },
+            { text: '架构叙事：SaaS 与 AI 工程化', link: '/misc/arch-narrative-saas-ai' },
           ]
         }
       ],
@@ -488,6 +531,8 @@ export default defineConfig({
             { text: 'Function Calling 与工具调用', link: '/ai-agent/function-calling' },
             { text: 'AI 应用架构模式', link: '/ai-agent/app-architecture' },
             { text: 'AI 应用工程化实践', link: '/ai-agent/app-engineering' },
+            { text: 'Python 基础语法速成', link: '/ai-agent/python-basics' },
+            { text: 'Python AI 生态入门', link: '/ai-agent/python-ai-ecosystem' },
           ]
         },
         {
@@ -517,12 +562,14 @@ export default defineConfig({
             { text: '最佳实践', link: '/ai-agent/harness-engineering/best-practices' },
             { text: '质量控制对比', link: '/ai-agent/harness-engineering/quality-control' },
             { text: 'dev-agent-harness 项目介绍', link: '/ai-agent/harness-engineering/dev-agent-harness' },
+            { text: '引入 Function Calling 计划', link: '/ai-agent/harness-engineering/function-calling-upgrade' },
           ]
         },
         {
           text: '案例研究',
           items: [
             { text: 'Qoder 优化实践', link: '/ai-agent/case-studies/qoder' },
+            { text: 'DeepSeek Harness 案例研究', link: '/ai-agent/case-studies/deepseek-harness' },
           ]
         }
       ]

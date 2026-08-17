@@ -1024,7 +1024,7 @@ pnpm rag:index
 pnpm dev
 ```
 
-访问 http://localhost:5173，右下角 AI 助手按钮即可使用。
+访问 `http://localhost:5173`，右下角 AI 助手按钮即可使用。
 
 ---
 

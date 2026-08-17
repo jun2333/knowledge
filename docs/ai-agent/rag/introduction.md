@@ -702,4 +702,4 @@ RAG的核心价值:
 3. ✅ 学习进阶技巧(metadata filtering, re-ranking)
 4. ✅ 应用到实际项目中
 
-下一步: 学习 [LangChain实战](./langchain-tutorial.md),用代码实现RAG系统。
+下一步: 学习 [知识库实战](./knowledge-base.md),用代码实现RAG系统。

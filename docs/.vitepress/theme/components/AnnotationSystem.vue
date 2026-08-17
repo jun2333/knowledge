@@ -226,6 +226,8 @@ const selectedTextSnapshot = ref('')
 
 // 计算属性
 const currentPageUrl = computed(() => {
+  // SSR 构建阶段没有 window，返回 path 即可
+  if (typeof window === 'undefined') return route.fullPath || ''
   // 使用 route.fullPath 确保响应式更新
   const baseUrl = window.location.origin
   const fullPath = route.fullPath || window.location.pathname

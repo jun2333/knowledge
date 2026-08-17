@@ -7,10 +7,10 @@
 ## 📐 布局类型
 
 ### 经典布局
-- [九宫格布局](/css/nine-grid) - Grid 实现
-- [两栏布局](/css/two-column) - float / flex / grid
-- [三栏布局](/css/three-column) - 圣杯布局、双飞翼布局
-- [水平垂直居中](/css/center) - 多种方案对比
+- 九宫格布局 - Grid 实现
+- [两栏布局](/css/layout-best-practices) - float / flex / grid
+- [三栏布局](/css/layout-best-practices) - 圣杯布局、双飞翼布局
+- [水平垂直居中](/css/layout-best-practices) - 多种方案对比
 
 ### 核心概念
 - [BFC 概念](/css/bfc) - 块级格式化上下文

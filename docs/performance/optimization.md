@@ -29,10 +29,10 @@
 
 ## 🎯 实战项目
 
-- [⭐⭐ 大文件上传](/performance/upload-project) - Vue2 + Node.js 完整实现
-- [等高虚拟列表](/performance/virtual-list-fixed)
-- [不等高虚拟列表](/performance/virtual-list-dynamic)
-- [瀑布流布局](/performance/waterfall)
+- [⭐⭐ 大文件上传](/performance/upload-idea) - Vue2 + Node.js 完整实现
+- [等高虚拟列表](/performance/virtual-list)
+- [不等高虚拟列表](/performance/virtual-list)
+- 瀑布流布局
 
 ---
 

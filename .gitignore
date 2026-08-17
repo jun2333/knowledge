@@ -59,3 +59,6 @@ mermaid-*.png
 
 # Playwright MCP debug artifacts
 .playwright-mcp/
+
+# DSH vision toolkit local artifacts
+.dsh-vision-toolkit/

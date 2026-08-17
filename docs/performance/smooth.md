@@ -92,27 +92,89 @@ JavaScript → Style → Layout → Paint → Composite
 - 优先使用类选择器
 - 避免通配符选择器
 
-### 2. 避免布局抖动（Layout Thrashing）
+### 2. 避免重排（Layout）
 
-布局抖动：在 JS 中交替读写 DOM 几何属性，导致多次 Layout。
+重排（Reflow/Layout）：几何属性（宽高、边距、位置）变化时，浏览器重新计算元素的几何信息。重排会波及整棵布局树，是渲染流水线中最贵的步骤之一。
+
+**常见触发重排的属性**：
+- 读：`offsetWidth`、`offsetHeight`、`scrollTop`、`getBoundingClientRect()`、`getComputedStyle()`
+- 写：`width`、`height`、`margin`、`padding`、`display`、`position`、字体大小等几何属性
+
+**避免重排的四个核心措施**：
+
+#### ① 读写分离，避免强制同步布局
+
+浏览器是**懒执行布局**的：改了样式不会立刻重排，而是攒到当前任务结束统一执行。但如果**改完立刻读**布局属性，浏览器为了返回准确值，必须当场强制同步布局（Forced Synchronous Layout / 布局抖动）。
 
 ```javascript
-// ❌ 布局抖动：读写交替
-elements.forEach(el => {
-  const width = el.offsetWidth;  // 读（触发 Layout）
-  el.style.width = width + 10 + 'px';  // 写（触发 Layout）
-});
+// ❌ 布局抖动：写 → 读交替，每次读都强制同步布局（1000 次重排）
+for (let i = 0; i < 1000; i++) {
+  element.style.width = i + 'px';
+  const height = element.offsetHeight;  // 读触发强制布局
+}
 
-// ✅ 批量读，批量写
-const widths = elements.map(el => el.offsetWidth);  // 批量读
+// ✅ 批量读，批量写（布局只发生 2 次）
+const widths = elements.map(el => el.offsetWidth);  // 先统一读
 elements.forEach((el, i) => {
-  el.style.width = widths[i] + 10 + 'px';  // 批量写
+  el.style.width = widths[i] + 10 + 'px';  // 再统一写
 });
 ```
 
-**常见触发 Layout 的属性**：
-- 读：`offsetWidth`、`offsetHeight`、`scrollTop`、`getComputedStyle()`
-- 写：`width`、`height`、`margin`、`padding`
+#### ② 批量修改 className，避免逐条改 style
+
+逐条修改 `style` 每条都触发样式计算与布局；改用 `className` 一次性切换，浏览器只计算一次。
+
+```javascript
+// ❌ 每条都触发 Style 计算
+element.style.width = '100px';
+element.style.height = '50px';
+element.style.margin = '10px';
+
+// ✅ 一次类切换，只触发一次
+element.className = 'expanded';
+```
+
+```css
+.expanded {
+  width: 100px;
+  height: 50px;
+  margin: 10px;
+}
+```
+
+#### ③ documentFragment 离屏批量构建
+
+`documentFragment` 是不在文档树中的虚拟容器，其子节点不参与渲染；先把所有节点挂进 fragment，最后一次性提交到 DOM，只触发一次布局。
+
+```javascript
+// ❌ 每 append 一个节点都触发一次布局
+for (let i = 0; i < 1000; i++) {
+  document.body.appendChild(createItem(i));
+}
+
+// ✅ 先离屏构建，一次性提交
+const fragment = document.createDocumentFragment();
+for (let i = 0; i < 1000; i++) {
+  fragment.appendChild(createItem(i));
+}
+document.body.appendChild(fragment);  // 只触发一次布局
+```
+
+#### ④ display: none 脱离渲染，改完再显示
+
+`display: none` 的元素不在渲染树中，对它做任何样式修改都不会触发布局；改完再显示，把 N 次布局合并成 1 次。
+
+```javascript
+const list = document.getElementById('list');
+list.style.display = 'none';   // 脱离渲染
+// ... 批量修改内容、样式 ...
+list.style.display = 'block';  // 重新渲染（一次布局）
+```
+
+**补充技巧**：
+- 动画元素用 `transform` / `opacity`（只走合成，不触发重排）
+- 频繁修改的局部区域设为 `position: absolute` 脱离文档流，缩小重排波及范围
+- 避免 `table` 布局（表格重排成本远高于块级元素）
 
 ### 3. 合成代替绘制
 
@@ -181,7 +243,7 @@ self.onmessage = (e) => {
 | 优化 | 效果 |
 |------|------|
 | 高性能 CSS 选择器 | 加速 Style 计算 |
-| 避免布局抖动 | 减少 Layout 次数 |
+| 避免重排 | 读写分离 / fragment / display:none，减少 Layout 次数 |
 | 合成代替绘制 | 跳过 Paint，只做 Composite |
 | rAF 代替 setInterval | 避免掉帧 |
 | Web Worker / Time Slicing | 避免 Long Task 阻塞交互 |

@@ -209,6 +209,93 @@ for (const block of response.content) {
 }
 ```
 
+## MCP：Function Calling 的标准分发协议
+
+上面两种方式（OpenAI Function Calling、Anthropic Tool Use）都是**直接调用各家 LLM API**，工具定义格式、调用流程都和具体厂商绑定。如果想把同一批工具在多个 AI 应用（CLI、IDE 插件、Web 应用）之间复用，每个应用都要写一遍对接代码——这就是 MCP 要解决的问题。
+
+**MCP（Model Context Protocol）是工具分发协议，不是新的 function calling 机制**：
+
+- Function Calling 是**机制**：LLM API 层的 `tools` 参数 + `tool_calls` 响应，负责"让 LLM 决定调用哪个工具、填什么参数"
+- MCP 是**分发协议**：标准化工具的暴露、发现和调用，让任意宿主（Claude Code、QoderCLI、自研应用）都能用同一套协议接同一批工具
+
+宿主启动时会从 MCP server 拉取工具定义，**转成自家 LLM API 的 `tools` 参数格式**注入进去。对 LLM 来说毫无区别——它看到的还是普通的 function calling。
+
+### 最小 MCP server 示例
+
+```javascript
+// verify-mcp-server.js
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+
+const server = new McpServer({ name: 'harness-tools', version: '0.1.0' })
+
+server.registerTool('verify', {
+  title: 'verify',
+  description: '执行验证命令并返回真实 exit code。宣称测试通过前必须调用。',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      commands: { type: 'array', items: { type: 'string' } },
+      phase: { type: 'string', enum: ['testing', 'reviewing'] },
+    },
+    required: ['commands'],
+  },
+}, async (args) => {
+  const results = runVerification(args.commands)
+  return { content: [{ type: 'text', text: JSON.stringify(results) }] }
+})
+
+const transport = new StdioServerTransport()
+await server.connect(transport)
+```
+
+注意 `inputSchema` 和 OpenAI 的 `parameters`、Anthropic 的 `input_schema` 是**同一套 JSON Schema 规范**，只是字段名不同。
+
+### 注册到 AI 应用
+
+以 QoderCLI 为例，在 `settings.json` 中注册：
+
+```json
+{
+  "mcpServers": {
+    "harness": {
+      "command": "node",
+      "args": [".harness/mcp/verify-server.js"]
+    }
+  }
+}
+```
+
+Claude Code 则用命令行注册：`claude mcp add harness node .harness/mcp/verify-server.js`。
+
+### 调用闭环
+
+```
+宿主应用                 MCP server                LLM API
+  │                         │                        │
+  ├─ tools/list ──────────► │                        │
+  │ ◄─── 工具定义 ─────────┤                        │
+  │                         │                        │
+  ├─ 转成 tools 参数 ──────┼───────────────────────►│
+  │                         │                        │
+  │ ◄───────── tool_call ──┼────────────────────────┤
+  ├─ tools/call ──────────► │                        │
+  │ ◄─── 执行结果 ─────────┤                        │
+  ├─ 作为 role:'tool' ─────┼───────────────────────►│
+```
+
+### 三种实现对比
+
+| 维度 | OpenAI Function Calling | Anthropic Tool Use | MCP |
+|------|------------------------|--------------------|-----|
+| 工具定义字段 | `parameters` | `input_schema` | `inputSchema`（同一套 JSON Schema） |
+| 依赖 | 绑定 OpenAI API | 绑定 Anthropic API | 协议中立，任何宿主 + 任何 LLM |
+| 传输方式 | HTTP API 直接调用 | HTTP API 直接调用 | stdio（本地进程）/ SSE、HTTP（远程） |
+| 工具复用 | 仅当前应用 | 仅当前应用 | 一次实现，跨应用复用 |
+| 典型场景 | 后端脚本直接调 LLM | 后端脚本直接调 LLM | CLI / IDE 插件等宿主工具 |
+
+**怎么选**：自己写代码调 LLM API（如自动化脚本）时，直接用 OpenAI/Anthropic 原生的 function calling 就够了；工具要跨多个 AI 应用复用时，才值得包装成 MCP server。
+
 ## 多轮工具调用
 
 LLM 可能需要在一次对话中调用多个工具，甚至基于前一个工具的结果决定下一步。
@@ -379,6 +466,41 @@ const tools = [
 // 2. 拿到邮箱列表后 → 逐个调用 sendEmail
 // 3. 生成总结回复
 ```
+
+**tools 是"说明书"，实现是"员工"**：`tools` 数组里的 `parameters` 就是 **JSON Schema**（子集）——只用来描述"这个工具收什么参数、参数长什么样"，LLM 按它生成参数的 JSON；真正干活的是应用层写的普通函数，靠 `name` 一一对应：
+
+```javascript
+// 工具的实际实现：key 必须与 tools 里的 name 完全一致
+const toolImplementations = {
+  // queryUsers 对应 tools 里的 name: 'queryUsers'
+  queryUsers: async ({ role, status, limit = 20 }) => {
+    // LLM 生成的参数不可信：必须用参数化查询，防 SQL 注入
+    const conditions = []
+    const params = []
+    if (role) { conditions.push('role = ?'); params.push(role) }
+    if (status) { conditions.push('status = ?'); params.push(status) }
+    params.push(limit)
+    const sql = `SELECT id, email, name FROM users
+      WHERE ${conditions.join(' AND ') || '1=1'} LIMIT ?`
+    const rows = await db.query(sql, params)
+    return JSON.stringify(rows)   // 结果必须是字符串，回传给 LLM
+  },
+
+  sendEmail: async ({ to, subject, body }) => {
+    await emailService.send({ to, subject, body })
+    return JSON.stringify({ ok: true, to })
+  },
+}
+
+// 完整调用：LLM 返回 tool_call → 按 name 找到函数 → 传参执行 → 结果回传
+async function runToolCall(toolCall) {
+  const fn = toolImplementations[toolCall.function.name]
+  const args = JSON.parse(toolCall.function.arguments)  // arguments 是 JSON 字符串
+  return fn(args)
+}
+```
+
+**对应关系一句话**：JSON Schema 决定"LLM 能传什么"，函数实现决定"收到参数后干什么"，桥梁就是 `name`。
 
 ## Function Calling vs RAG
 

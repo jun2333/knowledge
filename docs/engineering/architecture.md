@@ -17,24 +17,24 @@
 ## 🔧 工具链
 
 ### Webpack
-- [Webpack 原理](/engineering/webpack)
-- [Webpack 插件开发](/engineering/webpack-plugin)
-- [ServiceWorker 集成](/engineering/serviceworker)
+- [Webpack 原理](/engineering/build-optimization)
+- Webpack 插件开发
+- [ServiceWorker 集成](/engineering/pwa)
 
 ### Vite
-- [Vite 原理](/engineering/vite) - ESBuild + Rollup
+- [Vite 原理](/engineering/build-optimization) - ESBuild + Rollup
 
 ---
 
 ## 📦 Node.js
 
-- [Node 模块机制](/engineering/node-module) - CommonJS vs ESM
-- [Node 内存管理](/engineering/node-memory)
-- [多进程设计](/engineering/node-process) - child_process, cluster
-- [异步 IO](/engineering/node-async-io) - libuv
+- [Node 模块机制](/books/node-module) - CommonJS vs ESM
+- [Node 内存管理](/books/node-memory)
+- [多进程设计](/books/node-process) - child_process, cluster
+- [异步 IO](/books/node-async-io) - libuv
 
 ---
 
 ## 🔗 相关文档
 
-- [SDK 设计](/engineering/sdk)
+- SDK 设计

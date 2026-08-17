@@ -676,7 +676,7 @@ class UsageTracker {
 
 ## 🔗 延伸阅读
 
-- [Spec-First 核心思想](/ai-agent/spec-first/overview) - Spec-First 的完整理念
+- [Spec-First 核心思想](/ai-agent/spec-first/guide) - Spec-First 的完整理念
 - [Harness Engineering 核心思想](/ai-agent/harness-engineering/core-concepts) - 六层模型详解
 - [最佳实践](/ai-agent/harness-engineering/best-practices) - 通用 AI 工程实践
 
@@ -697,4 +697,4 @@ Qoder 代表了 AI 开发的下一个阶段:
 
 无论你是否使用 Qoder,这些思想都值得借鉴。
 
-**下一步**: 结合 [Spec-First](/ai-agent/spec-first/overview) 和 [Harness Engineering](/ai-agent/harness-engineering/core-concepts) 的理念,在你自己的项目中实践 AI Harness Engineering。
+**下一步**: 结合 [Spec-First](/ai-agent/spec-first/guide) 和 [Harness Engineering](/ai-agent/harness-engineering/core-concepts) 的理念,在你自己的项目中实践 AI Harness Engineering。

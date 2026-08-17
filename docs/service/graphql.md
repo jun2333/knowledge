@@ -259,6 +259,20 @@ type Mutation {
 
 ## Resolver 详解
 
+**先澄清一个误区：GraphQL 不直接查数据库。** GraphQL 只是"查询语言 + 执行引擎"，数据从哪来完全由 resolver 决定——每个字段背后都有一个 resolver 函数，查数据库的代码写在 resolver 里：
+
+```
+客户端 Query → GraphQL(解析/校验) → 调用 resolver → resolver 内部取数
+                                              ├─ 查数据库(SQL/ORM)
+                                              ├─ 调 HTTP 微服务
+                                              ├─ 读缓存
+                                              └─ 甚至直接返回硬编码数据
+```
+
+类比：GraphQL 是菜单，resolver 是后厨——菜单只规定"有什么菜、什么格式"（Schema），后厨决定菜从哪来。所以 resolver 可以聚合任意数据源（先查 DB 再调微服务拼一起），性能和 GraphQL 无关、只和 resolver 写法有关（N+1、慢查询都是 resolver 里的查询代码导致的），GraphQL 也不生成 SQL——它不是 ORM，数据层的优化是你的活。反过来，resolver 里全写假数据，GraphQL 服务不连任何数据库也能跑——这就是 GraphQL 与数据源解耦的最好证明。
+
+**resolver 都要自己写吗？** 分情况——**顶层字段**（`Query.user`）必须写，不写 GraphQL 不知道数据从哪来；**关联字段**（`User.orders`）必须写，要自己查；**计算字段**（`fullName`）必须写，要自己拼。**可以不写的**是"默认 resolver"：字段名和返回对象里的属性名一致时，GraphQL 自动取属性。本质认知：resolver 的"自己写逻辑"和 REST 的 handler 写业务逻辑是一回事，只是粒度从"接口级"细到"字段级"——GraphQL 只做**分发**（哪个字段调哪个函数）和**组装**（按查询结构拼响应），取数、关联、计算、鉴权全是你的代码。真正"自动生成"的是 ORM（TypeORM/Prisma），它们在 resolver 里被调用，生成 SQL 的是它们，不是 GraphQL。
+
 ```javascript
 const resolvers = {
   Query: {
@@ -289,6 +303,8 @@ const resolvers = {
 ```
 
 ## 前端集成
+
+**先搞清 uri 哪来的**：`uri` 是 **GraphQL 后端服务的地址**——就是上面"快速开始"里自己搭的那个服务（`app.listen(4000)` + `app.use('/graphql')`，两者完全对应）。可以是自己团队维护的 GraphQL 服务（Apollo Server / express-graphql），也可以是第三方开放的（如 GitHub、Shopify 的公共 GraphQL API）。类比 REST：uri 相当于 `axios` 的 baseURL——都是后端服务地址，区别只是 GraphQL 所有请求打同一个 `/graphql` 端点（单一端点），REST 是每个资源一个 URL。注意 Apollo 有两个产品：**Apollo Client**（前端发请求的库，就是这段代码）和 **Apollo Server**（后端搭服务的库），uri 是客户端连服务器的地址。
 
 ### Apollo Client
 

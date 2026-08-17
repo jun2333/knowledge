@@ -358,7 +358,7 @@ const addItem = () => {
 
 - [Advanced Prompt Engineering](./advanced.md) - 高级技巧
 - [Harness Engineering](../harness-engineering/core-concepts.md) - 超越Prompt Engineering
-- [Spec-First Overview](../spec-first/overview.md) - Spec-First方法论
+- [Spec-First Overview](/ai-agent/spec-first/guide) - Spec-First方法论
 
 ---
 

@@ -100,6 +100,16 @@ graph LR
 | **鉴权** | 统一处理登录态 |
 | **限流** | 保护后端服务 |
 
+**协议转换用在什么场景**：微服务内部通信为了性能，常用二进制协议（**gRPC**、**Thrift**），但浏览器里的 JS 只能直接消费 **HTTP + JSON**——fetch 发不了 gRPC 请求（基于 HTTP/2 二进制帧 + protobuf 编码），Thrift 的二进制流更是没法解析。所以 BFF 是"翻译官"：
+
+```
+浏览器(HTTP + JSON) ←→ BFF(翻译) ←→ 微服务(gRPC/Thrift)
+```
+
+典型场景：① 大厂微服务体系，订单/商品服务都是 gRPC，BFF 用 gRPC 客户端调内部服务（二进制快），聚合成 HTTP+JSON 返回浏览器；② 异构老系统（Java Thrift 服务），BFF 做翻译，老系统不用改；③ 内部协议不对外暴露——内部随便换协议，前端无感知。
+
+为什么不让微服务自己改协议：内部协议是性能诉求（二进制快），为外部兼容改成 JSON 会拖慢内部调用；放在 BFF 转换，两边都不动。
+
 ## 技术选型
 
 | 方案 | 适用场景 | 特点 |
@@ -257,6 +267,125 @@ router.get('/api/products', async (ctx) => {
   ctx.body = products;
 });
 ```
+
+## 可靠性设计：BFF 怎么保护自己
+
+BFF 的可靠性问题是它自己"招来"的——**聚合放大**：BFF 收到 1 个前端请求，可能向后端发出 3~5 个请求。恶意用户刷 BFF，等于用 1 份流量放大成 N 份打到后端。所以 BFF 的限流不只是保护自己，更是**后端的第二道保险**（第一道是网关）。
+
+### 分层防护：谁保护 BFF
+
+BFF 不是没人保护的孤儿，它站在分层防护的中间——而且越靠外越"粗"，越靠内越"细"：
+
+```mermaid
+graph TB
+    A[客户端] --> B[CDN / 云 WAF]
+    B -->|抗 DDoS、CC 攻击| C[API 网关 Nginx/Kong]
+    C -->|全局 QPS 限流、IP 黑名单| D[BFF]
+    D -->|用户级限流、熔断、超时| E[微服务]
+    E -->|自身校验 + 服务网格限流| F[数据库]
+```
+
+| 层 | 防护手段 | 粒度 |
+|----|---------|------|
+| **CDN / 云 WAF** | 抗 DDoS、CC 攻击 | 流量级 |
+| **API 网关** | 全局 QPS 限流、IP 黑名单 | IP 级 |
+| **BFF 自身** | 用户级限流、熔断、超时、降级 | **用户级** |
+| **微服务** | 参数校验、自身限流 | 接口级 |
+
+**为什么 BFF 的限流比网关更关键**：网关按 IP 限，攻击者换 IP 就绕过；BFF 按用户（token）限，换 IP 也没用——所以"保护后端"这个职责最终落在 BFF 的用户级限流上。
+
+**按用户限流示例**（Koa 中间件 + Redis 固定窗口）：
+
+```javascript
+// 按用户限流:固定窗口计数,Redis 保证多实例共享计数
+const redis = require('redis')
+const client = redis.createClient()
+
+function rateLimitByUser({ limit = 100, windowSec = 60 } = {}) {
+  return async (ctx, next) => {
+    // 用户标识:登录用户用 userId,匿名用 IP
+    // 注意:不能用 token 字符串做 key——token 过期重签后 key 就变了,等于绕过限流
+    const userId = ctx.state.user?.id || ctx.ip
+    const windowKey = Math.floor(Date.now() / 1000 / windowSec)
+    const key = `rate:${userId}:${windowKey}`
+
+    // INCR 计数,首次设置过期时间:原子操作,窗口到期 key 自动消失
+    const count = await client.incr(key)
+    if (count === 1) await client.expire(key, windowSec)
+
+    if (count > limit) {
+      ctx.status = 429
+      ctx.body = { message: '请求太频繁,稍后再试' }
+      return
+    }
+    await next()
+  }
+}
+
+// 全局限流 + 敏感接口单独收紧(比如结算接口)
+app.use(rateLimitByUser({ limit: 100, windowSec: 60 }))
+router.post('/api/checkout', rateLimitByUser({ limit: 5, windowSec: 10 }), handler)
+```
+
+**关键设计点**：
+- **key 格式** `rate:{userId}:{窗口号}`——窗口号 = `now / 窗口秒数` 取整：`Date.now()` 毫秒 → `/1000` 转秒 → `/windowSec` 算出"第几个窗口" → `floor` 取整。例：windowSec=60 时，14:00:00~14:00:59 都算第 840 个窗口（同一个 key，共享计数），14:01:00 起变 841（新 key，计数清零）。窗口到期 key 自动过期，不用手动清
+- **为什么用 Redis**：BFF 多实例部署，进程内计数器各算各的，限 100 的接口 5 个实例等于能打 500；Redis 集中计数，多实例共享一个计数
+- **INCR 为什么数不错**：Redis 单线程执行命令，一条命令从读值、加 1、写回全程不被插队——并发 100 个请求 INCR 也是排队逐个执行，各自拿到正确的递增值。自己写 `get → count++ → set` 在高并发下会丢计数（两个请求同时读到 99，各写回 100，只 +1），限流形同虚设。数据在内存里，单条命令微秒级，扛得住高频
+- **key 必须用 userId，不能用 token 字符串**：token 过期重签后字符串就变了，key 变新 → 计数清零 → 攻击者刷新 token 就绕过限流
+- **为什么放在 BFF**：网关只能按 IP（换 IP 绕过），BFF 能解析 token 拿到 userId——身份是 BFF 的独特视角
+
+**限流算法怎么选**：
+
+| 算法 | 思路 | 特点 |
+|------|------|------|
+| **固定窗口** | 每 N 秒一个窗口计数 | 最简单，窗口交界处可双倍突发 |
+| **滑动窗口** | 精确记录最近 N 秒的请求 | 精确，成本高 |
+| **令牌桶** | 按速率放令牌，桶容量 = 允许的突发 | 允许突发，最常用 |
+
+生产环境直接上 `rate-limiter-flexible` 这类现成库，别手写——窗口算法、时钟、原子性都有坑。
+
+### BFF 的可靠性三纪律
+
+| 纪律 | 解决什么问题 | 实现 |
+|------|-------------|------|
+| **超时必须有** | 下游慢 → 占住事件循环 → 拖死所有请求（比被打死更常见） | 每次微服务调用设超时（见最佳实践） |
+| **熔断必须有** | 下游挂了 → 快速失败而不是无限重试 → 把故障隔离在 BFF 层 | 连续失败 N 次后直接短路，过段时间再试探 |
+| **限流必须有** | 聚合放大 → 一个人刷爆后端 | 按用户/接口限流，超限直接 429 |
+
+**熔断示例**（简单实现）：
+
+```javascript
+// 熔断器:连续失败 5 次进入 OPEN,直接拒绝 30 秒,再放一个请求试探
+const circuit = {
+  failures: 0,
+  state: 'CLOSED',   // CLOSED 正常 / OPEN 熔断 / HALF_OPEN 试探
+  openUntil: 0,
+  threshold: 5,
+  timeout: 30000,
+
+  async call(fn) {
+    if (this.state === 'OPEN' && Date.now() < this.openUntil) {
+      throw new Error('circuit open')
+    }
+    try {
+      const result = await fn()
+      this.failures = 0
+      return result
+    } catch (err) {
+      this.failures++
+      if (this.failures >= this.threshold) {
+        this.state = 'OPEN'
+        this.openUntil = Date.now() + this.timeout
+      }
+      throw err
+    }
+  }
+}
+```
+
+### 最大的底气：无状态
+
+BFF 只做聚合、裁剪、转换，不碰数据库、没有本地状态——所以它是所有服务里**最好扩容**的：扛不住就加 Pod，水平扩展没有状态负担。有状态的后端（数据库连接池、本地缓存）扩容反而麻烦。这也是"薄 BFF"设计原则的可靠性红利：代码少 = 攻击面小 = 被攻破也没数据可偷。
 
 ## 最佳实践
 

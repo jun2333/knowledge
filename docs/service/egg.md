@@ -5,7 +5,7 @@ date: 2023-03-08
 
 # Egg.js 入门
 
-Egg.js 是阿里开源的企业级 Node.js 框架，基于 Koa，提供约定优于配置的开发体验。
+Egg.js 是阿里开源的企业级 Node.js 框架，基于 Koa（Egg 1.x 基于 Koa 1，2.x/3.x 基于 Koa 2），提供约定优于配置的开发体验。注意 Koa 本身已进入**维护模式**（功能冻结，只修安全与 bug，不再加新特性）——但 Egg 在这之上持续迭代，中间件与 Koa 完全兼容，底座停滞不影响 Egg 使用。
 
 ## 核心特点
 
@@ -21,7 +21,9 @@ Egg.js 是阿里开源的企业级 Node.js 框架，基于 Koa，提供约定优
 ### 安装
 
 ```bash
-npm init egg --type=simple
+npm init egg --type=simple   # simple 是最小骨架（一个 controller + router）
+                             # 其他模板：sequelize（带 ORM+MySQL）、ts（TypeScript）、
+                             # mongoose（MongoDB）、microservice（微服务）、plugin/framework
 cd my-egg-app
 npm install
 npm run dev
@@ -114,7 +116,7 @@ module.exports = UserController;
 
 ## Service 层
 
-Service 层封装业务逻辑，可被 Controller 和其他 Service 调用。
+Service 层封装业务逻辑，可被 Controller 和其他 Service 调用。下面是假数据演示（真实项目在这里查数据库，用法见下文「数据库」章节）：
 
 ```javascript
 // app/service/user.js
@@ -122,7 +124,7 @@ const Service = require('egg').Service;
 
 class UserService extends Service {
   async findAll() {
-    // 实际项目中这里查询数据库
+    // 实际项目中这里查询数据库（见「数据库」章节）
     return [
       { id: 1, name: 'Alice', email: 'alice@example.com' },
       { id: 2, name: 'Bob', email: 'bob@example.com' }
@@ -135,13 +137,126 @@ class UserService extends Service {
   }
 
   async create(data) {
-    // 实际项目中这里插入数据库
+    // 实际项目中这里插入数据库（见「数据库」章节）
     return { id: Date.now(), ...data };
   }
 }
 
 module.exports = UserService;
 ```
+
+## 数据库（egg-mysql）
+
+Egg 官方推荐数据库方案是插件 `egg-mysql`（阿里基于 mysql 库封装）。**启用和连接配置见上文插件机制章节**（`plugin.js` 里 `mysql: { enable: true }` + `config.default.js` 里 `config.mysql` 连接信息），配好后直接在 Service 里通过 `this.app.mysql` 使用。
+
+### CRUD
+
+| Service 方法 | 对应的 SQL |
+|---|---|
+| `this.app.mysql.get('users', { id })` | `SELECT * FROM users WHERE id = ? LIMIT 1`（查不到返回 null） |
+| `this.app.mysql.select('users', { where, orders, limit, offset })` | `SELECT * FROM users WHERE ... ORDER BY ... LIMIT ...` |
+| `this.app.mysql.insert('users', data)` | `INSERT INTO users ...` |
+| `this.app.mysql.update('users', data, { where })` | `UPDATE users SET ... WHERE ...` |
+| `this.app.mysql.delete('users', { id })` | `DELETE FROM users WHERE id = ?` |
+
+```javascript
+// app/service/user.js —— 真实 CRUD
+class UserService extends Service {
+  // 查列表
+  async findAll() {
+    return this.app.mysql.select('users');   // SELECT * FROM users
+  }
+
+  // 查单条
+  async findById(id) {
+    return this.app.mysql.get('users', { id });   // WHERE id = ?
+  }
+
+  // 条件查询 + 分页排序
+  async findByAge(age, page = 0) {
+    return this.app.mysql.select('users', {
+      where: { age },            // WHERE age = ?
+      orders: [['id', 'desc']],  // ORDER BY id DESC
+      limit: 10,
+      offset: page * 10,
+    });
+  }
+
+  // 新增
+  async create(data) {
+    const result = await this.app.mysql.insert('users', data);
+    return { id: result.insertId, ...data };   // insertId 是自增主键
+  }
+
+  // 更新
+  async update(id, data) {
+    const result = await this.app.mysql.update('users', data, { where: { id } });
+    return result.affectedRows > 0;   // 是否真的有行被改
+  }
+
+  // 删除
+  async destroy(id) {
+    const result = await this.app.mysql.delete('users', { id });
+    return result.affectedRows > 0;
+  }
+}
+```
+
+### 防注入
+
+复杂 SQL 用 `query()` + `?` 占位符，**严禁字符串拼接**：
+
+```javascript
+async search(keyword) {
+  // ✅ 参数化：值由框架转义
+  return this.app.mysql.query('SELECT * FROM users WHERE name LIKE ?', [`%${keyword}%`]);
+  // ❌ 不要：`SELECT * FROM users WHERE name LIKE '%${keyword}%'` 会被注入
+}
+```
+
+### 事务
+
+多个操作要么全成功要么全失败：
+
+```javascript
+async transfer(fromId, toId, amount) {
+  const conn = await this.app.mysql.beginTransaction();
+  try {
+    await conn.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, fromId]);
+    await conn.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, toId]);
+    await conn.commit();       // 全部成功才提交
+  } catch (err) {
+    await conn.rollback();     // 任何一步失败，全部回滚
+    throw err;
+  }
+}
+```
+
+### egg-sequelize（ORM 方式）
+
+`egg-mysql` 是"半 ORM"：方法封装 SQL，但表结构自己管。想用模型化实体（类似 Nest + TypeORM 的体验），用 `egg-sequelize` 插件：
+
+```javascript
+// config/plugin.js
+sequelize: { enable: true, package: 'egg-sequelize' }
+
+// app/model/user.js —— 模型定义（对应一张表）
+module.exports = app => {
+  const { STRING, INTEGER } = app.Sequelize;
+  const User = app.model.define('users', {
+    id: { type: INTEGER, primaryKey: true, autoIncrement: true },
+    name: STRING(50),
+    age: INTEGER,
+  });
+  return User;
+};
+
+// service 里使用
+const { Op } = this.app.Sequelize;
+const users = await this.ctx.model.User.findAll({ where: { age: { [Op.gt]: 18 } } });
+```
+
+**选型**：项目简单、SQL 直观 → `egg-mysql`；项目大、表多、要模型约束 → `egg-sequelize`（和 Nest 用 TypeORM 是同一套思路）。
 
 ## 中间件
 
@@ -302,35 +417,97 @@ module.exports = {
 
 ## 多进程模型
 
+### 为什么要多进程
+
+Node 单线程只能用**一个 CPU 核**——服务器 8 核就浪费 7 核。Egg 用 cluster（集群）模式：**一个 Master 启动多个 Worker 进程**，每个 Worker 是独立的事件循环，**共享同一个端口**，请求由操作系统/Node 集群层分发到不同 Worker，多核资源就都用上了。
+
+### 原理：三层进程
+
 ```mermaid
 graph TB
     subgraph Master
-        M1[Master 进程]
+        M1[Master 进程<br/>不处理业务]
     end
 
     subgraph Agent
-        A1[Agent 进程]
+        A1[Agent 进程<br/>后台任务]
     end
 
     subgraph Workers
-        W1[Worker 1]
-        W2[Worker 2]
-        W3[Worker 3]
-        W4[Worker 4]
+        W1[Worker 1<br/>HTTP 请求]
+        W2[Worker 2<br/>HTTP 请求]
+        W3[Worker 3<br/>HTTP 请求]
     end
 
-    M1 -->|管理| W1
-    M1 -->|管理| W2
-    M1 -->|管理| W3
-    M1 -->|管理| W4
+    M1 -->|启动/监控/重启| W1
+    M1 -->|启动/监控/重启| W2
+    M1 -->|启动/监控/重启| W3
     M1 -->|通信| A1
+    M1 -.IPC 转发.-> W1
+    M1 -.IPC 转发.-> W2
+    M1 -.IPC 转发.-> W3
 ```
 
-| 进程 | 职责 |
-|------|------|
-| **Master** | 进程管理、重启、升级 |
-| **Agent** | 后台任务、定时任务 |
-| **Worker** | 处理 HTTP 请求（默认 CPU 核数个） |
+| 进程 | 数量 | 职责 |
+|------|------|------|
+| **Master** | 1 | 不处理业务：启动 Worker、监控、崩溃自动重启 |
+| **Agent** | 1 | 后台任务：定时任务、公共连接（数据库连接池） |
+| **Worker** | 默认 = CPU 核数 | 处理 HTTP 请求（业务代码跑在这里） |
+
+**三个关键机制**：
+
+1. **端口共享**：多个 Worker 监听同一端口，请求被分发到空闲的 Worker——你的业务代码写在 Worker 里，天然并行处理
+2. **IPC 通信**：Worker 之间**不能直接对话**（不同进程内存隔离），必须通过 Master 转发（`app.messenger`）
+3. **崩溃恢复**：Worker 挂了 Master 立刻拉一个新的；Master 挂了由部署层（PM2/容器）重启整个应用
+
+### 怎么玩
+
+**1. 控制进程数量与端口**：
+
+```javascript
+// config/config.default.js
+config.cluster = {
+  listen: { port: 7001, hostname: '0.0.0.0' },
+  // 不配 worker 数则默认 = CPU 核数；也可用环境变量 EGG_WORKER_COUNT=4 指定
+};
+```
+
+**2. 进程间通信（`app.messenger`）**——例如配置更新后通知所有 Worker 重新加载：
+
+```javascript
+// Agent 或 Master 里广播
+app.messenger.broadcast('config:reload', { version: 2 });
+
+// Worker 里监听（业务代码）
+app.messenger.on('config:reload', data => {
+  // 重新加载配置...
+});
+```
+
+**3. 定时任务类型**（接上文定时任务章节）：
+
+```javascript
+schedule: {
+  interval: '1d',
+  type: 'worker'   // 只在其中一个 Worker 执行（避免所有 Worker 重复执行）
+                   // 'all' = 所有 Worker 都执行；'agent' = 在 Agent 进程执行
+}
+```
+
+**4. 查看当前进程**：
+
+```javascript
+// 业务代码任意位置
+console.log('worker id:', process.env.NODE_APP_INSTANCE, 'pid:', process.pid);
+```
+
+### 多进程的坑
+
+| 坑 | 现象 | 解法 |
+|----|------|------|
+| **内存状态不共享** | session/缓存存在进程内存里，请求被分发到另一个 Worker 就丢了 | 存 Redis / 数据库 |
+| **定时任务重复执行** | 每个 Worker 各跑一遍定时任务 | `type: 'worker'`（只一个执行） |
+| **日志分散** | 每个进程各打各的 | Egg 内置 logger 自动带 pid，统一收集到同一文件 |
 
 ## 与 Koa 对比
 
@@ -346,4 +523,4 @@ graph TB
 **选择建议：**
 - 团队协作、中大型项目 → Egg.js
 - 个人项目、微服务 → Koa
-- 需要 TypeScript → NestJS
+- 需要 TypeScript → NestJS（Egg 也有官方 TS 支持，但属于"后补"——约定式动态加载（`ctx.service.xxx`）依赖 egg-ts-helper 生成类型声明，体验不如 Nest 原生 TS）

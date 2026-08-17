@@ -246,6 +246,21 @@ b.ref = a;  // b 引用 a
 // 即使 a、b 不再使用，引用次数都不为 0，无法回收
 ```
 
+#### V8 内存上限
+
+| 环境 | 堆内存上限 |
+|------|-----------|
+| 64 位浏览器 | 约 1.4 GB |
+| 32 位浏览器 | 约 0.7 GB |
+| Node.js | 默认约 2 GB，可用 `--max-old-space-size` 调大 |
+
+**为什么有上限**：V8 的 GC 是"全停顿"（Stop-The-World）——回收期间主线程冻结。堆越大，单次 GC 耗时越长，页面卡顿越明显，所以用上限换取停顿时间可控。
+
+```typescript
+// Node.js 调大堆内存上限（单位 MB）
+node --max-old-space-size=4096 app.js
+```
+
 ## 内存泄漏常见场景
 
 | 场景 | 说明 | 解决方案 |
@@ -255,6 +270,72 @@ b.ref = a;  // b 引用 a
 | **事件监听** | 未移除的事件监听器 | 组件卸载时 `removeEventListener` |
 | **闭包** | 闭包引用外部变量 | 长生命周期闭包中手动解除引用 |
 | **DOM 引用** | 已删除 DOM 的引用 | 设置为 `null` |
+| **无界缓存** | Map/对象缓存只增不删 | 加淘汰策略（LRU）或改用 WeakMap |
+| **console.log 大对象** | DevTools 持有被打印对象的引用 | 生产环境移除 console 语句 |
+
+## 内存泄漏排查手段
+
+排查思路分三步：**先确认有没有泄漏 → 再定位泄漏对象 → 最后定位分配位置**。
+
+### 第一步：确认是否存在泄漏
+
+**① Chrome 任务管理器（Shift + Esc）**
+
+| 列 | 观察点 |
+|----|--------|
+| **内存占用空间** | 反复执行同一操作后持续增长、不回落 |
+| **JavaScript 内存** | 当前页面 JS 堆占用，只升不降说明有泄漏 |
+
+**② Performance 面板录制内存曲线**
+
+```javascript
+// 在 Console 里反复执行你怀疑泄漏的操作（如开关弹窗 10 次），同时录制
+// 观察 Memory 曲线
+```
+
+**关键认知**（先建立这个判断标准，不然会把正常现象当泄漏）：
+- 曲线呈**锯齿状**（上升后被 GC 拉回）是正常现象
+- 泄漏的特征是**台阶式持续上升**，GC 后也回不到基线
+
+### 第二步：定位泄漏对象（Heap Snapshot 三快照法）
+
+1. 操作前拍一张快照（baseline）
+2. 反复执行疑似泄漏的操作
+3. 操作后再拍一张快照
+4. 在 **Summary** 视图勾选 **Objects allocated between Snapshots 1 and 2**（对比视图）
+5. 按 **Retained Size（保留大小）** 排序，找出新增且被保留的大对象
+6. 点开对象的 **Retainers（持有者）** 展开引用链，看是谁一直引用它——**顺着引用链找到泄漏源头**
+
+常见目标：搜 **Detached** 过滤分离的 DOM 节点
+
+```javascript
+// Detached DOM 节点：节点已从文档移除，但 JS 里仍有引用，无法回收
+let detached = []
+function createAndForget() {
+  const el = document.createElement('div')
+  el.textContent = 'leak'
+  detached.push(el)  // 页面里已没有这个节点，数组却一直持有引用
+}
+```
+
+### 第三步：定位分配位置（Allocation instrumentation on timeline）
+
+快照对比适合找"对象"，但要找"代码位置"用这个：
+
+1. Memory 面板 → **Allocation instrumentation on timeline** → 开始记录
+2. 在页面重复执行泄漏操作
+3. 停止记录，蓝色竖条即分配事件
+4. 筛选**只显示保留的对象**（Retained objects）
+5. 点开对象看 **Allocation Stack（分配栈）**——直接显示是哪个函数创建了它
+
+### 排查工具总结
+
+| 工具 | 用途 |
+|------|------|
+| Chrome 任务管理器（Shift+Esc） | 粗筛：看内存是否持续增长 |
+| Performance 录制 | 看内存曲线趋势，确认泄漏（锯齿正常、台阶上升是泄漏） |
+| Heap Snapshot 对比 | 定位被保留的对象 + Retainers 引用链 |
+| Allocation timeline | 定位分配发生的代码位置 |
 
 ## 最佳实践
 
@@ -284,4 +365,16 @@ useEffect(() => {
   window.addEventListener('click', handler);
   return () => window.removeEventListener('click', handler);
 }, []);
+
+// 5. WeakRef：引用对象但不阻止 GC，deref() 拿不到说明已被回收
+//    场景：需要"取回对象但允许被回收"的缓存（WeakMap 不能遍历，适合做缓存容器）
+const ref = new WeakRef(obj);
+ref.deref();  // 返回 obj，或 undefined（已被回收）
+
+// 6. FinalizationRegistry：对象被 GC 后触发回调（用于清理外部资源）
+const registry = new FinalizationRegistry((heldValue) => {
+  console.log('对象已回收:', heldValue);
+});
+registry.register(obj, '清理标记');
+// 注意：GC 时机不确定，不能依赖它做关键逻辑
 ```

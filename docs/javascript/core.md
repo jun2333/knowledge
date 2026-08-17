@@ -16,15 +16,15 @@ JavaScript 核心知识包含以下几个重要模块:
 ### 2. 高级特性
 - [闭包与作用域](/javascript/closure) - ⭐⭐⭐⭐⭐ 必考
 - [异步编程 (Promise)](/javascript/async) - ⭐⭐⭐⭐⭐ 必考
-- [事件机制](/javascript/event) - ⭐⭐⭐⭐
+- [事件机制](/javascript/event-loop) - ⭐⭐⭐⭐
 
 ### 3. 设计模式
 - [发布订阅模式](/javascript/pubsub) - ⭐⭐⭐⭐
-- [并发控制](/javascript/concurrency) - ⭐⭐⭐
+- 并发控制 - ⭐⭐⭐
 
 ### 4. 实用技巧
-- [节流防抖](/javascript/throttle-debounce) - ⭐⭐⭐⭐
-- [数组扁平化](/javascript/flat) - ⭐⭐⭐
+- [节流防抖](/performance/best-practices) - ⭐⭐⭐⭐
+- [数组扁平化](/javascript/es6) - ⭐⭐⭐
 
 ---
 

@@ -19,7 +19,7 @@
 3. [原型与继承](/javascript/prototype) - ⭐⭐⭐
 
 **第二阶段: DOM 操作**
-4. [事件机制](/javascript/event) - ⭐⭐⭐⭐
+4. [事件机制](/javascript/event-loop) - ⭐⭐⭐⭐
 5. [闭包与作用域](/javascript/closure) - ⭐⭐⭐⭐⭐
 
 **第三阶段: CSS 布局**
@@ -43,7 +43,7 @@
 **第一阶段: 异步编程**
 1. [异步编程 (Promise)](/javascript/async) - ⭐⭐⭐⭐⭐
 2. [手写 Promise](/javascript/async#promise-实现) - ⭐⭐⭐⭐⭐
-3. [事件循环](/browser/event-loop) - ⭐⭐⭐⭐⭐
+3. [事件循环](/javascript/event-loop) - ⭐⭐⭐⭐⭐
 
 **第二阶段: Vue 深度**
 4. [Effect 实现原理](/vue/effect) - ⭐⭐⭐⭐
@@ -59,11 +59,11 @@
 **第四阶段: 浏览器**
 11. [HTTP 协议演进](/browser/http-history) - ⭐⭐⭐⭐
 12. [HTTPS 安全](/browser/https) - ⭐⭐⭐⭐
-13. [存储与缓存](/browser/storage) - ⭐⭐⭐⭐
+13. [存储与缓存](/browser/storage-cache) - ⭐⭐⭐⭐
 
 **第五阶段: 性能优化**
 14. [Web 性能优化](/performance/optimization) - ⭐⭐⭐⭐⭐
-15. [大文件上传项目](/performance/upload-project) - ⭐⭐⭐⭐⭐
+15. [大文件上传项目](/performance/upload-idea) - ⭐⭐⭐⭐⭐
 
 ---
 
@@ -91,18 +91,18 @@
 10. [渲染方式 (CSR/SSR/SSG)](/engineering/rendering) - ⭐⭐⭐⭐⭐
 
 **第四阶段: 工程化**
-11. [Webpack 原理](/engineering/webpack) - ⭐⭐⭐⭐
-12. [Webpack 插件开发](/engineering/webpack-plugin) - ⭐⭐⭐⭐
-13. [Vite 原理](/engineering/vite) - ⭐⭐⭐⭐
+11. [Webpack 原理](/engineering/build-optimization) - ⭐⭐⭐⭐
+12. Webpack 插件开发 - ⭐⭐⭐⭐
+13. [Vite 原理](/engineering/build-optimization) - ⭐⭐⭐⭐
 
 **第五阶段: Node.js**
-14. [Node 模块机制](/engineering/node-module) - ⭐⭐⭐⭐
-15. [多进程设计](/engineering/node-process) - ⭐⭐⭐⭐
-16. [异步 IO](/engineering/node-async-io) - ⭐⭐⭐
+14. [Node 模块机制](/books/node-module) - ⭐⭐⭐⭐
+15. [多进程设计](/books/node-process) - ⭐⭐⭐⭐
+16. [异步 IO](/books/node-async-io) - ⭐⭐⭐
 
 **第六阶段: 算法**
-17. [动态规划](/algorithms/dp) - ⭐⭐⭐⭐⭐
-18. [回溯算法](/algorithms/backtracking) - ⭐⭐⭐⭐
+17. 动态规划 - ⭐⭐⭐⭐⭐
+18. 回溯算法 - ⭐⭐⭐⭐
 19. [字符串匹配算法](/algorithms/string-matching) - ⭐⭐⭐
 
 ---

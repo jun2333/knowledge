@@ -172,7 +172,7 @@ git push
 
 ## 参考资料
 
-- [相关链接](url)
+- [相关链接](https://vitepress.dev/)
 ```
 
 ---
@@ -250,7 +250,7 @@ npm run build
 
 - [VitePress 官方文档](https://vitepress.dev/)
 - [Markdown 语法指南](https://www.markdownguide.org/)
-- [项目 README](../README.md)
+- 项目 README
 
 ---
 
