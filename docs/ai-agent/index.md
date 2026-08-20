@@ -26,6 +26,7 @@
 AI 开发的核心术语和名词解释。
 
 - [名词解释](/ai-agent/glossary) - LLM、Token、RAG、Agent 等术语速查
+- [大模型全景介绍](/ai-agent/llm-landscape) - 开源/闭源主流大模型：GPT、Claude、Qwen、DeepSeek 等
 
 ### 2. AI 应用开发 ⭐⭐⭐⭐⭐
 
@@ -34,6 +35,7 @@ AI 开发的核心术语和名词解释。
 - [LLM API 调用基础](/ai-agent/llm-api-basics) - OpenAI/Claude API、流式响应、Token 计费、错误处理
 - [Function Calling 与工具调用](/ai-agent/function-calling) - 让 LLM 调用外部工具执行任务
 - [AI 应用架构模式](/ai-agent/app-architecture) - Chat/Agent/Workflow 三种模式、记忆管理、多 Agent 协作
+- [LangChain 框架介绍](/ai-agent/langchain-introduction) - LLM 应用开发框架：组件、LCEL、LangGraph/LangSmith 生态
 - [AI 应用工程化实践](/ai-agent/app-engineering) - 评估测试、可观测性、成本控制、安全防护
 
 ### 3. Prompt Engineering ⭐⭐⭐

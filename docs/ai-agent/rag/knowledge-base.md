@@ -14,7 +14,7 @@ graph TD
     B --> B2[Claude 3.5 Sonnet]
     B --> B3[Gemini Pro]
     B --> B4[通义千问 Max]
-    C --> C1[Qwen2.5 系列]
+    C --> C1[Qwen3 系列]
     C --> C2[Llama 3 系列]
     C --> C3[DeepSeek 系列]
     C --> C4[Mistral 系列]
@@ -24,7 +24,7 @@ graph TD
 
 | 模型 | 参数量 | 中文能力 | 特点 | 适用场景 |
 |------|--------|----------|------|----------|
-| **Qwen2.5** | 0.5B-72B | ⭐⭐⭐⭐⭐ | 阿里出品，中文最强 | 通用对话、代码、知识库 |
+| **Qwen3** | 0.6B-235B | ⭐⭐⭐⭐⭐ | 阿里出品，中文最强 | 通用对话、代码、知识库 |
 | **DeepSeek-V2** | 236B(MoE) | ⭐⭐⭐⭐⭐ | 性价比极高 | 长文本、推理 |
 | **Llama 3** | 8B-70B | ⭐⭐⭐ | Meta 出品，英文强 | 英文场景、多语言 |
 | **Mistral** | 7B-8x7B | ⭐⭐ | 轻量高效 | 资源受限场景 |
@@ -78,16 +78,16 @@ ollama serve
 
 ```bash
 # 下载聊天模型
-ollama pull qwen2.5:7b
+ollama pull qwen3:8b
 
 # 下载 embedding 模型
-ollama pull mxbai-embed-large
+ollama pull bge-m3
 
 # 查看已安装模型
 ollama list
 
 # 运行模型（交互式对话）
-ollama run qwen2.5:7b
+ollama run qwen3:8b
 ```
 
 #### 4. 常用管理命令
@@ -97,13 +97,13 @@ ollama run qwen2.5:7b
 ollama ps
 
 # 停止模型
-ollama stop qwen2.5:7b
+ollama stop qwen3:8b
 
 # 删除模型
-ollama rm qwen2.5:7b
+ollama rm qwen3:8b
 
 # 查看模型信息
-ollama show qwen2.5:7b
+ollama show qwen3:8b
 ```
 
 ### Ollama API
@@ -120,7 +120,7 @@ const client = new OpenAI({
 
 // 聊天
 const response = await client.chat.completions.create({
-  model: 'qwen2.5:7b',
+  model: 'qwen3:8b',
   messages: [
     { role: 'user', content: '你好' }
   ],
@@ -128,7 +128,7 @@ const response = await client.chat.completions.create({
 
 // 生成 embedding
 const embedding = await client.embeddings.create({
-  model: 'mxbai-embed-large',
+  model: 'bge-m3',
   input: '这是一段测试文本',
 })
 ```
@@ -150,9 +150,9 @@ RAG（Retrieval Augmented Generation，检索增强生成）让 LLM 能够访问
 | 组件 | 工具 | 说明 |
 |------|------|------|
 | **文档处理** | LangChain.js | 加载、切分文档 |
-| **Embedding** | Ollama + mxbai-embed-large | 文本转向量 |
+| **Embedding** | Ollama + bge-m3 | 文本转向量 |
 | **向量数据库** | Chroma | 存储和检索向量 |
-| **LLM** | Ollama + qwen2.5:7b | 生成回答 |
+| **LLM** | Ollama + qwen3:8b | 生成回答 |
 | **后端框架** | Koa + TypeScript | API 服务 |
 | **流式传输** | SSE | 实时推送回答 |
 
@@ -212,7 +212,7 @@ async function index() {
 
   // 4. 生成 embedding 并存入 Chroma
   const embeddings = new OpenAIEmbeddings({
-    modelName: 'mxbai-embed-large',
+    modelName: 'bge-m3',
     apiKey: 'ollama',
     configuration: { baseURL: 'http://localhost:11434/v1' },
   })
@@ -230,7 +230,7 @@ async function index() {
 // server/src/rag/retriever.ts
 export async function getRetriever(topK: number = 5) {
   const embeddings = new OpenAIEmbeddings({
-    modelName: 'mxbai-embed-large',
+    modelName: 'bge-m3',
     apiKey: 'ollama',
     configuration: { baseURL: 'http://localhost:11434/v1' },
   })
@@ -274,7 +274,7 @@ router.post('/api/chat', async (ctx) => {
 
   // 5. 流式生成回答
   const response = await client.chat.completions.create({
-    model: 'qwen2.5:7b',
+    model: 'qwen3:8b',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT + context },
       ...history,
@@ -952,13 +952,15 @@ import { RecycleScroller } from 'vue-virtual-scroller'
 | 模型 | 维度 | 中文支持 | 大小 |
 |------|------|----------|------|
 | nomic-embed-text | 768 | ⭐⭐ | 274MB |
-| **mxbai-embed-large** | **1024** | **⭐⭐⭐⭐** | **669MB** |
-| snowflake-arctic-embed | 1024 | ⭐⭐⭐⭐ | 669MB |
+| mxbai-embed-large | 1024 | ⭐⭐⭐ | 669MB |
+| **bge-m3** | **1024** | **⭐⭐⭐⭐⭐** | **1.2GB** |
 | text-embedding-v3 (通义) | 1024 | ⭐⭐⭐⭐ | 云端 |
+
+> 实测对比：同样的检索场景下，mxbai-embed-large 对中文问题的召回效果明显弱于 bge-m3（如"什么是闭包"这类问题可能完全检索不到相关文档），本项目已切换为 bge-m3。
 
 ```bash
 # 下载中文更好的模型
-ollama pull mxbai-embed-large
+ollama pull bge-m3
 ```
 
 #### 2. 调整 Chunk 策略
@@ -1011,8 +1013,8 @@ brew install --cask docker
 pnpm install
 
 # 2. 下载模型
-ollama pull qwen2.5:7b
-ollama pull mxbai-embed-large
+ollama pull qwen3:8b
+ollama pull bge-m3
 
 # 3. 启动 Chroma 向量数据库
 pnpm chroma:start
