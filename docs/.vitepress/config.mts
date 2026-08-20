@@ -4,6 +4,10 @@ export default defineConfig({
   title: '知识库',
   description: '个人知识库',
 
+  // 部署到 Gitee Pages 子路径（https://jun2333.gitee.io/frontend-knowledge-summary/）时
+  // 需要设置 base，否则静态资源 404。本地开发/预览保持默认 '/'。
+  base: process.env.BASE_PATH || '/',
+
   themeConfig: {
     nav: [
       { text: 'JavaScript', link: '/javascript/memory' },
@@ -177,6 +181,13 @@ export default defineConfig({
           items: [
             { text: '渲染优化实践', link: '/react/render-optimization' },
             { text: '异步渲染', link: '/react/async-render' },
+          ]
+        },
+        {
+          text: '状态管理',
+          items: [
+            { text: 'Zustand（客户端状态）', link: '/react/zustand' },
+            { text: 'TanStack Query（服务端状态）', link: '/react/tanstack-query' },
           ]
         },
         {
@@ -527,9 +538,11 @@ export default defineConfig({
           text: 'AI 应用开发',
           items: [
             { text: '名词解释', link: '/ai-agent/glossary' },
+            { text: '大模型全景介绍', link: '/ai-agent/llm-landscape' },
             { text: 'LLM API 调用基础', link: '/ai-agent/llm-api-basics' },
             { text: 'Function Calling 与工具调用', link: '/ai-agent/function-calling' },
             { text: 'AI 应用架构模式', link: '/ai-agent/app-architecture' },
+            { text: 'LangChain 框架介绍', link: '/ai-agent/langchain-introduction' },
             { text: 'AI 应用工程化实践', link: '/ai-agent/app-engineering' },
             { text: 'Python 基础语法速成', link: '/ai-agent/python-basics' },
             { text: 'Python AI 生态入门', link: '/ai-agent/python-ai-ecosystem' },
@@ -540,6 +553,7 @@ export default defineConfig({
           items: [
             { text: '基础技巧', link: '/ai-agent/prompt-engineering/basics' },
             { text: '高级技巧', link: '/ai-agent/prompt-engineering/advanced' },
+            { text: 'Skill：文件化的提示词工程', link: '/ai-agent/prompt-engineering/skills' },
           ]
         },
         {
