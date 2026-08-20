@@ -9,8 +9,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 export const config = {
   // === LLM 模型（本地 Ollama）===
   ollamaBaseUrl: 'http://localhost:11434/v1',  // Ollama 本地服务地址，兼容 OpenAI API 格式
-  chatModel: 'qwen2.5:7b',  // 聊天模型名称
-  embeddingModel: 'mxbai-embed-large',  // 向量模型名称，用于将文本转为向量（多语言，中文支持较好）
+  chatModel: 'qwen3:8b',  // 聊天模型名称（qwen3 新一代，质量优于 qwen2.5:7b）
+  embeddingModel: 'bge-m3',  // 向量模型名称（bge-m3 中文检索质量显著优于 mxbai-embed-large，实测对比见 rag-eval）
 
   // === Chroma 向量数据库 ===
   chromaHost: process.env.CHROMA_HOST || 'localhost',  // Chroma 服务地址

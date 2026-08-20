@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useAIChat } from '../composables/useAIChat.ts'
 import { usePanelState } from '../composables/usePanelState.js'
 import hljs from 'highlight.js/lib/core'
@@ -56,6 +56,14 @@ watch(isOpen, (val) => {
     closePanel()
   }
 })
+
+// 发送或收到新消息时立即滚动到底部
+watch(
+  () => messages.value.length,
+  () => {
+    nextTick(scrollToBottom)
+  }
+)
 
 function openPanel() {
   if (isBlocked.value) return

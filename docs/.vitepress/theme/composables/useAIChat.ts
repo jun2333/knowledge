@@ -25,6 +25,19 @@ export function useAIChat() {
   let onSources: ((sources: ChatSource[]) => void) | null = null
   let onDone: (() => void) | null = null
 
+  // 来源延迟渲染：先缓存检索结果，等收到第一个 token（流式真正开始）再展示，
+  // 避免"参考来源先出、文字迟迟不来"的割裂体验
+  let pendingSources: ChatSource[] | null = null
+  let streamStarted = false
+
+  function flushPendingSources() {
+    if (pendingSources && !streamStarted) {
+      streamStarted = true
+      onSources?.(pendingSources)
+      pendingSources = null
+    }
+  }
+
   async function sendMessage(content: string) {
     if (!content.trim() || isLoading.value) return
 
@@ -37,6 +50,8 @@ export function useAIChat() {
     }
     messages.value.push(assistantMsg)
     isLoading.value = true
+    pendingSources = null
+    streamStarted = false
 
     abortController.value = new AbortController()
 
@@ -83,10 +98,13 @@ export function useAIChat() {
               if (lastMsg?.role === 'assistant') {
                 lastMsg.sources = json.data
               }
-              onSources?.(json.data)
+              pendingSources = json.data
             } else if (json.type === 'token') {
+              flushPendingSources()
               onToken?.(json.data)
             } else if (json.type === 'done') {
+              // 模型可能没有任何输出，兜底展示来源
+              flushPendingSources()
               onDone?.()
               const lastMsg = messages.value[messages.value.length - 1]
               if (lastMsg?.role === 'assistant') {
@@ -105,7 +123,10 @@ export function useAIChat() {
         }
       }
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
+      if ((error as Error).name === 'AbortError') {
+        // 用户手动停止：已输出的内容保留，未展示的来源补上
+        flushPendingSources()
+      } else {
         const lastMsg = messages.value[messages.value.length - 1]
         if (lastMsg?.role === 'assistant') {
           lastMsg.content = '连接失败，请检查服务器是否启动'

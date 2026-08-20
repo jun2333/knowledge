@@ -1,6 +1,6 @@
 import Router from '@koa/router'
 import OpenAI from 'openai'
-import { getRetriever } from '../rag/retriever.js'
+import { getRetriever, invalidateRetriever } from '../rag/retriever.js'
 import { config } from '../config/index.js'
 
 const router = new Router()
@@ -38,7 +38,14 @@ router.post('/api/chat', async (ctx) => {
   }
 
   const retriever = await getRetriever(5)
-  const docs = await retriever.invoke(message)
+  let docs
+  try {
+    docs = await retriever.invoke(message)
+  } catch (e) {
+    // 集合可能刚被 rag:index 重建，旧句柄失效；重建后重试一次
+    invalidateRetriever()
+    docs = await (await getRetriever(5)).invoke(message)
+  }
 
   const context = docs
     .map(
