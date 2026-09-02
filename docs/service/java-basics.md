@@ -98,6 +98,49 @@ new User("张三", 18).equals(new User("张三", 18));  // true，自动按字�
 | `Object.assign` | 无直接对应 | 手动写构造器或 builder 模式 |
 | 解构 `{a, b} = obj` | 无直接对应 | record 的 `user.name()` 访问 |
 
+### 接口与实现类（interface / implements）
+
+TS 的 interface 只是类型约束；Java 的 interface 是"**契约 + 可多实现**"，配合实现类使用。
+
+```typescript
+// TS：interface 只是类型，没有实现
+interface UserService {
+  getByUsername(username: string): User
+}
+```
+
+```java
+// Java：interface 声明方法签名（"能做什么"），实现类写逻辑（"怎么做"）
+public interface UmsAdminCacheService {
+    void delAdmin(Long adminId);
+    UmsAdmin getAdmin(String username);
+}
+
+public class UmsAdminCacheServiceImpl implements UmsAdminCacheService {
+    public void delAdmin(Long adminId) { /* 真正的逻辑 */ }
+    public UmsAdmin getAdmin(String username) { /* 真正的逻辑 */ }
+}
+```
+
+| JS | Java |
+|----|------|
+| TS `interface`（纯类型） | `interface`（契约，可多实现） |
+| 一个类 implements 多个接口 | 类似 TS：单继承类 + 多实现接口 |
+| 直接 new 一个类 | 用接口类型声明，运行时是具体实现类 |
+
+**为什么拆"接口 + 实现"（面试常问）**：
+1. **解耦**：调用方只认接口，换实现不影响上游
+2. **多实现**：一个接口多个实现类（如缓存：Redis 实现 / 本地实现，按环境切换）
+3. **代理**：Spring 的 JDK 动态代理（事务/缓存切面）基于接口
+4. **测试**：mock 接口比 mock 具体类更干净
+
+**现代趋势**：接口+实现成对出现是**老风格**（2018 年前后，mall 就是这样）；单体新项目常直接 `@Service` 一个类搞定，只在确实需要多实现/跨模块解耦时才拆接口。
+
+**接口 vs 抽象类**（面试加分）：
+- 接口：纯契约，可多实现，字段只能是常量
+- 抽象类：可含已实现方法 + 状态，单继承
+- 一句话：接口侧重"能力约定"，抽象类侧重"部分共用实现"
+
 ### 集合框架
 
 ```javascript
@@ -276,6 +319,47 @@ String city = Optional.ofNullable(user)
 | 不存在的属性 = `undefined` | 访问 null 对象直接 NPE | **Java 没有 undefined，空就是 null，访问即崩** |
 
 **Java 最大新手杀手：NullPointerException（NPE）**。JS 里 `user.name` 是 undefined 还能忍，Java 里直接抛异常。习惯：方法参数/返回值明确是否可为 null，可用则用 `Optional`。
+
+### 异常处理（Java 特色：受检异常）
+
+JS 里 `throw` 随便抛、`catch` 随意接；Java 把异常分两类，**编译器强制管**。
+
+```javascript
+// JS：随便抛，没人强制你处理
+function parse(s) {
+  throw new Error('bad format')
+}
+try { parse('x') } catch (e) { /* 可写可不写 */ }
+```
+
+```java
+// Java：受检异常必须处理（throws 声明 或 try-catch），否则编译不过
+public void handle(HttpServletResponse response) throws IOException {
+    response.getWriter().write("hello");   // 写 IO 可能失败 → 强制声明
+}
+```
+
+| JS | Java |
+|----|------|
+| `throw new Error()` | `throw new RuntimeException(...)`（非受检，不用声明） |
+| try/catch | try/catch（语法一样） |
+| 无 | **受检异常**：必须 `throws` 声明或 `try-catch`（编译器强制） |
+
+**两类异常**：
+
+| 类型 | 例子 | 编译器态度 |
+|------|------|-----------|
+| 受检异常（checked） | `IOException`、`SQLException` | 必须处理（throws 或 try-catch） |
+| 非受检异常（unchecked） | `NullPointerException`、`IllegalArgumentException` | 不用声明，随便抛 |
+
+**`throws` 是什么**：方法签名上声明"我会抛这个异常，调用方负责"。方法里不 catch 就一直往上抛。
+
+**实战套路（mall）**：
+- **业务异常**：`Asserts.fail("密码不正确")` 抛一个 RuntimeException 子类 → 被全局异常处理器（`@RestControllerAdvice` + `GlobalExceptionHandler`）统一转成 JSON 返回
+- **日常开发**：业务方法基本都 `throws` 往上抛，让全局处理器统一"收尸"，自己很少 try-catch
+- **什么时候 try-catch**：确实要处理的场景（重试、降级、打日志）
+
+**NPE 是最大的坑**：Java 没有 undefined，访问 null 对象直接抛 NPE（非受检异常）。用 `Optional` / 判空防御，见上文 null 处理。
 
 ### 异步与并发（最需要重构心智的地方）
 

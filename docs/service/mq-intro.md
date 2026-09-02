@@ -14,6 +14,21 @@
 | **削峰填谷** | 秒杀/大促瞬间流量打 DB | 数据库直接被冲垮 |
 | **解耦** | 订单系统和库存系统通过消息通信 | 强耦合，改一个全改 |
 
+**削峰填谷怎么实现**：生产端正常发（Kafka 顺序写扛高并发），消费端限速——核心是"生产不设防 + 消费恒速"：
+
+```java
+// 生产端：直接发，不设防（MQ 扛得住高并发写入）
+kafkaTemplate.send("order-topic", orderId, orderJson);
+
+// 消费端：固定并发数限速，落库速率恒定（削峰的关键）
+@KafkaListener(topics = "order-topic", concurrency = "3")
+public void consume(String orderJson) {
+    orderService.save(orderJson);   // 永远最多 3 个线程在落库
+}
+```
+
+**代价**：消费延迟（秒杀可接受：先返回"已受理"，后异步落库）。
+
 ```
 同步调用：订单 → 短信 → 库存 → 积分（串行，全等）
 MQ 异步：订单 → MQ →（短信/库存/积分各自消费）
