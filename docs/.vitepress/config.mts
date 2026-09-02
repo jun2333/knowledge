@@ -10,20 +10,33 @@ export default defineConfig({
 
   themeConfig: {
     nav: [
-      { text: 'JavaScript', link: '/javascript/memory' },
-      { text: 'Vue', link: '/vue/double-binding' },
-      { text: 'React', link: '/react/concept' },
+      {
+        text: '前端', items: [
+          { text: 'JavaScript', link: '/javascript/memory' },
+          { text: 'Vue', link: '/vue/double-binding' },
+          { text: 'React', link: '/react/concept' },
+          { text: 'CSS', link: '/css/bfc' },
+          { text: '浏览器', link: '/browser/overview' },
+          { text: '性能优化', link: '/performance/best-practices' },
+          { text: '大前端', link: '/frontend/hybrid' },
+        ]
+      },
+      {
+        text: '后端', items: [
+          { text: 'Service', link: '/service/roadmap' },
+          { text: 'Java实战', link: '/java-practice/' },
+        ]
+      },
       { text: 'AI Agent', link: '/ai-agent/' },
-      { text: '浏览器', link: '/browser/overview' },
-      { text: 'CSS', link: '/css/bfc' },
-      { text: '性能优化', link: '/performance/best-practices' },
       { text: '架构', link: '/engineering/micro-frontend' },
-      { text: '大前端', link: '/frontend/hybrid' },
-      { text: 'Service', link: '/service/roadmap' },
       { text: '算法', link: '/algorithms/basic' },
-      { text: '读书笔记', link: '/books/js-you-dont-know' },
-      { text: '运动', link: '/sports/breaststroke-for-beginners' },
-      { text: '杂项', link: '/misc/notes' },
+      {
+        text: '其他', items: [
+          { text: '读书笔记', link: '/books/js-you-dont-know' },
+          { text: '运动', link: '/sports/breaststroke-for-beginners' },
+          { text: '杂项', link: '/misc/notes' },
+        ]
+      },
     ],
 
     sidebar: {
@@ -387,8 +400,17 @@ export default defineConfig({
           items: [
             { text: 'Redis 入门', link: '/service/redis-intro' },
             { text: '消息队列（Kafka）入门', link: '/service/mq-intro' },
+            { text: 'Elasticsearch 入门', link: '/service/elasticsearch' },
             { text: '分布式基础', link: '/service/distributed-basics' },
             { text: 'Spring Cloud 微服务', link: '/service/spring-cloud' },
+          ]
+        },
+        {
+          text: '高并发专题',
+          items: [
+            { text: 'Node.js 高并发与高可用设计', link: '/service/node-high-concurrency' },
+            { text: 'Java（Spring Boot）高并发与高可用设计', link: '/service/java-high-concurrency' },
+            { text: 'Node.js vs Java 后端选型', link: '/service/node-vs-java' },
           ]
         },
         {
@@ -424,6 +446,30 @@ export default defineConfig({
             { text: 'Docker 入门', link: '/service/docker' },
             { text: '后端测试实践', link: '/service/backend-testing' },
             { text: 'Linux 常用命令', link: '/service/linux-basics' },
+          ]
+        }
+      ],
+
+      '/java-practice/': [
+        {
+          text: '学习计划',
+          items: [
+            { text: '整体计划（路线图）', link: '/java-practice/' },
+            { text: 'IDEA 使用指南', link: '/java-practice/08-intellij-idea' },
+          ]
+        },
+        {
+          text: '阶段指南',
+          items: [
+            { text: '阶段 1：请求全链路', link: '/java-practice/01-run-and-trace-request' },
+            { text: '阶段 2：CRUD 模块', link: '/java-practice/02-crud-module' },
+            { text: '阶段 3：数据访问与事务', link: '/java-practice/03-data-access-transaction' },
+            { text: '阶段 4：Redis 缓存', link: '/java-practice/04-redis-cache' },
+            { text: '阶段 5：安全与权限', link: '/java-practice/05-security-auth' },
+            { text: '阶段 6：动手开发', link: '/java-practice/06-build-new-feature' },
+            { text: '阶段 7：12306 微服务', link: '/java-practice/07-microservice-12306' },
+            { text: '📌 收获记录', link: '/java-practice/harvest' },
+            { text: '📦 部署流程与最佳实践', link: '/java-practice/09-deployment-practice' },
           ]
         }
       ],
@@ -541,6 +587,8 @@ export default defineConfig({
             { text: '大模型全景介绍', link: '/ai-agent/llm-landscape' },
             { text: 'LLM API 调用基础', link: '/ai-agent/llm-api-basics' },
             { text: 'Function Calling 与工具调用', link: '/ai-agent/function-calling' },
+            { text: '知识库引入 Function Calling（RAG 升级）', link: '/ai-agent/function-calling-rag-upgrade' },
+            { text: '自研 Agent CLI 设计', link: '/ai-agent/self-built-cli' },
             { text: 'AI 应用架构模式', link: '/ai-agent/app-architecture' },
             { text: 'LangChain 框架介绍', link: '/ai-agent/langchain-introduction' },
             { text: 'AI 应用工程化实践', link: '/ai-agent/app-engineering' },
@@ -584,6 +632,7 @@ export default defineConfig({
           items: [
             { text: 'Qoder 优化实践', link: '/ai-agent/case-studies/qoder' },
             { text: 'DeepSeek Harness 案例研究', link: '/ai-agent/case-studies/deepseek-harness' },
+            { text: 'Claude Code 记忆机制', link: '/ai-agent/case-studies/claude-code-memory' },
           ]
         }
       ]
