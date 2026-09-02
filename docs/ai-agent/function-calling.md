@@ -347,6 +347,65 @@ async function chatLoop(userMessage, maxIterations = 5) {
 第 4 轮: LLM 生成回答 "已为您取消 alice 最近的订单 #12345"
 ```
 
+## 每次请求都全量发送 tools？——常驻机制与 Prompt Caching
+
+上面的多轮循环里，`tools` 每轮都完整发送。这是 API 的**无状态设计**：每次请求必须自包含，才能水平扩展、负载均衡、随意重试。工具定义是"常驻上下文"，每轮全量注入，占用模型输入 token。
+
+但这里有一个关键机制让"全量重发"从成本灾难变成合理设计：**Prompt Caching（提示词缓存）**。
+
+### 三层视角：真的重复吗
+
+| 层面 | 实际行为 |
+|------|---------|
+| 网络层 | tools 定义每轮全量传输（确实重复，但 schema 只有几 KB，在 API 网关内廉价） |
+| 计算层 | 不重复：KV cache 前缀命中，**跳过整个 Prefill 阶段** |
+| 计费层 | 不重复：缓存读有折扣价 |
+
+### 底层原理
+
+Transformer 推理分两个阶段：
+
+- **Prefill**：把 prompt 整体读入，算出每个 token 的 K/V 向量（计算密集型，堆 GPU）
+- **Decode**：逐 token 生成，拿 query 与前面所有 token 的 K/V 做注意力（内存带宽密集）
+
+Prompt Caching 是**跨请求复用**：第一次请求算完的 KV 不丢弃，下次请求前缀完全相同就直接复用，跳过 Prefill。工具定义是 prompt 里最稳定的部分，正好是缓存的高命中区。
+
+### OpenAI：自动生效
+
+- 缓存**自动开启**，无需改代码、无额外费用（gpt-4o 及更新模型）
+- 官方文档明确：**"消息数组和可用的 `tools` 列表均可缓存"**
+- 命中后输入 token 成本降低高达 90%，延迟降低 80%
+- 只有**精确前缀匹配**才能命中 → 静态内容（工具定义）放开头，动态内容（对话）放结尾
+
+### Anthropic：cache_control 断点
+
+- 手动在 block 上打 `cache_control: {"type": "ephemeral"}` 标记缓存位置
+- 缓存**读取价是 base 价的 1/10（0.1×）**；5 分钟 TTL 档写入价 1.25×
+- 工具定义在 prompt 最前面，是最稳定的部分；每个断点向后回溯最多 20 个 block 找匹配
+- 官方专门有 "Tool use with prompt caching" 文档；Claude Code 团队把缓存命中率列为 SEV 级监控指标——"prompt caching is everything"
+
+### 铁律：前缀稳定性
+
+> 前缀里**任何一个 token 变化，后面全部缓存失效**。
+
+| 操作 | 后果 |
+|------|------|
+| 修改工具定义 | tools / system / messages 三层缓存全失效 |
+| 工具顺序变化 | 缓存失效（JSON 键序不稳定是经典坑） |
+| 换模型 | 缓存作废（缓存是模型 specific 的） |
+
+所以"**永远别中途增删工具**"是 agent 工程的黄金法则。Claude Code 的 Plan Mode 用"工具集固定 + 系统消息切状态"而不是切换工具集合，正是为了保住缓存前缀。
+
+### 工具界的"懒加载"：defer_loading
+
+MCP 普及后工具可能挂载几十上百个，每个都塞完整 schema 既贵又撑爆 context，但中途删工具又破坏缓存。Claude Code 的解法是 `defer_loading`：
+
+- 先只发轻量 **stub**（仅工具名），顺序永远一样 → 缓存前缀稳定
+- 模型通过 tool search 发现有需要时，**再请求完整 schema**
+- 只有真正用到的工具才付出 schema 的 token 成本
+
+这与 Skill 的两段式加载（元数据常驻 + 正文按需注入）殊途同归——都是"目录常驻、按需翻页"。区别是：经典 tools 靠 **Prompt Cache 前缀复用**消化成本，Skill 靠**懒加载**规避成本，defer_loading 则是两者结合。
+
 ## 工具设计最佳实践
 
 ### 1. 描述要清晰
