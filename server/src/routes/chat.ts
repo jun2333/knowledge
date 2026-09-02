@@ -1,7 +1,8 @@
 import Router from '@koa/router'
 import OpenAI from 'openai'
-import { getRetriever, invalidateRetriever } from '../rag/retriever.js'
 import { config } from '../config/index.js'
+import { createTools } from '../agent/tools.js'
+import { runAgentLoop } from '../agent/loop.js'
 
 const router = new Router()
 
@@ -10,9 +11,13 @@ const client = new OpenAI({
   baseURL: config.ollamaBaseUrl,
 })
 
-const SYSTEM_PROMPT = `你是一个知识库助手。基于以下检索到的知识库内容回答用户的问题。
+const SYSTEM_PROMPT = `你是一个知识库助手。回答需要知识库内容支撑的问题时，按需调用工具：
+1. 需要查知识库 → 调用 search_knowledge 检索相关文档片段
+2. 检索片段不足以回答（如要求全文总结、对比多篇文章）→ 调用 get_doc_content 读取完整内容
+
+闲聊、寒暄、与知识库无关的简单问题不需要调用工具，直接回答。
 如果检索内容中没有相关信息，请如实告知，不要编造答案。
-回答时请在相关句子末尾用 [来源1]、[来源2] 这样的格式标注引用，但不要单独列出"参考依据"或"参考来源"部分，前端会自动显示可点击的来源标签。
+回答时请在相关句子末尾用 [来源1]、[来源2] 这样的格式标注引用（编号来自工具结果中的 [来源N]），但不要单独列出"参考依据"或"参考来源"部分，前端会自动显示可点击的来源标签。
 
 **重要**：返回代码时必须使用 Markdown 代码块语法，指定语言(包括但不限于)：
 \`\`\`javascript
@@ -37,25 +42,7 @@ router.post('/api/chat', async (ctx) => {
     return
   }
 
-  const retriever = await getRetriever(5)
-  let docs
-  try {
-    docs = await retriever.invoke(message)
-  } catch (e) {
-    // 集合可能刚被 rag:index 重建，旧句柄失效；重建后重试一次
-    invalidateRetriever()
-    docs = await (await getRetriever(5)).invoke(message)
-  }
-
-  const context = docs
-    .map(
-      (doc, i) =>
-        `[来源${i + 1}: ${doc.metadata.source}]\n${doc.pageContent}`
-    )
-    .join('\n\n---\n\n')
-
   // SSE 流式响应需要手动控制写入时机，绕过 Koa 的自动响应机制
-  // Koa 默认会等异步函数结束后再发送响应，而 SSE 需要边生成边推送
   ctx.respond = false
 
   const res = ctx.res
@@ -66,14 +53,11 @@ router.post('/api/chat', async (ctx) => {
     'X-Accel-Buffering': 'no',
   })
 
-  const sources = docs.map((d) => ({
-    source: d.metadata.source,
-    title: d.metadata.title,
-  }))
-  res.write(`data: ${JSON.stringify({ type: 'sources', data: sources })}\n\n`)
+  // 创建本次请求独立的工具（来源聚合独立于请求）
+  const { definitions, implementations } = createTools()
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: SYSTEM_PROMPT + '\n\n---检索到的知识库内容---\n' + context },
+    { role: 'system', content: SYSTEM_PROMPT },
     ...history.map((h) => ({
       role: (h.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
       content: h.content,
@@ -81,20 +65,35 @@ router.post('/api/chat', async (ctx) => {
     { role: 'user', content: message },
   ]
 
-  try {
-    const response = await client.chat.completions.create({
-      model: config.chatModel,
-      messages,
-      stream: true,
-      temperature: 0.7,
-    })
+  const allSources: Array<{ source: string; title: string }> = []
+  let sourcesSent = false
+  const sendSources = () => {
+    if (sourcesSent || allSources.length === 0) return
+    sourcesSent = true
+    res.write(`data: ${JSON.stringify({ type: 'sources', data: allSources })}\n\n`)
+  }
 
-    for await (const chunk of response) {
-      const content = chunk.choices[0]?.delta?.content
-      if (content) {
-        res.write(`data: ${JSON.stringify({ type: 'token', data: content })}\n\n`)
+  try {
+    for await (const event of runAgentLoop({
+      messages,
+      definitions,
+      implementations,
+      client,
+      model: config.chatModel,
+    })) {
+      if (event.type === 'tool') {
+        // 聚合工具产生的来源（去重），在第一个 token 前一次性发出
+        for (const s of event.sources) {
+          if (!allSources.some((x) => x.source === s.source)) allSources.push(s)
+        }
+      } else if (event.type === 'token') {
+        sendSources()
+        res.write(`data: ${JSON.stringify({ type: 'token', data: event.content })}\n\n`)
       }
     }
+
+    // 极端情况：全程无 token（如模型只调工具就结束），补发 sources 让前端能展示
+    sendSources()
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
   } catch (error) {
     console.error('流式生成失败:', error)
