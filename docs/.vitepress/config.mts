@@ -388,6 +388,8 @@ export default defineConfig({
           text: 'Java 进阶',
           items: [
             { text: 'Java 并发编程', link: '/service/java-concurrency' },
+            { text: '并发锁应用', link: '/service/concurrency-locks' },
+            { text: '数据分布场景与锁设计', link: '/service/data-distribution-locks' },
             { text: 'JVM 入门', link: '/service/java-jvm' },
             { text: 'Java 集合源码', link: '/service/java-collections' },
             { text: 'Spring 核心原理', link: '/service/spring-principles' },
@@ -470,6 +472,12 @@ export default defineConfig({
             { text: '阶段 7：12306 微服务', link: '/java-practice/07-microservice-12306' },
             { text: '📌 收获记录', link: '/java-practice/harvest' },
             { text: '📦 部署流程与最佳实践', link: '/java-practice/09-deployment-practice' },
+          ]
+        },
+        {
+          text: '📐 mall 设计记录',
+          items: [
+            { text: '权限设计（RBAC + 动态权限）', link: '/java-practice/mall-design/01-permission-design' },
           ]
         }
       ],
