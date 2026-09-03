@@ -198,11 +198,43 @@ WHERE id IN (1, 2)
 for (PmsProduct p : list) {
     productMapper.updateByPrimaryKeySelective(p);   // 每个商品用自己的 record
 }
-
-// 数据量大时：JDBC 批处理（MyBatis ExecutorType.BATCH）
-// 每条还是不同参数，但打包成一次网络往返，性能优于循环
-SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH);
 ```
+
+**为什么循环慢**：每次 mapper 调用 = SQL 解析 + 建 statement + **一次网络往返** + 等返回。1 万条 = 1 万次网络往返，慢在网络 IO 和 statement 创建，不是真正执行。
+
+**数据量大时用 JDBC 批处理（MyBatis ExecutorType.BATCH）**：攒批后一次网络往返发一坨，性能远优于逐条：
+
+```java
+// ① 必须用 BATCH 模式开 session（默认 SIMPLE 不攒批）
+SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH);
+try {
+    // ② mapper 必须从这个 session 拿（注入的 mapper 属于别的 session，不攒批）
+    PmsProductMapper mapper = sqlSession.getMapper(PmsProductMapper.class);
+    int i = 0;
+    for (PmsProduct p : list) {
+        mapper.updateByPrimaryKeySelective(p);   // 内部 addBatch：只攒参数，不真正执行
+        if (++i % 1000 == 0) {
+            sqlSession.flushStatements();        // ③ 攒够 1000 手动刷一次（才真正发到 MySQL）
+        }
+    }
+    sqlSession.flushStatements();                // ④ 把最后没发的刷完
+    sqlSession.commit();                         // ⑤ 提交事务
+} finally {
+    sqlSession.close();                          // ⑥ 必须关
+}
+```
+
+**原理**：JDBC 的 `addBatch` 只把参数记在本地缓冲，`executeBatch`/`flushStatements` 才一次网络往返批量发给 MySQL——1 万条 = 10 次往返（每批 1000），不是 1 万次。
+
+**BATCH 模式三个坑**：
+
+| 坑 | 说明 |
+|----|------|
+| 必须手动 `flushStatements()` | BATCH 默认攒着不执行，攒太多占内存/超时，定期刷 |
+| 返回值不可靠 | BATCH 下 update 返回条数不准（可能 -2），别依赖返回值判断 |
+| 和 `@Transactional` 混用冲突 | `@Transactional` 用 Spring 管理的 session，`openSession(BATCH)` 是自开的 session，不在同一事务——BATCH 常用于独立批处理任务，自己 commit |
+
+**可选加速**：JDBC url 加 `rewriteBatchedStatements=true`，MySQL 会把批里的多条 SQL 重写成一条多值语句，少解析几次。
 
 #### 决策总结
 
