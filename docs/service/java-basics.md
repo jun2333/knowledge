@@ -98,6 +98,79 @@ new User("张三", 18).equals(new User("张三", 18));  // true，自动按字�
 | `Object.assign` | 无直接对应 | 手动写构造器或 builder 模式 |
 | 解构 `{a, b} = obj` | 无直接对应 | record 的 `user.name()` 访问 |
 
+#### record 详解（Java 16+ 的数据载体）
+
+**它是语言级特性（不是 Spring/框架功能）**：JDK 16 正式引入，`javac` 编译器原生支持，不依赖任何 jar——Spring Boot 3 用 Java 17 所以天然可用。
+
+**解决什么**：Java 最大的痛点——数据类的样板代码。手写一个只装数据的类要几十行（私有字段 + 构造器 + getter + equals/hashCode/toString），record 一行全包：
+
+```java
+// 手写（几十行）                          // record（一行）
+public class User {                        public record User(String name, int age) {}
+    private final String name;             // 自动生成：
+    private final int age;                 //   final 字段（不可变）
+    public User(String name, int age) {    //   全参构造器
+        this.name = name;                  //   访问器 name() / age()（不是 getName）
+        this.age = age;                    //   equals / hashCode（按字段值比较）
+    }                                      //   toString
+    public String name() { return name; }
+    public int age() { return age; }
+}
+```
+
+**使用与自动能力**：
+
+```java
+User u = new User("张三", 18);
+u.name();                                   // 访问器是 name()，不是 getName()
+u.age();
+new User("张三", 18).equals(new User("张三", 18));   // true（按字段值比）
+u.toString();                               // User[name=张三, age=18]
+```
+
+**record 还能带逻辑（不只是"纯一行"）**：
+
+```java
+public record UserSession(Long userId, String username, List<String> roles) {
+
+    // ① compact constructor：省去参数声明，直接写校验 + 防御拷贝（record 特色语法）
+    public UserSession {
+        if (userId == null) throw new IllegalArgumentException("userId 不能为空");
+        roles = List.copyOf(roles);          // 拷贝成不可变 List，防外部篡改
+    }
+
+    // ② 静态工厂（替代复杂构造，起语义名字）
+    public static UserSession of(Long userId, String username, List<String> roles) {
+        return new UserSession(userId, username, roles);
+    }
+
+    // ③ 可以有只读计算方法（不新增字段就行）
+    public boolean isAdmin() { return roles.contains("超级管理员"); }
+}
+
+// ④ record 可以 implements 接口（如序列化标记/业务接口）
+public record ApiResponse<T>(int code, String message, T data) implements java.io.Serializable { }
+
+// ⑤ 支持泛型（上面的 ApiResponse<T>）；也支持嵌套（record 里放 record）
+```
+
+**record vs Lombok @Data 怎么选**：
+
+| | record | Lombok @Data |
+|--|--------|-------------|
+| 谁提供 | Java 语言（JDK 16+） | 第三方库（Lombok 插件） |
+| 可变性 | 不可变（字段 final，无 setter） | 可变（有 setter） |
+| 适合 | DTO / 值对象（只读传输） | 实体 / 可变 Bean（MyBatis 实体要 set） |
+
+**什么时候别用 record**：
+- 需要**可变**（框架要 setter——MyBatis 实体类）
+- 需要**继承**别的类（record 是 final，只能 implements 不能 extends）
+- 需要无参构造（record 只有全参构造器，可用重载/静态工厂补充）
+
+**JS 视角一句话**：record ≈ **"不可变的纯数据类语法糖"**——像 TS 里 `type User = { name: string; age: number }` + 自动实现值比较和克隆不可变对象，Java 用 `record` 关键字一个声明全给。
+
+**实践建议**：后端**接口传输对象（DTO/响应体）一律用 record**；数据库实体、要赋值的 Bean 继续 class + Lombok。
+
 ### 接口与实现类（interface / implements）
 
 TS 的 interface 只是类型约束；Java 的 interface 是"**契约 + 可多实现**"，配合实现类使用。

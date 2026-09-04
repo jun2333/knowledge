@@ -107,6 +107,66 @@ end
 增强：先删缓存再更新 DB 有窗口期 → 延迟双删（删缓存 → 更新 DB → 等 500ms 再删一次）
 ```
 
+## redis-cli 常用命令速查
+
+### 连接与库
+
+```bash
+redis-cli                  # 进交互模式
+redis-cli -n 0             # 指定数据库（mall 缓存默认 db0）
+ping                       # 通不通 → 返回 PONG
+dbsize                     # 当前库有多少 key
+```
+
+### 字符串（缓存核心）
+
+```
+SET ums:admin:admin {...}      # 写缓存（对象存 JSON 字符串）
+GET ums:admin:admin            # 读缓存
+INCR  click:count              # 计数 +1（原子）
+DECR  click:count              # 计数 -1
+```
+
+### 过期时间（缓存必配）
+
+```
+EXPIRE key 3600          # 给已有 key 设 10 分钟过期
+TTL key                  # 看剩余秒数（-1 = 永不过期；-2 = key 不存在）
+SET key val EX 10        # 写入时直接带过期（一条命令）
+```
+
+### key 管理
+
+```
+EXISTS key       # 判断存在（1 存在 / 0 不存在）
+TYPE key         # 看类型（string/hash/list/set/zset）
+DEL key          # 删除 key
+KEYS *           # ⚠️ 列出所有 key——学习用可以，生产会阻塞，用 SCAN
+SCAN 0 MATCH ums:*   # 游标式分批扫（不阻塞），返回 key + 下一个游标
+```
+
+### 分布式锁（SETNX）
+
+```
+SET lock:product:1 uuid NX EX 10   # 抢锁：不存在才成功 + 10 秒过期（防死锁）
+DEL lock:product:1                 # 释放（正式要 Lua 比对 value，见分布式锁章节）
+```
+
+### 实用组合：扫前缀 + 删（清缓存的正规姿势）
+
+```bash
+# 看所有匹配前缀的 key（内部用 SCAN，不阻塞）
+redis-cli -n 0 --scan --pattern 'ums:*'
+
+# 扫到并删除（不用 keys *，不用 flushdb 全清）
+redis-cli -n 0 --scan --pattern 'ums:*' | xargs -L1 redis-cli -n 0 del
+
+# 开发环境图省事直接清空当前库（别在生产用！）
+redis-cli -n 0 flushdb
+```
+
+**一句话**：`keys *`/`flushdb` 只限开发；生产查 key 用 `--scan --pattern`，删 key 用 `scan + del`（不阻塞、不误伤别的缓存）。
+
 ## 面试题速查
 
 | 问题 | 一句话答案 |

@@ -244,6 +244,126 @@ catch (BadCredentialsException e) {
 
 **缓存一致性小坑**：改了 DB 里的缓存数据源（如 status）**必须清 Redis**（`redis-cli -n 0 flushdb` 或删对应 key），否则 `getAdminByUsername` 先查缓存拿到旧值——"改库 + 清缓存"是配套动作。
 
+## 2026-09-03（第三篇）
+
+### 十四、并发锁：从"背 API"到"用定义分界做决策"（今日主线）
+
+**乐观/悲观阵营模型**（自己推出来的）：分界 = **加不加锁、阻不阻塞**，不是"用不用 version"：
+
+```
+悲观阵营：FOR UPDATE（加锁阻塞）
+乐观阵营：不加锁假设成功、失败检测返回 0
+  ├─ 条件型（原子 SQL stock=stock-1）：不读快照，一次闭环
+  └─ 版本型（version/时间戳）：先读快照，冲突重试
+```
+
+- 按此定义**原子 SQL 也是乐观的**（教材把版本型特指叫乐观锁 → 口径混乱的根源）
+- 乐观锁本质 = "**WHERE 带旧值**"：version / 时间戳 / CAS 条件（`stock>=1`）/ 状态机校验（防重复支付）/ 唯一约束 全是同一思想
+- 原子 SQL 一条（不用读旧值）、版本型两条（先读快照再校验）——"一条能原子解决就别上锁"
+
+**状态单调性决定预检可靠性**（自己悟的，值钱）：锁外预检只对"**单调状态**"（只增不减：已领/幂等标记）可靠、不会误杀；"**可回退状态**"（库存可退/剩余量回升）判断必须锁内拿最新值——秒杀 = "是否已抢"（可预检）+ "还有没有货"（锁内判）。
+
+**锁粒度 = 并发粒度**：锁 key 决定互斥范围 = 能并行多少（`seckill:product` 串行 1 vs `seckill:product:1` 并发 = 资源数）。key 粒度是**性能决策不是正确性决策**。
+
+**悲观锁必须事务**：FOR UPDATE 锁随事务提交/回滚释放，autocommit 下锁立即释放（锁个寂寞）；但"事务"不限于 @Transactional（TransactionTemplate/JDBC 手动都行）。
+
+**Redis 分布式锁**：
+- key = 锁什么资源，**value = 持有者 UUID（所有权凭证）**——释放靠 Lua"比对 value 才删"（原子两步），防超时后误删别人的锁
+- Redisson 全封装：value 存 `UUID:threadId` + hash 可重入计数 + **看门狗**（默认 30s，业务没跑完每 10s 自动续，防提前过期）
+- 两层过期：正常靠看门狗续、**宕机靠 TTL 兜底**（看门狗在持锁 JVM 里，JVM 死它也死）
+- 锁粒度选择看"临界资源独立性"：资源按 id 独立就带 id；任务全局唯一（对账/刷新）用任务名
+- 锁"数据" vs 锁"代码"：DB 锁数据行（库管），Redis 锁代码临界区（自己管令牌）
+
+### 十五、数据批量写与主从一致（网络往返视角统一）
+
+**批量写三种方案的性能本质 = 网络往返次数**：
+
+```
+循环逐条（N 次往返）< BATCH 攒批（addBatch 本地攒 + flushStatements 一批发，N/1000 次）< 合并 SQL（1 次）
+BATCH 三坑：手动 flush、返回值不可靠、和 @Transactional 混用冲突（session 不同）
+JDBC url 加 rewriteBatchedStatements=true 让 MySQL 重写合并批里的 SQL
+```
+
+**主从复制有两层一致**（自己悟的）：
+- 第一层：主库并发写 → **主库行锁**（和单库一模一样，写全落主库）——需要锁
+- 第二层：主库→从库 → binlog **顺序重放**，没有并发写 → 不用锁，一致风险是**复制延迟**（不是冲突）
+- 所以"主从靠复制策略不是锁"指第二层（半同步/关键读走主/延迟监控）；第一层照样靠 DB 锁
+- 四种数据形态（单库/主从/分片/分布式库）的锁与一致见 [数据分布场景与锁设计](/service/data-distribution-locks)
+
+### 十六、SQL 优化动手闭环 + IDEA 红波浪线
+
+**LEFT JOIN + 右表字段 IS NOT NULL = INNER JOIN**（语义等价，过滤只针对最右表时成立）——改了 mall `getResourceList` 四表联查并测试通过（第一次"看懂 → 动手改 → 验证"完整闭环）。
+
+**IDEA XML 红波浪线** = SQL inspection 没配数据库数据源 → 猜列不存在而标红，**不是 SQL 写错**（运行时 MySQL 解析正常）——配 Database 数据源解决。
+
+### 十七、Redis 认知补全
+
+- **缓存三大问题 mall 没做防御**的原因：key 少（几个 admin/资源）、访问温和，够不着穿透/击穿/雪崩的触发条件——**方案必要性由场景决定**（高并发才值得上布隆/互斥/随机）
+- `keys *` 生产禁用：单线程被全量遍历占死（阻塞）+ 运维 `rename-command KEYS ""` 禁命令；`scan` 游标分批不阻塞；`--scan --pattern 'ums:*' | xargs del` 是清缓存正规姿势
+- `@CacheException`（RedisCacheAspect）：Redis 挂了自己抛异常，切面决定"命运"——**普通缓存吞异常降级（回源 DB），关键操作（验证码）必须抛**（假成功比失败更糟）；降级前提 = 有第二数据源，主源在 Redis 的数据只能显式失败
+
+## 2026-09-04（第四篇）
+
+### 十八、通知功能实战：从建表到接口的完整闭环（06 篇延伸）
+
+自己动手写了 cms_notice 的完整 CRUD，踩了一圈真实开发必经的坑：
+
+**Swagger 看不到控制器（排查三板斧）**：
+- `@Controller` ≠ `@RestController`——纯 @Controller 返回值走视图渲染，SpringDoc 不收录、返回也不是 JSON
+- **只有类级 @RequestMapping 不够，每个方法必须有映射注解**（@GetMapping 等）——没有映射 = URL 不存在 = 404 且文档无 operation
+- 排查顺序：注解 → 方法映射 → springdoc 扫描限制 → 是否重启
+
+**入参 DTO 与实体分离（Param 的第二个存在理由）**：
+- `@RequestBody CmsNotice`（实体直接当入参）→ Swagger schema 暴露 id/createTime，调用方可伪造
+- 正确：入参用 Param（只含调用方可给的字段），Controller/Service 转换成实体
+- **入参模型 ≠ 存储模型**：id 由 DB 自增回填、createTime 由代码/DB 填，天然不该出现在"新增请求"里
+
+**DTO 字段默认值**：声明时直接赋初值（`private String status = "1";`）；**@Builder 必须配 @Builder.Default**（否则 builder 把字段初值冲成 null）。
+
+**Selective 与 DB 默认值的配合（关键机制）**：
+- `insert`（全字段）会把 null 显式写入 → **绕过 DB 默认值**；`insertSelective`（null 列不进 SQL）→ DB 默认生效
+- `updateByPrimaryKeyWithBLOBs`（全字段 UPDATE）会把没赋值的字段**刷成 NULL**——update 一律用 `updateByPrimaryKeySelective`（本次实战：updateStatus 复用 update + Selective，只更新 status 列）
+- 时间字段交给 DB：`create_time datetime DEFAULT CURRENT_TIMESTAMP`、`update_time ... ON UPDATE CURRENT_TIMESTAMP`——**时间字段不是 DB 自带的**（mall 76 表只有 28 个 create_time、0 个 update_time），是建表显式声明 + 列属性自动维护
+
+### 十九、MBG 自动生成（从手养到自动养）
+
+**流程**：generator.properties 配库 → generatorConfig.xml 配表 → 跑 `Generator.main()` → model/Example/Mapper/xml 全套生成到 mall-mbg。
+
+**三个坑**：
+- **Mac 路径**：原配置 targetProject 是反斜杠（`mall-mbg\src\main\java`，作者 Windows 开发）——Mac 上会生成到字面目录，必须改正斜杠
+- **FQCN 冲突**：手写的类（mall-admin）与生成类（mall-mbg）同全限定名 → 类路径冲突，手写版必须删（Service/Controller 的 import FQCN 不变，零改动）
+- **重跑 = 覆盖**：以 DB 当前结构重置生成文件——**生成物永远不手改**；丢自定义用 IDEA Local History 找回
+
+**铁律**：`model/mapper/xml = 生成物（改表重跑）`、`Service/Controller = 手写区`；自定义查询学 mall 的 `UmsAdminRoleRelationDao` 模式（自定义 dao 与生成 mapper 并存）。
+
+### 二十、Spring Bean 概念链（一次串清）
+
+- **Bean = 交给 Spring 容器创建和管理的对象**（IoC：对象不自己 new 依赖，容器统一创建按需注入，默认单例）
+- **@Component 家族**（类注解，扫描注册）：@Service/@Repository/@Controller 是 @Component 的语义化派生；@Repository 多异常翻译、@Controller 多 Web 能力
+- **@Bean**（方法注解，手动注册）：用于"没法加类注解"的对象——接口适配的方法引用（`adminService::loadUserByUsername`）、第三方类
+- **@Autowired 按类型从统一容器找**：跨模块/跨 @Configuration 都能注入；前提该类型 Bean 唯一（多个报 NoUniqueBeanDefinitionException）；注入先于 @PostConstruct
+- **@PostConstruct = 依赖注入完成后的初始化钩子**（构造器里依赖还是 null；对应前端 useEffect([])/onMounted）——DynamicSecurityMetadataSource 启动预加载权限 Map 就是它
+- **安全装配层模式**：MallSecurityConfig = "通用库定义接口（mall-security 不绑业务）+ 应用侧适配注册（把业务 Service 方法适配成框架接口）"，两条链路（认证/鉴权）的扩展点统一在这注册
+
+**record（Java 16 语言特性，非 Spring）**：一行生成不可变数据类全件（final 字段/全参构造/访问器 name()/equals/hashCode/toString）；适合**只读 DTO**；compact constructor 可加校验+防御拷贝；**有状态组件别转**（IDEA 会误报 Convert to record）；判断归属口诀"不带 spring 依赖能用 = Java 语言"。
+
+### 二十一、权限与缓存实战踩坑
+
+- **allocResource 是"全量分配"接口**（先删后插）——传 [33] 的语义是"角色 5 只有 33"，不是追加 → 实际把角色 5 资源清空了。追加 = 传"现有全部 + 新增"
+- **恢复数据用批量 INSERT 不带 id**（自增分配无冲突风险）：`INSERT INTO t (role_id, resource_id) VALUES (5,1),(5,2)...`；逐条复制执行容易丢分号（1064 两条连成一条）
+- **改权限库后必须清 `ums:resourceList:*` 缓存**（登录用户权限列表缓存在 Redis，不清则旧权限一直生效）
+- **白名单 403 的通配符坑**：`/notice/*` 只匹配一段（/notice/list ✓），**不匹配 /notice 本身**（insert 的 URL）——要用 `/notice/**`（** = 零或多段）。口诀：* 一段，** 剩余全部
+- 动态权限规则：**URL 未在 ums_resource 登记并授权 → 一律 403**（不是"没登记就放行"）
+
+### 二十二、杂项认知速记
+
+- **keys * 生产不能用**：单线程被全量遍历占死 + 运维 `rename-command KEYS ""` 禁用；`scan` 游标分批不阻塞；清缓存正规姿势 `redis-cli --scan --pattern 'ums:*' | xargs del`
+- **TEXT = 65535 字节 ≈ 64KB**（utf8mb4 约 1.6 万汉字）；富文本（图片外链）够用，含 base64 图要 MEDIUMTEXT；1MB = 1024KB 是存储进制（硬盘厂商按 1000）
+- **int(11) 的括号被 MySQL 8 弃用**：显示宽度不影响范围（int 固定 4 字节），新表写 `int` 即可
+- **model 的 setId 能改**：Java 实体只是表结构的内存映射，自增/主键约束在 DB 层；纪律是 insert 别手动传 id、已持久化记录别改 id
+- **DDL 的 Updated Rows 0 = 正常**（改结构不改数据）；验证用 SHOW CREATE TABLE
+- **LEFT JOIN + 右表字段 IS NOT NULL = INNER JOIN**（已动手改 mall 的 getResourceList 四表联查并测试）
+
 ---
 
 ## 待补充话题
