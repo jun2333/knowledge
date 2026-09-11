@@ -59,6 +59,7 @@ export default defineConfig({
             { text: '数据类型与内存管理', link: '/javascript/memory' },
             { text: '事件循环', link: '/javascript/event-loop' },
             { text: '异步编程与 Promise', link: '/javascript/async' },
+            { text: '异步并发控制最佳实践', link: '/javascript/async-concurrency' },
             { text: 'ES6+ 新特性', link: '/javascript/es6' },
             { text: '设计模式', link: '/javascript/pubsub' },
             { text: '原型与继承', link: '/javascript/prototype' },
@@ -438,6 +439,7 @@ export default defineConfig({
           items: [
             { text: 'BFF 架构设计', link: '/service/bff' },
             { text: '权限设计', link: '/service/permission-design' },
+            { text: '短链接服务设计', link: '/service/short-url-design' },
             { text: 'GraphQL 入门', link: '/service/graphql' },
             { text: 'Serverless 入门', link: '/service/serverless' },
           ]
@@ -446,6 +448,9 @@ export default defineConfig({
           text: '工程化与部署',
           items: [
             { text: 'Docker 入门', link: '/service/docker' },
+            { text: 'PM2 进程管理', link: '/service/pm2' },
+            { text: 'Node.js 服务部署最佳实践', link: '/service/node-deployment' },
+            { text: 'Java 服务部署最佳实践', link: '/service/java-deployment' },
             { text: '后端测试实践', link: '/service/backend-testing' },
             { text: 'Linux 常用命令', link: '/service/linux-basics' },
           ]
@@ -478,6 +483,7 @@ export default defineConfig({
           text: '📐 mall 设计记录',
           items: [
             { text: '权限设计（RBAC + 动态权限）', link: '/java-practice/mall-design/01-permission-design' },
+            { text: 'Token 失效设计（版本号 + jti 黑名单）', link: '/java-practice/mall-design/02-token-invalidation-design' },
           ]
         }
       ],

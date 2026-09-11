@@ -171,6 +171,7 @@ docker-compose -f docker-compose-app.yml up -d
 
 ## 相关
 
+- [Java 服务部署最佳实践](/service/java-deployment) - 通用部署流程、JVM 调优、发布与回滚（本文的"最佳实践版"）
 - [收获记录](/java-practice/harvest) - 日志链路（logback → Logstash → ES）的配置细节
 - [Elasticsearch 入门](/service/elasticsearch) - ELK 里 ES 的角色
 - [Spring Boot 入门](/service/spring-boot) - 打包部署一节（jar 内嵌 Tomcat）

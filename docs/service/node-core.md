@@ -107,6 +107,59 @@ import bar, { foo } from './module.js'
 | **缓存** | 首次加载后缓存 | 类似，但有细微差异 |
 | **文件扩展名** | 可省略 `.js` | 必须写 `.js` |
 
+### require 的完整加载流程
+
+```
+require('./foo')
+  │
+  ▼
+① 路径解析
+   ├─ 核心模块(fs / path / http)？ ──────────→ 直接返回(无需查找)
+   ├─ 以 ./ ../ / 开头？ ──────────────────→ 相对 / 绝对路径
+   └─ 裸模块名(foo)？ ────────────────────→ 从当前目录逐级向上找 node_modules/foo
+  │
+  ▼
+② 检查 require.cache
+   ├─ 已缓存？ ────────────────────────────→ 直接返回缓存的 module.exports(不会重新执行!)
+   └─ 未缓存:
+        ▼
+③ 解析具体文件
+   ├─ 尝试补扩展名:.js → .json → .node
+   └─ 若是目录:读 package.json 的 main 字段;没有则取 index.js
+        ▼
+④ 模块包装与执行
+   └─ 把源码包成函数执行:
+      (function(exports, require, module, __filename, __dirname) { ... })
+      └─ 执行中遇到 require → 回到 ①,递归加载依赖(形成依赖树)
+        ▼
+⑤ 写入缓存(以解析后的绝对路径为 key,存 module.exports)
+  │
+  ▼
+返回 module.exports
+```
+
+**循环依赖发生在这里**：A require B、B 又 require A 时，B 里拿到的 A 是"加载到一半的 A"——A 还停在 ④ 没执行完、`module.exports` 只写了开头一部分。Node 的做法是把"正在执行中的模块"也放进缓存，B 触发 ② 时命中缓存，拿到 A **当前已导出部分**（其余字段是 undefined）。
+
+### 模块缓存：机制与清除
+
+`require` **默认带缓存**：同一路径的模块只执行一次，后续 require 直接返回缓存的 `module.exports`（保证单例 + 省去重复执行）。
+
+```javascript
+const cache = require.cache
+// key:模块解析后的绝对路径;value:该模块的 module 对象
+console.log(Object.keys(require.cache))
+
+// 需要"强制重新执行"模块时(热更新、动态配置、测试隔离):
+delete require.cache[require.resolve('./config.js')]
+const fresh = require('./config.js')   // 会重新走一遍完整加载流程
+```
+
+要点：
+- `require.resolve(path)` 只做路径解析、不加载，可用来拿绝对路径当 `require.cache` 的 key
+- 清除后必须**重新 require** 一次才会再执行
+- 清除的是该模块自身；它依赖的子模块若也在缓存里，需要一并清除才完全"重新加载"
+- **ESM 没有 `require.cache` 这种公开缓存对象**：模块关系在编译期就固定，缓存由运行时管理，无法按路径删除——所以热更新场景（改配置/改代码即时生效）通常由 bundler（Vite/Webpack 的 HMR）或 `import(newUrl + '?t=' + Date.now())` 这类技巧实现
+
 **建议：** 新项目优先使用 ES Modules（配合 TypeScript），老项目维护用 CommonJS。
 
 ## 全局对象
@@ -248,6 +301,30 @@ process.on('unhandledRejection', (reason) => {
   console.error('未处理 rejection:', reason)
 })
 ```
+
+### 优雅退出：正确处理停机信号
+
+线上用 Docker/PM2 停止服务时不会直接 kill，而是发 **SIGTERM** 让进程"自己收拾完再退出"：
+
+```javascript
+const server = http.createServer(handler)
+
+// 收到停机信号 → 停接收新请求 → 等存量处理完 → 关外部资源 → 退出
+process.on('SIGTERM', async () => {
+  console.log('收到 SIGTERM,开始优雅退出')
+  server.close()       // 停止接收新连接;已建立的连接继续处理
+  await closeDb()      // 关闭数据库连接池/消息队列等
+  process.exit(0)      // 全部清理完再退出
+})
+
+process.on('SIGINT', () => process.exit(0))  // Ctrl+C(开发环境)
+```
+
+**要点：**
+- `docker stop`、`pm2 stop` 默认发的都是 SIGTERM；没监听它，进程会在宽限期（Docker 默认 10s）后被强制 SIGKILL
+- `process.on('exit')` 里只能做**同步**清理——异步操作不保证执行完；真异步清理要在收到信号后自己 `await`
+- 退出码约定：`0` 正常、`1` 未捕获异常、`128 + 信号号` 表示被信号杀死
+- 捕获 `uncaughtException` 后继续运行 = 状态已损坏还硬撑；正确姿势是**记录日志 → 退出 → 交给 supervisor 自动重启**
 
 ### 环境变量实践
 
@@ -429,6 +506,8 @@ const imageBuffer = await fs.readFile('./logo.png')
 - Base64 编解码
 - 加密/解密操作
 
+**Buffer 的内存从哪来：** Buffer 是**堆外内存**（不经 V8 GC，见"内存管理"章节）。`Buffer.from` 对小 Buffer（≤8KB）走**内存池**——预先分配大块内存复用，避免大量零碎小分配产生 GC 压力；大 Buffer 则单独分配。大 Buffer 一旦创建就占实打实的内存，用完靠引用释放回系统而不是 GC——这也是大文件要用流处理的原因之一。
+
 ## events 模块
 
 Node.js 的事件驱动架构基石，本质是**发布订阅模式**的实现。很多核心模块（如 `http`、`fs`、`stream`）都继承了 `EventEmitter`。
@@ -470,6 +549,22 @@ emitter.on('error', (err) => {
 emitter.emit('error', new Error('something went wrong'))
 ```
 
+### 监听器泄漏警告
+
+同一事件注册**超过 10 个**监听器会打印 `MaxListenersExceededWarning`。这通常是**事件监听器泄漏**的信号：每次创建对象都 `emitter.on(...)` 但从不 `off`，对象无法被 GC 回收（呼应"内存泄漏排查"章节）。排查方向：是否在循环/工厂函数里注册监听器。
+
+```javascript
+// 泄漏写法:注册后从不清理
+function fetchData() {
+  api.on('data', handler)  // 每次调用都新增一个监听器 → 越积越多
+}
+
+// 修复:用完 off;或业务上确认监听器数量很多时调高上限
+emitter.setMaxListeners(20)
+```
+
+> 判断口诀：**先怀疑泄漏，再调 setMaxListeners**——确认确实需要这么多监听器才去调上限。
+
 ## stream 模块
 
 流是 Node.js 处理连续数据的核心抽象。数据像水流一样分块处理，不需要全部加载到内存。
@@ -509,7 +604,19 @@ const server = http.createServer((req, res) => {
 server.listen(3000)
 ```
 
-> **背压（backpressure）**：当消费者处理速度跟不上生产者时，流会自动暂停读取（`readableFlowing` 变为 false），避免内存被撑爆。`pipe` 自动处理背压，手写 `data` 事件则要自己调用 `pause()`/`resume()`。
+> **背压（backpressure）**：当消费者处理速度跟不上生产者时，流会自动暂停读取（`readableFlowing` 变为 false），避免内存被撑爆。`pipe` 自动处理背压，手写 `data` 事件则要自己调用 `pause()`/`resume()`：
+
+```javascript
+const rs = fs.createReadStream('big.log')
+const ws = fs.createWriteStream('out.log')
+
+rs.on('data', (chunk) => {
+  if (!ws.write(chunk)) rs.pause()   // 写不下了 → 暂停读
+})
+ws.on('drain', () => rs.resume())    // 缓冲排空 → 恢复读
+```
+
+**对象流（objectMode）：** 默认流按字节处理；设成 `{ objectMode: true }` 后，每个 chunk 可以是任意 JS 对象（适合逐条处理 JSON 记录）。注意对象流内部高水位线默认从 16KB 变成 **16 个对象**。
 
 ## zlib 模块
 
@@ -772,6 +879,16 @@ parentPort.postMessage(result)  // 结果传回主线程
 - 适合：CPU 密集计算、图像/音视频处理、复杂序列化
 - 不适合：I/O 密集任务（主线程事件循环已足够，多开线程反而增加调度开销）
 
+**worker 之间传数据的三种方式**（面试常问"是拷贝还是共享"）：
+
+| 方式 | 行为 | 适用 |
+|------|------|------|
+| `postMessage(obj)` | **默认结构化克隆（拷贝一份）**——对象被序列化复制，大对象慢 | 常规传参 |
+| transferable 转移 | **零拷贝转移所有权**：`postMessage(buf, [buf.buffer])` 后原线程的 buffer 被"掏空"、不可再用 | 传大 ArrayBuffer，且不再需要原引用 |
+| `SharedArrayBuffer` | **真正的共享内存**：多线程读写同一块内存，用 `Atomics` 做同步 | 高频小数据、需要多线程并发读写 |
+
+> 所以"worker_threads 与主线程共享内存"是**不准确**的说法——默认是**拷贝**，只有显式用 SharedArrayBuffer 才是真共享。
+
 ## child_process：子进程
 
 `child_process` 用于**创建独立进程**：执行系统命令、跑其他脚本，进程间完全隔离。
@@ -803,7 +920,49 @@ child.on('close', (code) => {
 | **适用场景** | 简单命令、拿全部输出 | 日志流、长任务、大输出 |
 | **实现** | 内部也是 spawn + shell 包装 | 直接启动进程 |
 
+**还有两个变体（四兄弟一次记全）：**
+
+| API | 特点 | 典型场景 |
+|-----|------|---------|
+| `spawn` | 直接启动进程，流式输出，不经过 shell | 长任务、日志、参数可控（最底层） |
+| `exec` | spawn + shell，一次性缓存全部输出 | 简单命令、要完整输出 |
+| `execFile` | 直接执行可执行文件，**不经 shell**（比 exec 安全：无命令注入面） | 执行本地脚本/二进制 |
+| `fork` | spawn 的特例：以 Node 模块启动子进程，**自动建 IPC 通道** | 需要父子进程通信（见下方 IPC） |
+
 > **安全提醒**：`exec` 会通过 shell 执行字符串，**永远不要**把用户输入拼进命令字符串（命令注入漏洞）。有参数需求用 `spawn` 传数组。
+
+### 进程间通信（IPC）方式
+
+多进程协作的关键是通信。Node 里最常用的是 `fork()` 派生的子进程——它是 `spawn` 的特例，**自动建立一条 IPC 通道**，父子进程可以互发消息：
+
+```javascript
+// parent.js
+const { fork } = require('child_process')
+const child = fork('./child.js')
+
+child.on('message', (msg) => console.log('子进程说:', msg))
+child.send({ task: 'compute' })        // 主 → 子
+
+// child.js
+process.on('message', (msg) => {
+  process.send({ result: 'done', pid: process.pid })  // 子 → 主
+})
+```
+
+**IPC 方式的分类**（区分"同机进程间"与"跨机服务间"）：
+
+| 场景 | 方式 | 特点 |
+|------|------|------|
+| 同机·父子进程 | **fork + IPC channel** | Node 内置，`send`/`message` 最顺手；数据会序列化拷贝 |
+| 同机·通用 | 管道（stdio/命名管道） | 单向流，适合传字节流 |
+| 同机·通用 | Unix domain socket | 走文件系统的 socket，比 TCP 快（免网络栈） |
+| 同机·通用 | 共享内存（SharedArrayBuffer） | 零拷贝，`worker_threads` 间用；需自己管同步 |
+| 同机·通用 | 信号（SIGUSR1/SIGTERM） | 只能传达"事件"，不能带数据 |
+| 跨机 | **TCP/HTTP、gRPC** | 走网络，任何语言互通 |
+| 跨机 | **消息队列中间件**（RabbitMQ/Kafka/Redis） | 解耦、削峰，见 MQ 章节 |
+
+一句话选型：**Node 进程间优先 fork + IPC；线程间用 postMessage/SharedArrayBuffer；跨机器用网络或 MQ**。
+
 
 ## cluster：多进程集群
 

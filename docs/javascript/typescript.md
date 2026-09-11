@@ -224,13 +224,73 @@ const numStack = new Stack<number>();
 numStack.push(42);
 ```
 
-### 泛型默认值
+## 函数重载与 this 类型
+
+### 函数重载（与 Java 不同：只能有一个实现）
+
+TS 的函数重载 = **多个"重载签名"（对外门面）+ 1 个"实现签名"（函数本体）**。
+和 Java 最大的区别：TS **不允许写多个函数体**，实现逻辑只能有一份，靠重载签名声明"同一函数能接受的多种参数形状"，函数体内再自己分派。
 
 ```typescript
-function createPair<A = string, B = number>(a: A, b: B): [A, B] {
-  return [a, b];
+// 重载签名：只声明不写函数体，对外可见
+function format(input: string): string;
+function format(input: number): string;
+// 实现签名：真正的函数体，参数放宽到能覆盖所有重载；不对外可见
+function format(input: string | number): string {
+  if (typeof input === "string") return input.trim();
+  return input.toFixed(2);
+}
+
+format(" hi ");   // ✅ 命中 string 重载
+format(3.14159);  // ✅ 命中 number 重载
+format(true);     // ❌ 没有匹配的重载，编译报错
+```
+
+要点：
+- 调用时 TS 只在**重载签名列表**中匹配，实现签名不参与匹配、对调用方不可见
+- 为什么实现签名不能对外可见：它的参数往往故意放宽（如上例 `string | number`），若直接暴露，任何参数都能传进来，重载就失去精确约束了
+- 实现签名的参数/返回类型必须能**覆盖并兼容**所有重载签名，否则编译报错
+
+### this 参数
+
+`this` 参数 = 参数列表最前面的"假参数"，用来给函数体内的 `this` 标注类型（不写默认是 any，类型不安全）。
+
+```typescript
+type User = { name: string; role: "user" | "admin" };
+
+// this is 收窄 this：守卫通过后，调用处的 this 类型被收窄为管理员
+function isAdmin(this: User): this is User & { role: "admin" } {
+  return this.role === "admin";
 }
 ```
+
+`this` 参数配合 `call`/`apply`/类方法签名使用，常见于给"回调函数的 this 上下文"上类型。
+
+```typescript
+// 场景一：this 参数 + call/apply —— 调用时强制校验 this 的形状
+type Logger = { prefix: string; count: number };
+
+function logCount(this: Logger) {
+  console.log(`${this.prefix}: ${this.count}`);
+}
+const logger: Logger = { prefix: "hit", count: 3 };
+logCount.call(logger);                  // ✅ this 匹配 Logger
+logCount.call({ prefix: "hit" });       // ❌ TS2345：缺 count，this 形状不匹配
+
+// 场景二：对象方法的 this 参数 —— 解构导致 this 丢失，编译期就能暴露
+const counter = {
+  step: 0,
+  next(this: { step: number }): number {
+    this.step++;
+    return this.step;
+  },
+};
+counter.next();      // ✅ this 绑定为 counter，类型匹配
+const { next } = counter;
+next();              // ❌ TS2684：解构后 this 不再是 { step: number }，调用被拦截
+```
+
+`this` 参数不参与运行时——编译产物里会被擦掉，它纯粹是"给 this 上类型 + 让编译器校验调用方式"的编译期工具。
 
 ## 类型收窄（Type Narrowing）
 
@@ -323,19 +383,42 @@ type Partial<T> = { [K in keyof T]?: T[K] };
 // 将属性变为只读
 type Readonly<T> = { readonly [K in keyof T]: T[K] };
 
-// 将属性变为 required
+// 将属性变为 required(- 号去掉可选修饰符)
 type Required<T> = { [K in keyof T]-?: T[K] };
 
 // 排除某些属性
 type Omit<T, K extends keyof T> = { [P in Exclude<keyof T, K>]: T[P] };
 
-// 自定义映射
+// ===== 修饰符增删：readonly / ? 前可加 + 或 -(默认 +) =====
+// 关键坑：遍历 keyof T 的"同态映射"会保留原属性的 readonly / ? 修饰符，
+// 所以"去掉只读"不能靠重写一遍映射，必须显式写 -readonly
+type MyMutable<T> = { -readonly [K in keyof T]: T[K] };
+type Clean<T> = { -readonly [K in keyof T]-?: T[K] };  // 同时去只读 + 去可选
+// 验证：const o: MyMutable<{ readonly a: 1 }> = { a: 1 }; o.a = 2; // OK
+// 若用 { [K in keyof T]: T[K] } 重写，a 仍是 readonly，赋值会报 TS2540
+
+// ===== as 键重映射(key remapping) =====
+// 语法：{ [K in keyof T as 新键表达式]: T[K] }，as 后面把键 K 改写成新键名
+// K & string 的原因：keyof T 可能含 string | number | symbol，
+// 而 Uppercase / 模板字面量只认 string，& string 把键收窄到字符串部分(过滤 symbol)
+
+// 所有键转大写
+type UppercaseKeys<T> = { [K in keyof T as Uppercase<K & string>]: T[K] };
+
+// 所有键加前缀
+type AddPrefix<T, P extends string> = {
+  [K in keyof T as `${P}_${K & string}`]: T[K];
+};
+
+// 键名改造 + 值类型一起变(每个属性包装成同名 getter 函数)
 type Getters<T> = {
   [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];
 };
 
 type UserGetters = Getters<{ name: string; age: number }>;
 // { getName: () => string; getAge: () => number }
+type Upper = UppercaseKeys<{ name: string }>;       // { NAME: string }
+type Prefixed = AddPrefix<{ name: string }, 'config'>;  // { config_name: string }
 ```
 
 ### 条件类型
@@ -361,19 +444,85 @@ type B = UnpackPromise<number>;           // number
 
 ### 模板字面量类型
 
+在反引号字符串中嵌入 `${类型}`，基于字面量类型/联合"拼"出新的字符串字面量类型，还能参与模式匹配与递归。
+
 ```typescript
 type Color = "red" | "green" | "blue";
 type HexColor = `#${string}`;
+type Greet = `hello ${"world"}`;  // "hello world"
+```
 
-// 字符串操作类型
-type Greeting = `Hello, ${string}!`;
+**插值联合会自动做笛卡尔积展开**（每个插值点取一个成员，两两组合）：
 
-// 内置字符串工具
+```typescript
+type Route = `${"get" | "post"}/api`;
+// "get/api" | "post/api"
+
+type Padding = `${"top" | "bottom"}-${"left" | "right"}`;
+// "top-left" | "top-right" | "bottom-left" | "bottom-right"(2 × 2 = 4 个)
+```
+
+**`${string}` 通配：匹配"任意一段字符串"**，用于形状判定和约束：
+
+```typescript
+type HttpUrl = `http${string}`;          // "http://a"、"https://b" 都满足
+type EventName = `on${Capitalize<string>}`;  // "onClick" | "onInput" | ...
+
+// 判定某个字符串是否符合形状
+type R = "prefix_name" extends `prefix_${string}` ? true : false;  // true
+```
+
+**infer 提取与递归拆分**（比 `${string}` 更进一步——能取出内容再用）：
+
+```typescript
+// 去掉已知前缀:前缀已知直接拼,剩余未知用 infer R 抓
+type RemovePrefix<T extends string, P extends string> = T extends `${P}${infer R}` ? R : T;
+type A = RemovePrefix<"prefix_name", "prefix_">;  // "name"
+
+// 递归按 "." 把路径拆成各段联合
+type ParsePath<T extends string> =
+  T extends `${infer Head}.${infer Tail}` ? Head | ParsePath<Tail> : T;
+type B = ParsePath<"user.profile.name">;  // "user" | "profile" | "name"
+
+// 去掉最后一段(判断 Tail 是否还含分隔符)
+type RemoveLast<T extends string> =
+  T extends `${infer Head}.${infer Tail}`
+    ? Tail extends `${string}.${string}`
+      ? `${Head}.${RemoveLast<Tail>}`
+      : Head
+    : T;
+type C = RemoveLast<"a.b.c">;  // "a.b"
+```
+
+> 经验：只判断形状用 `${string}` 通配；需要"取出内容再用"用 `infer X`；需要拆到底用递归。
+
+**字符串操作内置类型**（可嵌套、可结合泛型参数）：
+
+```typescript
 type Upper = Uppercase<"hello">;    // "HELLO"
 type Lower = Lowercase<"HELLO">;    // "hello"
 type Cap = Capitalize<"hello">;     // "Hello"
 type Uncap = Uncapitalize<"Hello">; // "hello"
+
+type EventName<T extends string> = `on${Capitalize<T>}`;
+type E = EventName<"click">;  // "onClick"
 ```
+
+**实战组合：配合映射类型的 `as` 重映射，对键名做筛选/改造**（详见上节"as 键重映射"）：
+
+```typescript
+// 所有键转大写
+type UppercaseKeys<T> = { [K in keyof T as Uppercase<K & string>]: T[K] };
+
+// 条件筛键:只保留 onXxx 事件键,其余用 never 丢弃
+type HandlerMap = { onClick(): void; onChange(): void; total: number };
+type EventOnly<T> = {
+  [K in keyof T as K extends `on${string}` ? K : never]: T[K]
+};
+// { onClick(): void; onChange(): void }(total 被过滤)
+```
+
+常见面试题 `ParsePath`、`Split`、`Trim` 等字符串体操，本质都是"模板匹配 + infer 递归"的组合，可对照上面的 RemoveLast 理解。
 
 ## 内置工具类型
 
@@ -417,6 +566,16 @@ const enum Color {
   Green = "GREEN",
 }
 
+// const enum 的机制与限制：
+// - 编译时"就地替换"：const c = Color.Red 编译后直接变成 const c = "RED"，
+//   枚举定义和调用都不留运行时产物，这是"零开销"的来源
+// - 不能有计算成员：内联要求编译器在编译期就知道成员的值，
+//   所以成员只能是常量表达式（字面量、1 + 1、"a".length 等）；
+//   A = f() 这类运行时求值的写法会报错 TS2474（普通 enum 运行时才求值，故允许）
+// - isolatedModules 下受限：单文件独立编译的工具（esbuild、Babel）每次只看一个文件，
+//   看不到 const enum 的定义，无法做就地替换，因此需要额外配置才能编译；
+//   很多项目因此直接禁用 const enum，这也是推荐下面字面量联合方案的又一个原因
+
 // 枚举的替代方案：联合类型 + const（更推荐）
 const STATUS = {
   SUCCESS: "SUCCESS",
@@ -427,10 +586,15 @@ type Status = typeof STATUS[keyof typeof STATUS];
 // "SUCCESS" | "ERROR" | "LOADING"
 
 // 为什么更推荐 const 替代 enum：
-// 1. 零运行时开销：enum 会编译成真实对象，const 编译后就是普通对象
-// 2. 类型推断更精确：const 推断出字面量类型，enum 的类型是枚举本身
+// 1. 零运行时开销：enum 会编译成真实对象（含双向映射），const 编译后就是普通对象
+// 2. 类型推断更精确：as const 得到的是标准字面量类型（"SUCCESS"），与 string 体系完全互通；
+//    enum 的类型是枚举成员类型（如 EStatus.Success），始终携带"枚举身份"且兼容性单向：
+//    EStatus.Success 可赋给 "SUCCESS"，但 "SUCCESS" 不能赋给 EStatus.Success
 // 3. 与 JS 生态兼容：enum 是 TS 特有语法，const 是标准 JS
-// 4. 避免数字枚举的坑：数字枚举有隐式转换问题（如 let d: Direction = 0 合法但容易出错）
+// 4. （历史）TS 5.0 之前，数字枚举的类型检查形同虚设：任何 number 都能赋给枚举类型，
+//    比如 enum Direction { Up, Down } 时 let d: Direction = 42 是合法的，
+//    也就是说未定义的非法状态值（42、-1 等）能绕过类型检查直接混进来；
+//    TS 5.0 起数字枚举成员有了独立的字面量类型，此坑已修复
 ```
 
 ## 装饰器

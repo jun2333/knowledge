@@ -34,6 +34,29 @@ graph LR
 | **外键（Foreign Key）** | 关联另一张表的主键，建立表间关系 |
 | **索引（Index）** | 加速查询的数据结构，类似书的目录 |
 
+### 常用数据类型怎么选
+
+| 场景 | 推荐 | 说明 |
+|------|------|------|
+| 定长字符串（手机号、身份证、MD5） | `CHAR(n)` | 定长，存取快；不足会补空格 |
+| 变长字符串（用户名、邮箱、地址） | `VARCHAR(n)` | 按实际长度存，省空间；n 按业务上限给，别一律 255 |
+| 超长文本（文章、JSON） | `TEXT` / `JSON` | 不适合建索引（或只能前缀索引） |
+| 整数（ID、数量） | `INT` / `BIGINT` | 主键优先 `BIGINT`（防 ID 耗尽） |
+| **金额 / 精确小数** | **`DECIMAL(m,n)`** | **绝不用 `FLOAT`/`DOUBLE`**——浮点数有精度误差，`0.1 + 0.2 ≠ 0.3` |
+| 时间 | `DATETIME` / `TIMESTAMP` | 见下表对比 |
+| 布尔 | `TINYINT(1)` | MySQL 没有真正的 bool，用 0/1 表示 |
+
+**`DATETIME` vs `TIMESTAMP`：**
+
+| | `DATETIME` | `TIMESTAMP` |
+|---|---|---|
+| 范围 | 1000 ~ 9999 年 | 1970 ~ 2038 年（**2038 问题**） |
+| 时区 | **不随时区变**（存什么读什么） | **随会话时区转换**（存 UTC，读时转换） |
+| 空间 | 8 字节 | 4 字节 |
+| 建议 | 业务时间字段优先用它（直观、无 2038 限制） | 需要自动时区转换时用 |
+
+> **前端类比**：`DECIMAL` 像"用字符串精确存数字"（准，稍慢），`FLOAT` 像 JS 的 `number`（快，但精度不可靠）——所以**钱必须用 `DECIMAL`**。
+
 ### 基本 SQL 语法
 
 以下语法在 MySQL、PostgreSQL、SQLite 中通用，学会这些能覆盖大部分业务场景。
@@ -69,6 +92,19 @@ UPDATE users SET email = 'new@example.com' WHERE id = 1;
 -- 删
 DELETE FROM users WHERE id = 1;
 ```
+
+**三种"删除"的区别（面试常考）：**
+
+| | `DELETE` | `TRUNCATE` | `DROP` |
+|---|---|---|---|
+| 删除什么 | 符合条件的**行** | **整表数据**（保留表结构） | **整张表**（结构和数据都没了） |
+| 能否带 `WHERE` | ✅ | ❌ | ❌ |
+| 能否回滚 | ✅（事务内） | ❌（隐式提交，属 DDL） | ❌ |
+| 自增 ID | 不重置（继续递增） | **重置为 1** | — |
+| 速度 | 慢（逐行删 + 写 undo/redo） | 快（直接重建数据页） | 快 |
+| 触发器 | 会触发 | 不触发 | 不触发 |
+
+> 记忆：`DELETE` 是 DML（可回滚、可带条件）；`TRUNCATE` / `DROP` 是 DDL（不可回滚）。
 
 #### 条件与排序
 
@@ -118,6 +154,37 @@ SELECT role, avg_age FROM (
 WHERE avg_age > 25;
 ```
 
+#### NULL 的坑（高频）
+
+```sql
+-- ① = NULL 永远查不到东西,要用 IS NULL
+SELECT * FROM users WHERE email = NULL;      -- ❌ 结果永远为空
+SELECT * FROM users WHERE email IS NULL;     -- ✅
+
+-- ② NULL 参与运算 / 聚合会被忽略
+SELECT AVG(age) FROM users;    -- 跳过 age 为 NULL 的行再平均
+SELECT 1 + NULL;               -- NULL
+SELECT CONCAT('a', NULL);      -- NULL(字符串拼接同样会"传染")
+
+-- ③ COUNT 的三种写法结果可能不同
+SELECT COUNT(*)     FROM users;   -- 所有行
+SELECT COUNT(1)     FROM users;   -- 所有行(与 COUNT(*) 等价)
+SELECT COUNT(email) FROM users;   -- 只统计 email 非 NULL 的行 ← 关键区别
+
+-- ④ 排序:MySQL 中 NULL 最小,ASC 时排最前
+SELECT * FROM users ORDER BY age ASC;
+
+-- ⑤ 唯一索引允许多个 NULL(但空字符串只能有一个)
+```
+
+| 要点 | 说明 |
+|------|------|
+| 判断 | 只能用 `IS NULL` / `IS NOT NULL`，不能用 `=` |
+| 聚合 | `SUM/AVG/MAX/MIN/COUNT(col)` 都会**跳过 NULL** |
+| 函数 | 大部分函数遇 NULL 返回 NULL，可用 `IFNULL(col, 0)` / `COALESCE(a, b)` 兜底 |
+| 索引 | `WHERE col IS NULL` 一般能走索引；`IS NOT NULL` 常常不走 |
+| 设计建议 | 业务字段尽量 `NOT NULL DEFAULT ''` / `0`，少用 NULL（三值逻辑容易踩坑） |
+
 #### MySQL vs PostgreSQL 常见差异
 
 大部分基础语法完全一样，差异主要在以下场景：
@@ -133,6 +200,28 @@ WHERE avg_age > 25;
 | JSON 查询 | `JSON_EXTRACT(data, '$.name')` | `data->>'name'` |
 
 **实际建议：** 先学通用语法，遇到差异查一下目标数据库的写法就行，10 分钟能上手。大部分项目用 ORM 后这些差异也被屏蔽了。
+
+#### UNION vs UNION ALL
+
+```sql
+-- 合并两个查询的结果(列数、类型必须一致)
+SELECT name FROM users
+UNION
+SELECT name FROM admins;       -- 去重(隐式排序,慢)
+
+SELECT name FROM users
+UNION ALL
+SELECT name FROM admins;       -- 不去重(直接拼接,快)
+```
+
+| | `UNION` | `UNION ALL` |
+|---|---|---|
+| 去重 | ✅ 会去重 | ❌ 不去重 |
+| 性能 | 慢（去重可能引入临时表 + 排序） | **快**（直接追加） |
+| 何时用 | 结果必须唯一 | 确定无重复、或允许重复时（**默认优先用它**） |
+
+> 面试问"选哪个"——**没有去重需求就用 `UNION ALL`**。
+> 另外：`UNION` 的结果列名取**第一个查询**的列名。
 
 ### 表关系设计
 

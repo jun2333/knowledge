@@ -57,12 +57,12 @@ flowchart TD
     D -->|否| E[400 用户名或密码错误]
     D -->|是| F{账号启用? status=1}
     F -->|否| G[403 账号已被禁用]
-    F -->|是| H[生成 JWT 返回前端<br/>token 携带密码指纹]
+    F -->|是| H[生成 JWT 返回前端<br/>token 携带版本号]
 ```
 
 - **无状态**：服务端不存 session，前端每次请求带 JWT
 - **UserDetails = AdminUserDetails**：包装 `ums_admin` + 该用户资源列表（角色扁平化成权限）
-- **JWT 失效方案**：token 里带密码指纹（pwd claim），改密码后旧 token 校验失败
+- **JWT 失效方案**：token 携带**版本号**——改密码/封号时递增版本号 → 该用户全端失效；登出用 **jti 黑名单** → 只失效当前设备。详见 [Token 失效设计（版本号 + jti 黑名单）](/java-practice/mall-design/02-token-invalidation-design)
 
 ## 四、授权：请求进来怎么判断（动态权限）
 
@@ -112,6 +112,7 @@ flowchart TD
 
 ## 相关
 
+- [Token 失效设计（版本号 + jti 黑名单）](/java-practice/mall-design/02-token-invalidation-design) - JWT 主动失效的完整方案（改密码/封号全端失效、登出单设备失效）
 - [权限设计](/service/permission-design) - 通用权限模型理论
 - [Spring Boot 入门](/service/spring-boot) - Spring Security/JWT/过滤器链
 - [收获记录](/java-practice/harvest) - 认证改造/循环依赖/异常分层实战沉淀

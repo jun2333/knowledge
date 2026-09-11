@@ -192,12 +192,16 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: redis-server --appendonly yes  # 开启 AOF 持久化(默认只有 RDB 快照,可能丢最后几分钟数据)
     ports:
       - '6379:6379'
+    volumes:
+      - redis-data:/data                    # Redis 容器内的数据目录就是 /data
     restart: unless-stopped
 
 volumes:
   pg-data:                                  # 顶层声明:登记"pg-data 是本项目管理的卷",up 时自动创建(等价 docker volume create)
+  redis-data:
 ```
 
 启动和停止：
@@ -208,6 +212,69 @@ docker compose logs -f app  # 查看应用日志
 docker compose down         # 停止并删除容器
 docker compose down -v      # 同时删除数据卷
 ```
+
+### 常用参数
+
+| 参数 | 全称 | 作用 |
+|------|------|------|
+| `-f` | `--file` | 指定 compose 文件（**默认只读当前目录的 `docker-compose.yml`**）；可多次指定，后面的覆盖前面的 |
+| `-d` | `--detach` | 后台运行（不加则前台跑，日志打屏，`Ctrl+C` 即停） |
+| `-p` | `--project-name` | 指定项目名（**默认取当前目录名**），决定容器名前缀和网络名 |
+| `--env-file` | — | 指定环境变量文件（默认读 `.env`） |
+| `--profile` | — | 启用某组 profile 下的服务 |
+
+**`-f` 的实际用法**——文件不在当前目录、或文件名不是默认名时必须指定：
+
+```bash
+# mall 项目:编排文件在 document/docker/ 下,且不叫 docker-compose.yml
+docker-compose -f document/docker/docker-compose-env.yml up -d
+docker-compose -f document/docker/docker-compose-app.yml up -d
+```
+
+**多文件合并**（基础配置 + 环境覆盖）：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# 后面的文件覆盖前面同名的配置项
+```
+
+**`-p` 解决"同一目录多套编排"**：
+
+```bash
+# 项目名默认 = 目录名,两套编排会撞车 → 用 -p 区分
+docker compose -f docker-compose-env.yml -p mall-env up -d    # 容器名 mall-env-xxx
+docker compose -f docker-compose-app.yml -p mall-app up -d    # 容器名 mall-app-xxx
+```
+
+> **v1 与 v2 两种写法**（参数基本兼容）：
+> - `docker-compose up -d` —— v1，老的独立二进制（连字符），已停止维护
+> - `docker compose up -d` —— v2，Docker 插件（空格），**现在推荐这种**
+>
+> 老教程里看到连字符、新文档里看到空格，是同一个东西。
+
+> **Redis 需要挂卷吗？** 分两种情况：
+>
+> | 用途 | 要不要挂 | 原因 |
+> |------|---------|------|
+> | **纯缓存**（丢了能从 DB 重建） | 可挂可不挂 | 不挂的话容器重建后**缓存全空**，请求瞬间全打到数据库，可能把 DB 打垮（"缓存雪崩"的变体）→ **生产建议挂** |
+> | **有状态数据**（session / 分布式锁 / 队列 / 排行榜） | **必须挂** | 丢了就是业务故障：掉登录、锁失效、消息丢失 |
+>
+> **注意"挂卷"和"持久化"要配套做**：只挂卷不开持久化，Redis 默认的 RDB 是定时快照，仍可能丢最后几分钟的数据；重要数据用 `--appendonly yes` 开 AOF。
+
+> **另一个常见的坑**：`depends_on` 只保证"容器已启动"，**不保证"服务已就绪"**（Postgres 可能还在初始化）。应用要自己重试连接，或用 `healthcheck` + `condition: service_healthy`：
+>
+> ```yaml
+> services:
+>   app:
+>     depends_on:
+>       postgres:
+>         condition: service_healthy
+>   postgres:
+>     healthcheck:
+>       test: ["CMD-SHELL", "pg_isready -U postgres"]
+>       interval: 5s
+>       retries: 5
+> ```
 
 ## 开发环境热更新
 
@@ -275,3 +342,10 @@ Docker 容器共享宿主机内核，启动秒级，体积 MB 级；虚拟机有
 
 **Q: 容器挂了数据怎么办？**
 用 volume 挂载数据目录，容器删除数据不丢。数据库一定要用 volume。
+
+## 相关
+
+- [Node.js 服务部署最佳实践](/service/node-deployment) - Node 服务的完整上线流程（含多阶段构建）
+- [Java 服务部署最佳实践](/service/java-deployment) - Spring Boot 服务的完整上线流程（含分层镜像）
+- [PM2 进程管理](/service/pm2) - 裸机部署时的进程守护与 cluster 模式
+- [mall 项目部署实操](/java-practice/09-deployment-practice) - 具体项目的 compose / nginx / ELK 配置
