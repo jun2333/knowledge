@@ -1,10 +1,10 @@
 name: Deploy Docs to GitHub Pages
 
 on:
-  # 推送到 master 分支时自动部署
-  push:
-    branches: [master]
-  # 支持手动触发
+  # ⚠️ 暂时禁用自动触发：GitHub 账号因账单问题无法使用 Actions（job 无法启动）
+  # 账号问题解决后，取消下面 push 的注释即可恢复自动部署
+  # push:
+  #   branches: [master]
   workflow_dispatch:
 
 # GitHub Pages 部署所需权限
