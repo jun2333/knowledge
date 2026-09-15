@@ -1,5 +1,92 @@
 import { defineConfig } from 'vitepress'
 
+// ==================== 环境区分：本地 / 线上 ====================
+// 本地开发（pnpm dev）显示全量内容；线上构建（pnpm build）排除个人内容
+const isProd = process.env.NODE_ENV === 'production'
+
+// 仅本地构建 / 显示的内容（生产环境不构建，无法通过 URL 访问）
+const LOCAL_ONLY_PATHS = [
+  'sports/**',                 // 个人兴趣（乒乓球 / 游泳）
+  'misc/**',                   // 杂项笔记
+  'java-practice/**',          // Java 学习实战（自用）
+  'guide/**',                  // 指南类文章（自用，对外价值不高）
+  'algorithms/**',             // 算法笔记（质量待完善）
+]
+
+// 仅本地显示的 sidebar 分组
+const LOCAL_ONLY_SIDEBAR_KEYS = ['/sports/', '/misc/', '/java-practice/', '/guide/', '/algorithms/']
+
+// 生产环境忽略的死链（其他文章里指向"已排除内容"的链接）
+const IGNORED_DEAD_LINKS = [
+  /^\/sports\//,
+  /^\/misc\//,
+  /^\/java-practice\//,
+  /^\/guide\//,
+]
+
+/** 生产环境过滤掉本地专属的 sidebar 分组 */
+function filterSidebar(sidebar) {
+  if (!isProd) return sidebar
+  const result = { ...sidebar }
+  for (const key of LOCAL_ONLY_SIDEBAR_KEYS) delete result[key]
+  return result
+}
+
+// ---------- 顶部导航：本地版（全量） ----------
+const localNav = [
+  {
+    text: '前端', items: [
+      { text: 'JavaScript', link: '/javascript/memory' },
+      { text: 'Vue', link: '/vue/double-binding' },
+      { text: 'React', link: '/react/concept' },
+      { text: 'CSS', link: '/css/bfc' },
+      { text: '浏览器', link: '/browser/overview' },
+      { text: '性能优化', link: '/performance/best-practices' },
+      { text: '大前端', link: '/frontend/hybrid' },
+    ]
+  },
+  {
+    text: '后端', items: [
+      { text: 'Service', link: '/service/roadmap' },
+      { text: 'Java实战', link: '/java-practice/' },
+    ]
+  },
+  { text: 'AI Agent', link: '/ai-agent/' },
+  { text: '架构', link: '/engineering/micro-frontend' },
+  { text: '算法', link: '/algorithms/basic' },
+  {
+    text: '其他', items: [
+      { text: '读书笔记', link: '/books/js-you-dont-know' },
+      { text: '运动', link: '/sports/breaststroke-for-beginners' },
+      { text: '杂项', link: '/misc/notes' },
+    ]
+  },
+]
+
+// ---------- 顶部导航：线上版（铺开技术分类，去掉个人内容） ----------
+const prodNav = [
+  {
+    text: '前端', items: [
+      { text: 'JavaScript', link: '/javascript/memory' },
+      { text: 'Vue', link: '/vue/double-binding' },
+      { text: 'React', link: '/react/concept' },
+      { text: 'CSS', link: '/css/bfc' },
+      { text: '浏览器', link: '/browser/overview' },
+      { text: 'MVVM', link: '/mvvm/react-vs-vue' },
+    ]
+  },
+  {
+    text: '工程化', items: [
+      { text: '性能优化', link: '/performance/best-practices' },
+      { text: '架构设计', link: '/engineering/micro-frontend' },
+      { text: '大前端', link: '/frontend/hybrid' },
+    ]
+  },
+  { text: '后端', link: '/service/roadmap' },
+  { text: 'AI Agent', link: '/ai-agent/' },
+  { text: '读书笔记', link: '/books/js-you-dont-know' },
+]
+
 export default defineConfig({
   title: '知识库',
   description: '个人知识库',
@@ -8,38 +95,16 @@ export default defineConfig({
   // 需要设置 base，否则静态资源 404。本地开发/预览保持默认 '/'。
   base: process.env.BASE_PATH || '/',
 
-  themeConfig: {
-    nav: [
-      {
-        text: '前端', items: [
-          { text: 'JavaScript', link: '/javascript/memory' },
-          { text: 'Vue', link: '/vue/double-binding' },
-          { text: 'React', link: '/react/concept' },
-          { text: 'CSS', link: '/css/bfc' },
-          { text: '浏览器', link: '/browser/overview' },
-          { text: '性能优化', link: '/performance/best-practices' },
-          { text: '大前端', link: '/frontend/hybrid' },
-        ]
-      },
-      {
-        text: '后端', items: [
-          { text: 'Service', link: '/service/roadmap' },
-          { text: 'Java实战', link: '/java-practice/' },
-        ]
-      },
-      { text: 'AI Agent', link: '/ai-agent/' },
-      { text: '架构', link: '/engineering/micro-frontend' },
-      { text: '算法', link: '/algorithms/basic' },
-      {
-        text: '其他', items: [
-          { text: '读书笔记', link: '/books/js-you-dont-know' },
-          { text: '运动', link: '/sports/breaststroke-for-beginners' },
-          { text: '杂项', link: '/misc/notes' },
-        ]
-      },
-    ],
+  // 生产环境排除本地专属内容（不进入构建产物，无法通过 URL 访问）
+  srcExclude: isProd ? LOCAL_ONLY_PATHS : [],
 
-    sidebar: {
+  // 生产环境忽略"指向已排除内容"的死链（本地开发仍会检查全部链接）
+  ignoreDeadLinks: isProd ? IGNORED_DEAD_LINKS : false,
+
+  themeConfig: {
+    nav: isProd ? prodNav : localNav,
+
+    sidebar: filterSidebar({
       '/guide/': [
         {
           text: '指南',
@@ -650,7 +715,7 @@ export default defineConfig({
           ]
         }
       ]
-    },
+    }),
 
     search: {
       provider: 'local'

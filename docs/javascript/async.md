@@ -184,6 +184,26 @@ class MyPromise {
   catch(onRejected) {
     return this.then(null, onRejected)
   }
+
+  // ===== 静态方法 =====
+  static resolve(value) {
+    // ① 已经是 MyPromise 实例 → 直接返回它(规范要求,不包新的)
+    if (value instanceof MyPromise) return value
+    return new MyPromise((resolve, reject) => {
+      // ② thenable(含原生 Promise)→ 跟随它的状态
+      if (value && typeof value.then === 'function') {
+        value.then(resolve, reject)
+      } else {
+        // ③ 普通值 → 直接 fulfilled
+        resolve(value)
+      }
+    })
+  }
+
+  static reject(reason) {
+    // 注意:reject 不做 thenable 展开,直接把 reason 作为拒绝原因
+    return new MyPromise((resolve, reject) => reject(reason))
+  }
 }
 ```
 
@@ -191,6 +211,23 @@ class MyPromise {
 - **状态不可逆**：`#transition` 中检查 `state !== 'pending'` 直接返回
 - **链式调用**：`.then()` 返回新 Promise，回调结果决定新 Promise 的状态
 - **微任务调度**：用 `queueMicrotask` 保证回调异步执行
+- **静态方法**：`resolve` 要处理三种输入（已是实例 / thenable / 普通值），`reject` 则直接拒绝、不做展开
+
+**`resolve` 与 `reject` 的不对称**（容易忽略）：
+
+| 输入 | `MyPromise.resolve(x)` | `MyPromise.reject(x)` |
+|------|------------------------|----------------------|
+| 已是 MyPromise 实例 | **直接返回它**（同一个对象） | 新建 rejected，reason 是它 |
+| thenable / 原生 Promise | **跟随它的状态** | **不展开**，reason 就是这个 Promise 对象 |
+| 普通值 | fulfilled，值就是它 | rejected，reason 就是它 |
+
+```js
+// 实测
+await MyPromise.resolve(Promise.resolve('native'))   // → 'native'(跟随)
+await MyPromise.reject(Promise.resolve('x'))         // → rejected,reason 是那个 Promise(不展开)
+```
+
+> **为什么不对称？** `reject` 的语义是"**以这个原因为由拒绝**"——如果它去展开 thenable，就变成"以 thenable 的结果为原因"，反而丢失了原始信息。
 
 ## 常见误区
 

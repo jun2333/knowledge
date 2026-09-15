@@ -8,7 +8,7 @@ import { useRouter } from 'vitepress'
 
 onMounted(() => {
   const router = useRouter()
-  router.go('/GUIDE')
+  router.go('/ai-agent/')
 })
 </script>
 

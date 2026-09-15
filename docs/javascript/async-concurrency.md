@@ -44,12 +44,141 @@ await Promise.all([slowTask(), failFastTask()])
 
 真要取消，必须用 `AbortController` 把信号传进任务（见第五节）。
 
-**② 空数组立即 resolve，不是挂起**
+**② 空数组的行为，四个 API 各不相同**（容易记混）
 
 ```js
-await Promise.all([])        // → []
-await Promise.allSettled([]) // → []   (实测确认)
+await Promise.all([])          // → []           立即 resolve
+await Promise.allSettled([])   // → []           立即 resolve
+await Promise.race([])         // → 永远 pending  ← 注意!
+await Promise.any([])          // → 立即 reject   AggregateError
 ```
+
+> 只有 `all` / `allSettled` 是"立即 resolve"；`race` 会**永远挂起**，`any` 会**立即 reject**——手写时这里最容易漏。
+
+### 手写实现（面试高频）
+
+四个 API 的核心都是"**遍历 + 计数 + 在恰当时机 settle**"，差别只在"什么时候算结束"。
+
+**共同骨架**：
+
+```js
+function myXXX(promises) {
+  return new Promise((resolve, reject) => {
+    const total = promises.length
+    // ① 空数组要特殊处理(四个 API 行为不同)
+    const results = new Array(total)
+    let done = 0
+    for (let i = 0; i < total; i++) {
+      Promise.resolve(promises[i]).then(/* 成功 */, /* 失败 */)
+    }
+  })
+}
+```
+
+#### 手写 `all`
+
+```js
+function myAll(promises) {
+  return new Promise((resolve, reject) => {
+    const total = promises.length
+    if (total === 0) return resolve([])
+    const results = new Array(total)
+    let done = 0
+    for (let i = 0; i < total; i++) {
+      Promise.resolve(promises[i]).then((data) => {
+        results[i] = data                       // 按索引存 → 保证顺序
+        if (++done === total) resolve(results)
+      }, reject)                                // 第二参数接 rejection(精确)
+    }
+  })
+}
+```
+
+**三个要点**：
+
+- `Promise.resolve(...)` 包一层 → 支持**非 Promise 值**（数字、普通对象也能进结果）
+- `results[i] = data` 按索引存 → **顺序与输入一致**（不是完成顺序）
+- `reject` 作为 `then` 第二参数（而非 `.catch()`）→ 只处理前一个 Promise 的 rejection，不会被 onFulfilled 里的错误误捕
+
+#### 手写 `allSettled`
+
+```js
+function myAllSettled(promises) {
+  return new Promise((resolve) => {
+    const total = promises.length
+    if (total === 0) return resolve([])
+    const results = new Array(total)
+    let done = 0
+    for (let i = 0; i < total; i++) {
+      Promise.resolve(promises[i])
+        .then(
+          (value)  => { results[i] = { status: 'fulfilled', value } },
+          (reason) => { results[i] = { status: 'rejected', reason } }
+        )
+        .finally(() => {
+          if (++done === total) resolve(results)   // 无论成败都要计数
+        })
+    }
+  })
+}
+```
+
+**要点**：**永不 reject**——用 `finally` 计数，成功失败都算一次完成。
+
+#### 手写 `race`
+
+```js
+function myRace(promises) {
+  return new Promise((resolve, reject) => {
+    for (const p of promises) {
+      Promise.resolve(p).then(resolve, reject)    // 第一个 settled 就赢
+    }
+    // 空数组 → 永远 pending(符合规范)
+  })
+}
+```
+
+**要点**：**谁先 settled 谁决定结果**——成功走 `resolve`，失败走 `reject`（别写成 `resolve(err)`，否则调用方的 `.catch()` 捕不到）。
+
+#### 手写 `any`
+
+```js
+function myAny(promises) {
+  return new Promise((resolve, reject) => {
+    const total = promises.length
+    if (total === 0) {
+      return reject(new AggregateError([], 'All promises were rejected'))
+    }
+    const errors = new Array(total)
+    let errCnt = 0
+    for (let i = 0; i < total; i++) {
+      Promise.resolve(promises[i]).then(resolve, (err) => {
+        errors[i] = err
+        if (++errCnt === total) {
+          reject(new AggregateError(errors, 'All promises were rejected'))   // 收集所有错误
+        }
+      })
+    }
+  })
+}
+```
+
+**三个要点**：
+
+- 第一个**成功**就 resolve（失败的不影响，继续等其他）
+- 全部失败 → 抛 **`AggregateError`**（包含所有错误，不是最后一个）
+- 空数组 → **立即 reject**
+
+#### 四个实现对比
+
+| | 结束条件 | 空数组 | 失败时 |
+|---|---|---|---|
+| `all` | 全部成功 | resolve `[]` | 立即 reject |
+| `allSettled` | 全部 settled | resolve `[]` | 记录，不 reject |
+| `race` | 第一个 settled | **永远 pending** | 第一个失败就 reject |
+| `any` | 第一个成功 | **立即 reject** | 全失败才 reject（`AggregateError`） |
+
+> **一句话记忆**：`all` 等全部成功、`allSettled` 等全部结束、`race` 等第一个、`any` 等第一个成功。
 
 ## 三、核心场景：固定任务列表 + 并发限制
 
@@ -91,6 +220,73 @@ Array.from 位置1 → worker() 进入 while → nextIndex 1→2 → 取 tasks[1
                                                           ↑ 此刻只有 2 个任务在跑
 tasks[0] 完成 → worker0 的 while 再判断 → nextIndex 2→3 → 取 tasks[2]
 ```
+
+#### worker 内部的两种写法（`await` vs `then` 递归）
+
+先记住两条铁律：
+
+| 层面 | 要求 | 为什么 |
+|------|------|--------|
+| **单个 worker 内部** | **串行**（一次一个任务） | 一个 worker = 一个并发额度；若它同时跑多个任务，limit 就失效了 |
+| **worker 之间（启动池）** | **并发**（N 个同时跑） | 这才是"池"的意义 |
+
+"串行"的本质是：**取任务 → 等它完成 → 再取下一个**——需要一个"在循环里暂停"的能力。
+
+**写法 1：`await` + `while`（推荐）**
+
+```js
+async function worker() {
+  while (nextIndex < total) {
+    const i = nextIndex++
+    results[i] = await tasks[i]()     // ← 暂停在这里,完成后从这继续 → 回到 while 顶部
+  }
+}
+```
+
+**写法 2：`then` + 递归（纯 Promise 风格）**
+
+```js
+function worker() {
+  if (nextIndex >= total) return Promise.resolve()
+  const i = nextIndex++
+  return Promise.resolve()
+    .then(() => tasks[i]())
+    .then((v) => { results[i] = v })
+    .then(() => worker())             // ← 递归:完成后取下一个
+}
+```
+
+实测两者完全等价（6 任务 / limit=2）：
+
+```
+await + while → 最大并发 2 | 166ms
+then + 递归   → 最大并发 2 | 157ms
+```
+
+**为什么 `await` 更自然**：
+
+| | `await` + `while` | `then` + 递归 |
+|---|---|---|
+| "循环"由谁提供 | `while` 语句 | **递归调用自己** |
+| "顺序等待"由谁提供 | `await` 暂停 / 恢复 | `then` 链 |
+| 直观度 | 高 | 中（递归不如循环直观） |
+
+> `then` 链**没有循环结构**，只能用递归模拟"继续取下一个"；而 `await` 能"跨越"`while` 循环（暂停后恢复，自然回到循环顶部），所以更直观。
+> 小提示：写法 2 的递归发生在 `then` 回调里（异步），**不会栈溢出**。
+
+**❌ 禁忌：`await worker()`**
+
+```js
+for (let w = 0; w < workerCount; w++) {
+  await worker()      // ❌ 第一个 worker 会干完【所有】任务,第二个没活干 → 退化成串行
+}
+
+for (let w = 0; w < workerCount; w++) {
+  worker().then(...)  // ✅ 不 await,让 N 个 worker 并发启动
+}
+```
+
+> **判断口诀**：代码里出现 `await worker()`，这个 worker 池一定退化成了串行（实测：6 任务 limit=2 时并发数只有 1、耗时翻倍）。
 
 ### 方案 B：信号量计数
 
@@ -267,6 +463,65 @@ async function concurrencyLimitAllSettled(tasks, limit) {
   {status:'rejected', reason:Error},          ← 失败被记录,其余照常
   {status:'fulfilled', value:3}, {status:'fulfilled', value:4} ]
 ```
+
+### 细节：为什么是 `.then(() => tasks[i]())` 而不是 `.then(tasks[i])`
+
+关键：**`then(fn)` 会替你调用 `fn`，并把上一个 Promise 的 resolve 值作为第一个参数传进去**。用一个"探针"函数就能看见：
+
+```js
+const spy = (...args) => console.log('我收到的参数:', JSON.stringify(args))
+
+await Promise.resolve('上个Promise的值').then(spy)                 // ["上个Promise的值"] ← then 塞的
+await Promise.resolve('上个Promise的值').then(() => spy())         // []                ← 被箭头函数屏蔽
+await Promise.resolve('上个Promise的值').then(() => spy('我传的'))  // ["我传的"]         ← 你控制的
+```
+
+**所以箭头函数的作用是"参数屏障"**：挡住 `then` 注入的值，同时保留自己传参的能力。
+
+```
+直接传:
+  then ──塞参数──→ tasks[i](上个值)          ← then 决定参数,你插不上手
+
+包一层:
+  then ──塞参数──→ 箭头函数(忽略它) ──→ tasks[i](你的参数)
+                      ↑ 屏障 / 适配器         ← 你决定参数
+```
+
+**什么时候真的需要传参？** 当任务需要的参数"调用时才知道"——最典型的是 `AbortSignal`（第五节会用）：
+
+```js
+.then(() => tasks[i]())         // 任务无参(参数靠闭包提前绑定)
+.then(() => tasks[i](signal))   // 任务需要 signal → 只能在这里传
+```
+
+如果直接 `.then(tasks[i])`，`signal` 就**没地方写**了（调用是 then 干的）。更糟的是它**不会报错**——`signal` 变成 `undefined`，取消功能静默失效。
+
+**但注意：注入不总是"干扰"**，取决于这个回调扮演什么角色：
+
+| 场景 | 回调的角色 | 注入是 | 写法 |
+|------|-----------|--------|------|
+| **数据处理链** | 管道的一环 | ✅ **特性**（数据靠它传递） | `x => x + 1`（不包，直接用） |
+| **并发控制调用任务** | 单纯的启动器 | ❌ **干扰**（任务不需要那个值） | `() => tasks[i]()`（包一层） |
+
+```js
+// 数据链:注入正是我们要的
+Promise.resolve(1)
+  .then((x) => x + 1)      // x = 1
+  .then((x) => x * 10)     // x = 2  ← 靠注入传递
+  .then(console.log)       // 20
+```
+
+**判断标准一句话**：**这个回调想不想接住上个 Promise 的值？** 想接就不包，不想接就包。
+
+**顺带，包一层还解决了另外两件事**：
+
+| 作用 | `.then(tasks[i])` | `.then(() => tasks[i]())` |
+|------|-------------------|---------------------------|
+| 参数 | 被注入 then 的值 | 你控制 |
+| this | 方法引用会丢 this | 箭头函数捕获外层 this |
+| 错误暴露 | 非函数时**静默跳过**（掩盖 bug） | 抛 `TypeError`（暴露 bug） |
+
+> **还有一种必须避开的写法**：`.then(tasks[i]())`——`tasks[i]()` 是**调用表达式**，在 `then` 之前就求值了，任务会**同步立即执行**，直接绕过并发控制。
 
 ### 关键细节：为什么用 `.then(onFulfilled, onRejected)` 而不是 `.then().catch()`
 
