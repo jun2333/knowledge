@@ -95,11 +95,11 @@
 
 ## 个人项目（AI 应用实践）
 
-**[RAG 知识库问答系统](https://github.com/jun2333/knowledge)**（2026）：Koa + TypeScript + Ollama（qwen3:8b / bge-m3）+ Chroma + LangChain + SSE。实现"文档语义切分 → 向量化入库 → 相似度检索 → LLM 生成"全链路，并升级为 Agent 工具调用循环（检索 / 取全文两个工具），支持多轮追问与来源引用；后端分层（config / rag / agent / routes），完全本地运行，零 API 成本。
+**RAG 知识库问答系统**（2026 ｜ [github.com/jun2333/knowledge](https://github.com/jun2333/knowledge)）：Koa + TypeScript + Ollama（qwen3:8b / bge-m3）+ Chroma + LangChain + SSE。实现"文档语义切分 → 向量化入库 → 相似度检索 → LLM 生成"全链路，并升级为 Agent 工具调用循环（检索 / 取全文两个工具），支持多轮追问与来源引用；后端分层（config / rag / agent / routes），完全本地运行，零 API 成本。
 
-**[DevAgent Harness · AI 开发工作流工具箱](https://github.com/jun2333/dev-agent-harness)**（2026）：约束 AI 辅助开发流程的通用框架，核心理念为"流程约束 + 精准上下文 + 阶段产出 + 经验闭环"。含 6 种内置工作流、阶段 gate 门禁、两层架构（通用层 + 项目层，git submodule 嵌入）、经验自动沉淀——把 AI 开发从"随机对话"变为可复现的工程流程。
+**DevAgent Harness · AI 开发工作流工具箱**（2026 ｜ [github.com/jun2333/dev-agent-harness](https://github.com/jun2333/dev-agent-harness)）：约束 AI 辅助开发流程的通用框架，核心理念为"流程约束 + 精准上下文 + 阶段产出 + 经验闭环"。含 6 种内置工作流、阶段 gate 门禁、两层架构（通用层 + 项目层，git submodule 嵌入）、经验自动沉淀——把 AI 开发从"随机对话"变为可复现的工程流程。
 
-**[Agent CLI · 终端 AI 编程助手](https://github.com/jun2333/agent-cli)**（2026）：从 0 实现命令行 Agent，跑通流式解析 + tool_calls 增量累积、可扩展工具系统、会话管理、TUI 渲染，配单元 + 终端模拟 e2e 测试。
+**Agent CLI · 终端 AI 编程助手**（2026 ｜ [github.com/jun2333/agent-cli](https://github.com/jun2333/agent-cli)）：从 0 实现命令行 Agent，跑通流式解析 + tool_calls 增量累积、可扩展工具系统、会话管理、TUI 渲染，配单元 + 终端模拟 e2e 测试。
 
 ## 其他项目
 
