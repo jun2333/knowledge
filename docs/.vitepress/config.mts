@@ -91,8 +91,9 @@ export default defineConfig({
   title: '知识库',
   description: '个人知识库',
 
-  // 部署到 Gitee Pages 子路径（https://jun2333.gitee.io/frontend-knowledge-summary/）时
-  // 需要设置 base，否则静态资源 404。本地开发/预览保持默认 '/'。
+  // GitHub Pages 子路径部署时需设置 base，否则静态资源 404：
+  //   线上 https://jun2333.github.io/knowledge/ → BASE_PATH=/knowledge/（GitHub Actions 注入）
+  //   本地开发 / 预览 → 默认 '/'
   base: process.env.BASE_PATH || '/',
 
   // 生产环境排除本地专属内容（不进入构建产物，无法通过 URL 访问）
@@ -722,7 +723,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://gitee.com/jun2333/front-end-knowledge-summary' }
+      { icon: 'github', link: 'https://github.com/jun2333/knowledge' }
     ],
 
     footer: {
