@@ -4,14 +4,14 @@ layout: home
 
 <script setup>
 import { onMounted } from 'vue'
-import { useRouter } from 'vitepress'
 
 onMounted(() => {
-  const router = useRouter()
-  router.go('/ai-agent/')
+  // BASE_URL 由 Vite 在构建时注入（本地 /，线上 /knowledge/），比 router.go 更可靠
+  const base = import.meta.env.BASE_URL || '/'
+  window.location.replace(base + 'ai-agent/')
 })
 </script>
 
 # 知识库
 
-正在跳转到写作指南...
+正在跳转...
