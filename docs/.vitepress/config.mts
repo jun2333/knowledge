@@ -4,45 +4,91 @@ import { defineConfig } from 'vitepress'
 // 本地开发（pnpm dev）显示全量内容；线上构建（pnpm build）排除个人内容
 const isProd = process.env.NODE_ENV === 'production'
 
-// 仅本地构建 / 显示的内容（生产环境不构建，无法通过 URL 访问）
-const LOCAL_ONLY_PATHS = [
-  'sports/**',                 // 个人兴趣（乒乓球 / 游泳）
-  'misc/**',                   // 杂项笔记
-  'java-practice/**',          // Java 学习实战（自用）
-  'guide/**',                  // 指南类文章（自用，对外价值不高）
-  'algorithms/**',             // 算法笔记（质量待完善）
+// ---------- 本地专属内容：单一数据源 ----------
+// 以后新增「仅本地」内容，只需在这里加一行，下面的四份配置会自动派生
+//   path:   相对于 docs/ 的路径（目录或单文件）
+//   isFile: 单篇文件（不填则按目录处理）
+//   desc:   说明（仅供阅读）
+const LOCAL_ONLY = [
+  { path: 'sports', desc: '个人兴趣（乒乓球 / 游泳）' },
+  { path: 'misc', desc: '杂项笔记' },
+  { path: 'java-practice', desc: 'Java 学习实战（自用）' },
+  { path: 'guide', desc: '指南类文章（自用，对外价值不高）' },
+  { path: 'algorithms', desc: '算法笔记（质量待完善）' },
+  { path: 'books', desc: '读书笔记（个人阅读记录，不公开）' },
+  { path: 'service/roadmap.md', desc: '前端转全栈学习路线（自用）', isFile: true },
 ]
 
-// 仅本地显示的 sidebar 分组
-const LOCAL_ONLY_SIDEBAR_KEYS = ['/sports/', '/misc/', '/java-practice/', '/guide/', '/algorithms/']
+/** 'service/roadmap.md' → '/service/roadmap' */
+const toSlug = (p: string) => '/' + p.replace(/\.md$/, '')
 
-// 生产环境忽略的死链（其他文章里指向"已排除内容"的链接）
-const IGNORED_DEAD_LINKS = [
-  /^\/sports\//,
-  /^\/misc\//,
-  /^\/java-practice\//,
-  /^\/guide\//,
-]
+// ---------- 以下配置全部由 LOCAL_ONLY 派生，不要手写 ----------
 
-/** 生产环境过滤掉本地专属的 sidebar 分组 */
-function filterSidebar(sidebar) {
+// ① 生产环境不构建的路径（不进入产物，无法通过 URL 访问）
+const LOCAL_ONLY_PATHS = LOCAL_ONLY.map((i) => (i.isFile ? i.path : `${i.path}/**`))
+
+// ② 生产环境不显示的 sidebar 分组（目录级）
+const LOCAL_ONLY_SIDEBAR_KEYS = LOCAL_ONLY.filter((i) => !i.isFile).map((i) => `/${i.path}/`)
+
+// ③ 生产环境不显示的 sidebar 单条链接（文件级）
+const LOCAL_ONLY_LINKS = LOCAL_ONLY.filter((i) => i.isFile).map((i) => toSlug(i.path))
+
+// ④ 生产环境忽略的死链（其他文章里指向"已排除内容"的链接）
+const IGNORED_DEAD_LINKS = LOCAL_ONLY.map(
+  (i) => new RegExp(`^${toSlug(i.path)}${i.isFile ? '' : '\\/'}`),
+)
+
+// ---------- sidebar 过滤 ----------
+interface SidebarItem {
+  text?: string
+  link?: string
+  items?: SidebarItem[]
+}
+
+/** 生产环境过滤掉本地专属的分组与链接 */
+function filterSidebar(sidebar: Record<string, SidebarItem[]>): Record<string, SidebarItem[]> {
   if (!isProd) return sidebar
-  const result = { ...sidebar }
-  for (const key of LOCAL_ONLY_SIDEBAR_KEYS) delete result[key]
+  const result: Record<string, SidebarItem[]> = {}
+
+  for (const [key, groups] of Object.entries(sidebar)) {
+    if (LOCAL_ONLY_SIDEBAR_KEYS.includes(key)) continue
+
+    const filtered = groups
+      .map((group) => {
+        // 兼容「直接链接」形式的条目（没有 items 字段）
+        if (!group.items) return group
+        return {
+          ...group,
+          items: group.items.filter((item) => !LOCAL_ONLY_LINKS.includes(item.link ?? '')),
+        }
+      })
+      .filter((group) => !group.items || group.items.length > 0)
+
+    // 整个路径下没有可见分组时，不保留空数组
+    if (filtered.length > 0) result[key] = filtered
+  }
+
   return result
 }
 
 // ---------- 顶部导航：本地版（全量） ----------
 const localNav = [
+  { text: 'AI Agent', link: '/ai-agent/' },
   {
     text: '前端', items: [
       { text: 'JavaScript', link: '/javascript/memory' },
       { text: 'Vue', link: '/vue/double-binding' },
       { text: 'React', link: '/react/concept' },
       { text: 'CSS', link: '/css/bfc' },
-      { text: '浏览器', link: '/browser/overview' },
+    ]
+  },
+  { text: '泛前端', link: '/frontend/hybrid' },
+  { text: '浏览器', link: '/browser/overview' },
+  {
+    text: '工程化', items: [
       { text: '性能优化', link: '/performance/best-practices' },
-      { text: '大前端', link: '/frontend/hybrid' },
+      { text: '架构设计', link: '/engineering/micro-frontend' },
+      { text: 'React vs Vue', link: '/engineering/react-vs-vue' },
     ]
   },
   {
@@ -51,11 +97,9 @@ const localNav = [
       { text: 'Java实战', link: '/java-practice/' },
     ]
   },
-  { text: 'AI Agent', link: '/ai-agent/' },
-  { text: '架构', link: '/engineering/micro-frontend' },
   { text: '算法', link: '/algorithms/basic' },
   {
-    text: '其他', items: [
+    text: '个人记录', items: [
       { text: '读书笔记', link: '/books/js-you-dont-know' },
       { text: '运动', link: '/sports/breaststroke-for-beginners' },
       { text: '杂项', link: '/misc/notes' },
@@ -63,28 +107,27 @@ const localNav = [
   },
 ]
 
-// ---------- 顶部导航：线上版（铺开技术分类，去掉个人内容） ----------
+// ---------- 顶部导航：线上版（去掉个人内容） ----------
 const prodNav = [
+  { text: 'AI Agent', link: '/ai-agent/' },
   {
     text: '前端', items: [
       { text: 'JavaScript', link: '/javascript/memory' },
       { text: 'Vue', link: '/vue/double-binding' },
       { text: 'React', link: '/react/concept' },
       { text: 'CSS', link: '/css/bfc' },
-      { text: '浏览器', link: '/browser/overview' },
-      { text: 'MVVM', link: '/mvvm/react-vs-vue' },
     ]
   },
+  { text: '泛前端', link: '/frontend/hybrid' },
+  { text: '浏览器', link: '/browser/overview' },
   {
     text: '工程化', items: [
       { text: '性能优化', link: '/performance/best-practices' },
       { text: '架构设计', link: '/engineering/micro-frontend' },
-      { text: '大前端', link: '/frontend/hybrid' },
+      { text: 'React vs Vue', link: '/engineering/react-vs-vue' },
     ]
   },
-  { text: '后端', link: '/service/roadmap' },
-  { text: 'AI Agent', link: '/ai-agent/' },
-  { text: '读书笔记', link: '/books/js-you-dont-know' },
+  { text: '后端', link: '/service/node-core' },
 ]
 
 export default defineConfig({
@@ -120,17 +163,27 @@ export default defineConfig({
 
       '/javascript/': [
         {
-          text: 'JavaScript 核心',
+          text: '语言基础',
           items: [
             { text: '数据类型与内存管理', link: '/javascript/memory' },
+            { text: '原型与继承', link: '/javascript/prototype' },
+            { text: '闭包、作用域与 this', link: '/javascript/closure' },
+            { text: 'ES6+ 新特性', link: '/javascript/es6' },
+          ]
+        },
+        {
+          text: '异步与运行时',
+          items: [
             { text: '事件循环', link: '/javascript/event-loop' },
             { text: '异步编程与 Promise', link: '/javascript/async' },
             { text: '异步并发控制最佳实践', link: '/javascript/async-concurrency' },
-            { text: 'ES6+ 新特性', link: '/javascript/es6' },
-            { text: '设计模式', link: '/javascript/pubsub' },
-            { text: '原型与继承', link: '/javascript/prototype' },
-            { text: '闭包、作用域与 this', link: '/javascript/closure' },
+          ]
+        },
+        {
+          text: '工程实践',
+          items: [
             { text: '模块化进化史', link: '/javascript/module' },
+            { text: '设计模式', link: '/javascript/pubsub' },
             { text: 'TypeScript 核心', link: '/javascript/typescript' },
           ]
         }
@@ -401,6 +454,7 @@ export default defineConfig({
             { text: 'BFF 层设计', link: '/engineering/bff' },
             { text: 'Server Components', link: '/engineering/server-components' },
             { text: 'Product Feature', link: '/engineering/product-feature' },
+            { text: 'React vs Vue', link: '/engineering/react-vs-vue' },
           ]
         },
         {
@@ -646,15 +700,6 @@ export default defineConfig({
             { text: '自研模板编辑器', link: '/misc/template-editor' },
             { text: '架构叙事：客服平台', link: '/misc/arch-narrative-customer-platform' },
             { text: '架构叙事：SaaS 与 AI 工程化', link: '/misc/arch-narrative-saas-ai' },
-          ]
-        }
-      ],
-
-      '/mvvm/': [
-        {
-          text: '框架对比',
-          items: [
-            { text: 'React vs Vue', link: '/mvvm/react-vs-vue' },
           ]
         }
       ],
