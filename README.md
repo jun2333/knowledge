@@ -56,9 +56,9 @@ pnpm install
 # 确保 Ollama 服务已启动（安装后会自动运行，也可手动启动）
 ollama serve
 
-# 下载聊天模型和向量模型（首次需要，共约 5GB，需等待几分钟）
-pnpm ollama:pull-chat    # qwen2.5:7b，约 4.7GB
-pnpm ollama:pull-embed   # nomic-embed-text，约 274MB
+# 下载聊天模型和向量模型（首次需要，共约 6.5GB，需等待几分钟）
+pnpm ollama:pull-chat    # qwen3:8b，约 5.2GB
+pnpm ollama:pull-embed   # bge-m3，约 1.2GB
 ```
 
 ### 3. 启动服务
@@ -94,8 +94,8 @@ pnpm rag:index        # 重建向量索引
 pnpm ollama:ps        # 查看运行中的模型
 pnpm ollama:list      # 查看已下载的模型
 pnpm ollama:stop      # 停掉模型释放内存
-pnpm ollama:pull-chat # 下载聊天模型（qwen2.5:7b）
-pnpm ollama:pull-embed # 下载向量模型（nomic-embed-text）
+pnpm ollama:pull-chat # 下载聊天模型（qwen3:8b）
+pnpm ollama:pull-embed # 下载向量模型（bge-m3）
 ```
 
 ## AI 知识问答
@@ -104,7 +104,7 @@ pnpm ollama:pull-embed # 下载向量模型（nomic-embed-text）
 
 1. 用户提问 → Ollama 向量模型将问题转为向量
 2. 向量检索 → 在 Chroma 中匹配最相关的文档片段
-3. 片段 + 问题 → 发送给本地 LLM（qwen2.5:7b）
+3. 片段 + 问题 → 发送给本地 LLM（qwen3:8b）
 4. 流式返回答案，附带参考来源
 
 左下角批注按钮，支持选中文本添加批注、管理所有批注。
@@ -117,20 +117,19 @@ pnpm ollama:pull-embed # 下载向量模型（nomic-embed-text）
 | Vue | 20+ |
 | 浏览器 | 12+ |
 | 算法 | 12+ |
-| 读书笔记 | 11+ |
 | AI Agent | 15+ |
 | 服务端 | 12+ |
 | 其他 | 30+ |
 
-**总计**: 130+ 篇技术笔记
+**总计**: 120+ 篇技术笔记
 
 ## 技术栈
 
 - **文档**: VitePress + Mermaid
 - **后端**: Koa + TypeScript
 - **向量数据库**: Chroma（Docker）
-- **Embedding 模型**: nomic-embed-text（本地 Ollama）
-- **LLM**: qwen2.5:7b（本地 Ollama）
+- **Embedding 模型**: bge-m3（本地 Ollama）
+- **LLM**: qwen3:8b（本地 Ollama）
 - **RAG**: LangChain.js
 - **包管理**: pnpm workspaces
 

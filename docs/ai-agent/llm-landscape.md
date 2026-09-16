@@ -201,7 +201,7 @@ graph TD
 | 开源 | InternVL 3 | 文本、图片、视频 |
 | 开源 | GLM-4V / GLM-4.5V | 文本、图片 |
 
-> 本知识库的 `qwen2.5vl:3b` 就是 Ollama 上的视觉模型，用于 dsh 插件的截图理解等场景。
+> 本知识库的 `qwen3-vl:8b-thinking` 就是 Ollama 上的视觉模型（带思考能力），用于 dsh 插件的截图理解等场景。
 
 ---
 
@@ -242,7 +242,7 @@ graph TD
 |------|------|------|------|
 | qwen3:8b | 5.2GB | 聊天/知识库问答 | ✅ 流畅，100% GPU |
 | bge-m3 | 1.2GB | 中文向量检索 | ✅ 流畅 |
-| qwen2.5vl:3b | 3.2GB | 视觉理解（截图等） | ✅ 可用 |
+| qwen3-vl:8b-thinking | 6.1GB | 视觉理解（截图等，带思考） | ✅ 可用 |
 
 ### 部署选型流程
 
@@ -264,7 +264,7 @@ ollama pull bge-m3          # 下载 embedding 模型
 ollama list                 # 查看已安装模型
 ollama ps                   # 查看当前加载的模型
 ollama run qwen3:8b         # 交互式对话
-ollama rm qwen2.5:7b        # 删除模型
+ollama rm qwen3:8b           # 删除模型
 ```
 
 ---
