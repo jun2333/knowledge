@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as n,a4 as h}from"./chunks/framework.BBs01uty.js";const g=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"vue/effect.md","filePath":"vue/effect.md"}'),t={name:"vue/effect.md"};function k(p,s,l,e,E,r){return a(),n("div",null,[...s[0]||(s[0]=[h("",46)])])}const y=i(t,[["render",k]]);export{g as __pageData,y as default};

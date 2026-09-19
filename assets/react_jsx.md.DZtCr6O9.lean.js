@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as n,a4 as t}from"./chunks/framework.BBs01uty.js";const g=JSON.parse('{"title":"JSX","description":"","frontmatter":{},"headers":[],"relativePath":"react/jsx.md","filePath":"react/jsx.md"}'),h={name:"react/jsx.md"};function l(k,s,p,e,E,r){return a(),n("div",null,[...s[0]||(s[0]=[t("",35)])])}const y=i(h,[["render",l]]);export{g as __pageData,y as default};

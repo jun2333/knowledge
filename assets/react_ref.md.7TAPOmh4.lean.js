@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as n,a4 as h}from"./chunks/framework.BBs01uty.js";const g=JSON.parse('{"title":"Ref","description":"","frontmatter":{},"headers":[],"relativePath":"react/ref.md","filePath":"react/ref.md"}'),t={name:"react/ref.md"};function l(k,s,p,e,E,r){return a(),n("div",null,[...s[0]||(s[0]=[h("",34)])])}const y=i(t,[["render",l]]);export{g as __pageData,y as default};

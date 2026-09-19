@@ -1,0 +1,1 @@
+import{_ as a,o as i,c as n,a4 as e}from"./chunks/framework.BBs01uty.js";const k=JSON.parse('{"title":"📝 知识库维护指南","description":"","frontmatter":{},"headers":[],"relativePath":"GUIDE.md","filePath":"GUIDE.md"}'),t={name:"GUIDE.md"};function l(p,s,h,d,r,o){return i(),n("div",null,[...s[0]||(s[0]=[e("",71)])])}const g=a(t,[["render",l]]);export{k as __pageData,g as default};
