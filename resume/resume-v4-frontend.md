@@ -13,13 +13,13 @@
 
 - **10 年前端经验**：经历 jQuery → Vue → React 完整技术演进，对 React Fiber 架构、Vue 响应式原理有源码级理解
 - **架构与工程化**：主导 5+ 子应用微前端（Qiankun）落地；参与多租户 SaaS 平台 **Schema 驱动架构**重构；熟悉 Vite / Webpack 优化、Monorepo、CI/CD 与 Docker 部署
-- **全栈与 AI 实践**：具备 Node（Koa / Nest）+ Java（Spring Boot）服务端能力；独立完成 RAG 知识库问答系统与 AI 开发工作流框架，具备 Agent 编排与 AI 工程化落地能力
+- **全栈与 AI 实践**：具备 Node.js（Koa / Nest）服务端能力与 Java（Spring Boot）实践基础；独立完成 RAG 知识库问答系统与 AI 开发工作流框架，具备 Agent 编排与 AI 工程化落地能力
 
 ## 专业技能
 
 - **前端核心**：JavaScript / TypeScript（闭包、原型链、事件循环）· React（Fiber、Hooks）· Vue 2/3（响应式原理）
 - **工程化与架构**：Vite / Webpack · Monorepo · CI/CD · 微前端（Qiankun）· Schema 驱动架构 · BFF · SSR / SSG
-- **服务端**：Node.js（Koa / Nest）· Java（Spring Boot / MyBatis）· MySQL / Redis · Docker / Nginx
+- **服务端**：Node.js（Koa / Nest）· MySQL / Redis · Docker / Nginx · Java（Spring Boot / MyBatis · 学习实践）
 - **AI 工程**：RAG（向量检索 + LLM）· Agent 工具调用 · SSE 流式渲染 · AI 辅助开发工作流设计
 
 ## 工作履历

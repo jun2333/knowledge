@@ -62,3 +62,9 @@ mermaid-*.png
 
 # DSH vision toolkit local artifacts
 .dsh-vision-toolkit/
+
+# 本地生成的求职材料（简历批注副本，仅本地）
+docs/resume/
+
+# 同步生成的个人面试笔记（仅本地，不入库）
+docs/interview-questions/

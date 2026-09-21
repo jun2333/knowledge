@@ -4,5 +4,6 @@ packages:
   - 'resume'
 allowBuilds:
   esbuild: true
+  onnxruntime-node: false
   protobufjs: true
   puppeteer: true

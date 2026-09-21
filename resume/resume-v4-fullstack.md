@@ -1,6 +1,6 @@
 # 陈俊
 
-**求职意向：前端 / 全栈开发工程师（Node / Java 方向）**
+**求职意向：全栈开发工程师（Node 方向）**
 
 641104000@qq.com ｜ 18873579224
 技术知识库：https://jun2333.github.io/knowledge/ ｜ 随时到岗
@@ -11,15 +11,16 @@
 
 ## 核心优势
 
-- **前端 10 年 + 全栈能力**：前端功底扎实（React Fiber / Vue 响应式源码级理解），同时具备 Node（Koa / Nest）与 Java（Spring Boot / MyBatis）服务端能力，可独立完成"界面 → API → 数据层 → 部署"全链路
+- **全栈交付能力**：10 年前端功底（React Fiber / Vue 响应式源码级理解）+ Node.js（Koa / Nest）服务端开发，可独立完成"界面 → API → 数据层 → 部署"全链路
 - **架构落地能力**：主导 5+ 子应用微前端（Qiankun）落地；参与多租户 SaaS 平台 **Schema 驱动架构**重构，解决"巨石代码 + 多版本并行"问题
-- **AI 应用工程化**：独立完成 RAG 知识库问答系统（本地模型 + 向量检索 + Agent 工具调用）、AI 开发工作流框架，具备 Agent 编排与 AI 工程化落地能力；设计并落地 AI 辅助开发流程，交付周期缩短 50%+
+- **AI 应用工程化**：独立完成 RAG 知识库问答系统（本地模型 + 向量检索 + Agent 工具调用）、AI 开发工作流框架与终端 AI Agent 三件套，具备 Agent 编排与 AI 工程化落地能力
+- **工程素养**：个人项目配备完整自动化测试（agent-cli **900+ 用例**）与技术文档沉淀，坚持"测试 + 文档 + 经验闭环"的工程习惯
 
 ## 专业技能
 
 - **前端核心**：JavaScript / TypeScript（闭包、原型链、事件循环）· React（Fiber、Hooks）· Vue 2/3（响应式原理）
 - **工程化与架构**：Vite / Webpack · Monorepo · CI/CD · 微前端（Qiankun）· Schema 驱动架构 · BFF · SSR / SSG
-- **服务端**：Node.js（Koa / Nest）· Java（Spring Boot / MyBatis）· MySQL / Redis · Docker / Nginx
+- **服务端**：Node.js（Koa / Nest）· MySQL / Redis · Docker / Nginx · Java（Spring Boot / MyBatis · 学习实践）
 - **AI 工程**：RAG（向量检索 + LLM）· Agent 工具调用 · SSE 流式渲染 · AI 辅助开发工作流设计
 
 ## 工作履历
@@ -27,7 +28,7 @@
 **蜜獾信息技术有限公司** ｜ 高级前端开发工程师 ｜ 2025.03 ~ 2026.06
 
 **2026.06 ~ 至今** ｜ AI 应用实践与技术深耕（自主）
-- 独立搭建本地化 RAG 知识库问答系统与 AI 开发工作流框架（详见"个人项目"）
+- 独立搭建本地化 RAG 知识库问答系统与 AI 开发工作流框架（详见"项目经历"个人项目）
 
 **众安在线财产保险股份有限公司** ｜ 资深前端开发工程师 ｜ 2021.03 ~ 2024.09
 
@@ -36,6 +37,22 @@
 **深圳技威时代科技有限公司** ｜ 前端开发工程师 ｜ 2017.03 ~ 2020.03
 
 ## 项目经历
+
+### RAG 知识库问答系统（个人全栈项目）｜ 2026 ｜ [github.com/jun2333/knowledge](https://github.com/jun2333/knowledge)
+
+**方案**：面向个人技术知识库的本地化问答系统，后端 Koa + TypeScript 分层架构（config / rag / agent / routes），独立完成从文档接入到对话服务的全链路。
+
+- **检索链路**：文档语义切分 → 向量化（bge-m3）→ Chroma 向量库 → 相似度检索 → LLM 生成
+- **Agent 工具调用循环**：基于 Ollama（qwen3:8b）+ LangChain，实现检索 / 取全文两个工具的 Agent 循环，支持多轮追问与来源引用
+- **交互与部署**：SSE 流式响应；完全本地运行（本地模型 + 本地向量库），零 API 成本
+
+### DevAgent Harness · AI 开发工作流工具箱（个人项目）｜ 2026 ｜ [github.com/jun2333/dev-agent-harness](https://github.com/jun2333/dev-agent-harness)
+
+约束 AI 辅助开发流程的通用框架，核心理念为"流程约束 + 精准上下文 + 阶段产出 + 经验闭环"。含 **6 种内置工作流**、阶段 gate 门禁、两层架构（通用层 + 项目层，git submodule 嵌入）、经验自动沉淀——把 AI 开发从"随机对话"变为可复现的工程流程。
+
+### Agent CLI · 终端 AI 编程助手（个人项目）｜ 2026 ｜ [github.com/jun2333/agent-cli](https://github.com/jun2333/agent-cli)
+
+从 0 实现命令行 AI Agent（**12,000+ 行 TypeScript**）：LLM 流式解析与 tool_calls 增量累积、可扩展工具系统（**15 个内置工具**）、权限 / Hook / 会话持久化、自研 DECSTBM 终端渲染层（TUI）；配套 **35 个测试文件 / 900+ 自动化用例**（纯逻辑单测 + 终端模拟 e2e）。
 
 ### 自研模板编辑器（蜜獾）｜ 2025.03 ~ 2026.06
 
@@ -92,14 +109,6 @@
 **方案与成果**：H5 端 React + TypeScript + Webpack（MPA + CSR），官网端 Next.js（SSG / ISR）；负责 H5 核心页面开发与性能优化，**首屏 LCP 优化至 1.3s**；参与 Hybrid 通信方案设计，优化 H5 与 Native 交互体验；主导 Next.js 官网静态站点建设。
 
 **角色**：前端组副组长，负责需求评审、方案设计与核心开发
-
-## 个人项目（AI 应用实践）
-
-**RAG 知识库问答系统**（2026 ｜ [github.com/jun2333/knowledge](https://github.com/jun2333/knowledge)）：Koa + TypeScript + Ollama（qwen3:8b / bge-m3）+ Chroma + LangChain + SSE。实现"文档语义切分 → 向量化入库 → 相似度检索 → LLM 生成"全链路，并升级为 Agent 工具调用循环（检索 / 取全文两个工具），支持多轮追问与来源引用；后端分层（config / rag / agent / routes），完全本地运行，零 API 成本。
-
-**DevAgent Harness · AI 开发工作流工具箱**（2026 ｜ [github.com/jun2333/dev-agent-harness](https://github.com/jun2333/dev-agent-harness)）：约束 AI 辅助开发流程的通用框架，核心理念为"流程约束 + 精准上下文 + 阶段产出 + 经验闭环"。含 6 种内置工作流、阶段 gate 门禁、两层架构（通用层 + 项目层，git submodule 嵌入）、经验自动沉淀——把 AI 开发从"随机对话"变为可复现的工程流程。
-
-**Agent CLI · 终端 AI 编程助手**（2026 ｜ [github.com/jun2333/agent-cli](https://github.com/jun2333/agent-cli)）：从 0 实现命令行 Agent，跑通流式解析 + tool_calls 增量累积、可扩展工具系统、会话管理、TUI 渲染，配单元 + 终端模拟 e2e 测试。
 
 ## 其他项目
 

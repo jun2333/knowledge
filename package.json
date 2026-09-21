@@ -6,8 +6,8 @@
     "dev": "pnpm --parallel -r run dev",
     "dev:docs": "pnpm --filter @knowledge/docs dev",
     "dev:server": "pnpm --filter @knowledge/server dev",
-    "preview": "pnpm --filter @knowledge/docs preview",
-    "build": "pnpm --filter @knowledge/docs build",
+    "preview": "BASE_PATH=/knowledge/ pnpm --filter @knowledge/docs preview",
+    "build": "BASE_PATH=${BASE_PATH:-/knowledge/} pnpm --filter @knowledge/docs build",
     "rag:index": "pnpm --filter @knowledge/server rag:index",
     "chroma:start": "docker run -d -p 8000:8000 --name chroma -v ./server/data/chroma:/data chromadb/chroma:latest",
     "chroma:stop": "docker stop chroma && docker rm chroma",
@@ -15,6 +15,7 @@
     "ollama:list": "ollama list",
     "ollama:stop": "ollama stop qwen3:8b && ollama stop bge-m3:latest",
     "ollama:pull-chat": "ollama pull qwen3:8b",
-    "ollama:pull-embed": "ollama pull bge-m3:latest"
+    "ollama:pull-embed": "ollama pull bge-m3:latest",
+    "sync": "node scripts/sync-local.mjs"
   }
 }

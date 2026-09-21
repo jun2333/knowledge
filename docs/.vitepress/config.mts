@@ -3,6 +3,14 @@ import { defineConfig } from 'vitepress'
 // ==================== 环境区分：本地 / 线上 ====================
 // 本地开发（pnpm dev）显示全量内容；线上构建（pnpm build）排除个人内容
 const isProd = process.env.NODE_ENV === 'production'
+// const isProd = false
+
+// 临时开关：INCLUDE_LOCAL=1 时，线上也包含"本地专属"内容（与本地 dev 一致）。
+// 默认不开启，线上仍排除个人内容。用法：INCLUDE_LOCAL=1 pnpm build
+const includeLocal = process.env.INCLUDE_LOCAL === '1'
+
+// 是否排除本地专属内容：生产环境且未显式开启 INCLUDE_LOCAL 时排除
+const excludeLocal = isProd && !includeLocal
 
 // ---------- 本地专属内容：单一数据源 ----------
 // 以后新增「仅本地」内容，只需在这里加一行，下面的四份配置会自动派生
@@ -17,6 +25,9 @@ const LOCAL_ONLY = [
   { path: 'algorithms', desc: '算法笔记（质量待完善）' },
   { path: 'books', desc: '读书笔记（个人阅读记录，不公开）' },
   { path: 'service/roadmap.md', desc: '前端转全栈学习路线（自用）', isFile: true },
+  { path: 'interview-questions', desc: '面试题（个人笔记，仅本地）' },
+  { path: 'resume', desc: '简历批注副本（求职材料，仅本地）' },
+  { path: 'project-architecture', desc: '知识库项目架构说明（自用）' },
 ]
 
 /** 'service/roadmap.md' → '/service/roadmap' */
@@ -47,7 +58,7 @@ interface SidebarItem {
 
 /** 生产环境过滤掉本地专属的分组与链接 */
 function filterSidebar(sidebar: Record<string, SidebarItem[]>): Record<string, SidebarItem[]> {
-  if (!isProd) return sidebar
+  if (!excludeLocal) return sidebar
   const result: Record<string, SidebarItem[]> = {}
 
   for (const [key, groups] of Object.entries(sidebar)) {
@@ -101,6 +112,10 @@ const localNav = [
   {
     text: '个人记录', items: [
       { text: '读书笔记', link: '/books/js-you-dont-know' },
+      { text: '面试题', link: '/interview-questions/' },
+      { text: '项目架构', link: '/project-architecture/' },
+      { text: 'Agent CLI', link: '/agent-cli/' },
+      { text: '简历', link: '/resume/v4-frontend' },
       { text: '运动', link: '/sports/breaststroke-for-beginners' },
       { text: '杂项', link: '/misc/notes' },
     ]
@@ -140,13 +155,17 @@ export default defineConfig({
   base: process.env.BASE_PATH || '/',
 
   // 生产环境排除本地专属内容（不进入构建产物，无法通过 URL 访问）
-  srcExclude: isProd ? LOCAL_ONLY_PATHS : [],
+  srcExclude: excludeLocal ? LOCAL_ONLY_PATHS : [],
 
-  // 生产环境忽略"指向已排除内容"的死链（本地开发仍会检查全部链接）
-  ignoreDeadLinks: isProd ? IGNORED_DEAD_LINKS : false,
+  // 生产环境忽略"指向已排除内容"的死链；全量模式（INCLUDE_LOCAL）下额外忽略 localhost 链接
+  ignoreDeadLinks: isProd
+    ? excludeLocal
+      ? IGNORED_DEAD_LINKS
+      : [...IGNORED_DEAD_LINKS, /localhost/]
+    : false,
 
   themeConfig: {
-    nav: isProd ? prodNav : localNav,
+    nav: excludeLocal ? prodNav : localNav,
 
     sidebar: filterSidebar({
       '/guide/': [
@@ -684,6 +703,27 @@ export default defineConfig({
         }
       ],
 
+      '/project-architecture/': [
+        {
+          text: '知识库项目架构',
+          items: [
+            { text: '总览', link: '/project-architecture/' },
+            { text: '01 · 总览与架构', link: '/project-architecture/01-overview' },
+            { text: '02 · 文档站（docs）', link: '/project-architecture/02-docs-site' },
+            { text: '03 · 后端与 RAG 检索', link: '/project-architecture/03-server-rag' },
+            { text: '04 · Agent 与流式对话', link: '/project-architecture/04-agent-chat' },
+            { text: '05 · 设计决策与踩坑', link: '/project-architecture/05-decisions' },
+          ]
+        }
+      ],
+
+      '/interview-questions/': [
+        {
+          text: '面试题',
+          items: 'auto',
+        },
+      ],
+
       '/misc/': [
         {
           text: '杂项',
@@ -700,6 +740,37 @@ export default defineConfig({
             { text: '自研模板编辑器', link: '/misc/template-editor' },
             { text: '架构叙事：客服平台', link: '/misc/arch-narrative-customer-platform' },
             { text: '架构叙事：SaaS 与 AI 工程化', link: '/misc/arch-narrative-saas-ai' },
+          ]
+        }
+      ],
+
+      '/agent-cli/': [
+        {
+          text: 'Agent CLI（自研终端 AI Agent）',
+          items: [
+            { text: '总览与阅读路线', link: '/agent-cli/' },
+            { text: '架构总览与硬不变量', link: '/agent-cli/architecture' },
+            { text: '模块清单', link: '/agent-cli/modules' },
+            { text: '机制 · TUI 渲染', link: '/agent-cli/mechanisms/tui-rendering' },
+            { text: '机制 · Agent 循环', link: '/agent-cli/mechanisms/agent-loop' },
+            { text: '机制 · 工具系统', link: '/agent-cli/mechanisms/tools' },
+            { text: '机制 · 权限系统', link: '/agent-cli/mechanisms/permissions' },
+            { text: '机制 · Hook 系统', link: '/agent-cli/mechanisms/hooks' },
+            { text: '机制 · 后台任务', link: '/agent-cli/mechanisms/background-tasks' },
+            { text: '机制 · 会话持久化', link: '/agent-cli/mechanisms/session' },
+            { text: '机制 · 交互原语', link: '/agent-cli/mechanisms/interaction' },
+            { text: '测试策略与基础设施', link: '/agent-cli/testing' },
+            { text: '术语与编号体系', link: '/agent-cli/glossary' },
+          ]
+        }
+      ],
+
+      '/resume/': [
+        {
+          text: '简历（批注副本）',
+          items: [
+            { text: 'v4 · 前端版', link: '/resume/v4-frontend' },
+            { text: 'v4 · 全栈版', link: '/resume/v4-fullstack' },
           ]
         }
       ],
@@ -734,6 +805,8 @@ export default defineConfig({
           items: [
             { text: 'RAG 入门', link: '/ai-agent/rag/introduction' },
             { text: 'AI 知识库实战', link: '/ai-agent/rag/knowledge-base' },
+            { text: 'RAG vs 微调', link: '/ai-agent/rag/rag-vs-finetuning' },
+            { text: '检索优化实践', link: '/ai-agent/rag/retrieval-optimization' },
           ]
         },
         {

@@ -631,6 +631,8 @@ async function queryWithCache(question) {
 
 **建议**: 大多数场景优先选择RAG,只有在需要特定领域语言风格时才考虑fine-tuning。
 
+> 📖 微调到底是什么、以及"为什么知识库问答用 RAG 不用微调"的深入版，见 [RAG vs 微调](./rag-vs-finetuning.md)。
+
 ---
 
 ## 🔧 常用工具和库

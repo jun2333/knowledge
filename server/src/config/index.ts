@@ -24,6 +24,14 @@ export const config = {
   chunkSize: 1000,   // 每个文本块的最大字符数
   chunkOverlap: 200, // 相邻文本块的重叠字符数，避免关键信息被切断
 
+  // === Rerank 重排 ===
+  // 实测（12 题回归集，均含按来源去重）：
+  //   关闭 rerank：Top1 83%、MRR 0.917
+  //   开启 rerank：Top1 58%、MRR 0.764
+  // bge-reranker-base 的区分度不如 bge-m3 向量本身，故默认关闭
+  rerankEnabled: false,
+  rerankCandidates: 20,  // 向量召回的候选数，供 rerank 精排
+
   // === 服务端口 ===
   port: parseInt(process.env.PORT || '3000'),  // Koa 后端服务监听端口
 }

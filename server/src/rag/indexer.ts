@@ -15,7 +15,9 @@ async function index() {
 
   const files = await glob('**/*.md', {
     cwd: config.docsPath,
-    ignore: ['node_modules/**', '.vitepress/**'],
+    // 排除非知识正文：面试题与正文同质（都是同一批知识点），
+    // 精炼问答和 query 相似度还高，会挤占检索结果、拉低精度
+    ignore: ['node_modules/**', '.vitepress/**', 'interview-questions/**', 'resume/**'],
     absolute: true,
   })
 
@@ -26,10 +28,13 @@ async function index() {
     const raw = await fs.readFile(file, 'utf-8')
     const { content, data } = matter(raw)
     const relativePath = path.relative(config.docsPath, file)
+    // frontmatter 没有 title 时，回退到正文第一个一级标题（# 后跟空格，不会匹配 ##），
+    // 避免 chunk 上下文退化成英文文件路径，提升中文语义检索命中率
+    const h1 = content.match(/^#\s+(.+)$/m)?.[1]?.trim()
     docs.push(
       new Document({
         pageContent: content,
-        metadata: { source: relativePath, title: data.title || '' },
+        metadata: { source: relativePath, title: data.title || h1 || '' },
       })
     )
   }
@@ -37,8 +42,8 @@ async function index() {
   const chunker = createMarkdownChunker()
   const chunks = await chunker.splitDocuments(docs)
 
-  // 块级标题上下文：切分后的孤立块不带章节归属，embedding 时容易断章取义，
-  // 在块首拼上文档标题，让向量同时编码"来自哪篇文章"的信息
+  // 块级标题上下文：切分后的孤立块不带章节归属，在块首拼上文档标题，
+  // 让向量同时编码"来自哪篇文章"的信息，避免断章取义
   for (const chunk of chunks) {
     const title = chunk.metadata.title || chunk.metadata.source || ''
     chunk.pageContent = title ? `【${title}】\n${chunk.pageContent}` : chunk.pageContent
