@@ -28,6 +28,7 @@ const LOCAL_ONLY = [
   { path: 'interview-questions', desc: '面试题（个人笔记，仅本地）' },
   { path: 'resume', desc: '简历批注副本（求职材料，仅本地）' },
   { path: 'project-architecture', desc: '知识库项目架构说明（自用）' },
+  { path: 'template-editor', desc: '自研模板编辑器架构说明（公司项目，仅本地）' },
 ]
 
 /** 'service/roadmap.md' → '/service/roadmap' */
@@ -115,6 +116,7 @@ const localNav = [
       { text: '面试题', link: '/interview-questions/' },
       { text: '项目架构', link: '/project-architecture/' },
       { text: 'Agent CLI', link: '/agent-cli/' },
+      { text: '模板编辑器', link: '/template-editor/' },
       { text: '简历', link: '/resume/v4-frontend' },
       { text: '运动', link: '/sports/breaststroke-for-beginners' },
       { text: '杂项', link: '/misc/notes' },
@@ -713,6 +715,7 @@ export default defineConfig({
             { text: '03 · 后端与 RAG 检索', link: '/project-architecture/03-server-rag' },
             { text: '04 · Agent 与流式对话', link: '/project-architecture/04-agent-chat' },
             { text: '05 · 设计决策与踩坑', link: '/project-architecture/05-decisions' },
+            { text: '06 · 评估体系设计', link: '/project-architecture/06-evaluation' },
           ]
         }
       ],
@@ -737,7 +740,6 @@ export default defineConfig({
         {
           text: '个人记录',
           items: [
-            { text: '自研模板编辑器', link: '/misc/template-editor' },
             { text: '架构叙事：客服平台', link: '/misc/arch-narrative-customer-platform' },
             { text: '架构叙事：SaaS 与 AI 工程化', link: '/misc/arch-narrative-saas-ai' },
           ]
@@ -761,6 +763,24 @@ export default defineConfig({
             { text: '机制 · 交互原语', link: '/agent-cli/mechanisms/interaction' },
             { text: '测试策略与基础设施', link: '/agent-cli/testing' },
             { text: '术语与编号体系', link: '/agent-cli/glossary' },
+          ]
+        }
+      ],
+
+      '/template-editor/': [
+        {
+          text: '自研模板编辑器',
+          items: [
+            { text: '总览与阅读路线', link: '/template-editor/' },
+            { text: '01 · 总览与架构', link: '/template-editor/01-overview' },
+            { text: '02 · 文档模型与选区', link: '/template-editor/02-document-model' },
+            { text: '03 · Command 引擎', link: '/template-editor/03-command-engine' },
+            { text: '04 · 渲染引擎', link: '/template-editor/04-render-engine' },
+            { text: '05 · 工具设计', link: '/template-editor/05-tools' },
+            { text: '06 · 序列化与单一数据源', link: '/template-editor/06-serialization' },
+            { text: '07 · Undo/Redo', link: '/template-editor/07-history' },
+            { text: '08 · Web Component 接入', link: '/template-editor/08-embedding' },
+            { text: '09 · 设计决策与面试复盘', link: '/template-editor/09-decisions' },
           ]
         }
       ],

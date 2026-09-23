@@ -82,6 +82,7 @@ function isError(content: string): boolean {
 // 直接 DOM 操作：通过 data 属性查找流式内容容器
 let rafId: number | null = null
 let pendingContent = ''
+let currentSourceCount = 0
 
 function escapeHtml(text: string) {
   return text
@@ -90,9 +91,12 @@ function escapeHtml(text: string) {
     .replace(/>/g, '&gt;')
 }
 
-function renderMarkdown(text: string) {
+function renderMarkdown(text: string, sourceCount = 0) {
+  // 过滤掉超出有效来源范围的引用标注：模型可能凭空标 [来源N]，导致悬空引用
+  const cleaned = text.replace(/\[来源(\d+)\]/g, (m, n) => (Number(n) <= sourceCount ? m : ''))
+
   // 处理完整代码块（有闭合 ```）
-  let result = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+  let result = cleaned.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
     const trimmedCode = code.trim()
     const langAlias: Record<string, string> = { js: 'javascript', ts: 'typescript', py: 'python', sh: 'bash', md: 'markdown' }
     const hljsLang = langAlias[lang] || lang || 'plaintext'
@@ -137,7 +141,7 @@ function getStreamSourcesEl() {
 function flushContent() {
   const el = getStreamContentEl()
   if (el) {
-    el.innerHTML = renderMarkdown(pendingContent)
+    el.innerHTML = renderMarkdown(pendingContent, currentSourceCount)
     scrollToBottom()
   }
   rafId = null
@@ -152,6 +156,7 @@ registerStreamCallbacks(
     }
   },
   (sources) => {
+    currentSourceCount = sources.length
     const el = getStreamSourcesEl()
     if (el && sources.length > 0) {
       el.innerHTML = `
@@ -182,6 +187,7 @@ async function handleSend() {
   if (!text) return
   inputText.value = ''
   pendingContent = ''
+  currentSourceCount = 0
   await sendMessage(text)
 }
 
@@ -301,7 +307,7 @@ function scrollToBottom() {
             <div
               v-else-if="msg.role === 'assistant'"
               class="ai-chat-content"
-              v-html="renderMarkdown(msg.content)"
+              v-html="renderMarkdown(msg.content, msg.sources?.length ?? 0)"
             />
 
             <div v-else class="ai-chat-content">{{ msg.content }}</div>

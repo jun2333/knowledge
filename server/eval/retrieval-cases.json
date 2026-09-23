@@ -1,0 +1,1775 @@
+[
+  {
+    "q": "React 的设计理念是什么？",
+    "expect": [
+      "react/concept.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React Fiber 的调度原理是什么？",
+    "expect": [
+      "react/scheduler.md",
+      "react/reconciler.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React 的 diff 协调算法是怎么比较的？",
+    "expect": [
+      "react/reconcile-algorithm.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React Hooks 有哪些使用规则和陷阱？",
+    "expect": [
+      "react/hooks-summary.md",
+      "react/fc-hook.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "怎么自定义一个 Hook？",
+    "expect": [
+      "react/custom-hooks.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React 有哪些性能优化手段？",
+    "expect": [
+      "react/render-optimization.md",
+      "react/performance.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "Vue 3 的响应式原理是什么？",
+    "expect": [
+      "vue/reactive.md",
+      "vue/primitive-reactive.md",
+      "vue/non-primitive-reactive.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue 的 diff 算法怎么比较新旧节点？",
+    "expect": [
+      "vue/diff-compare.md",
+      "vue/patch-compare.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue 编译器做了哪些优化？",
+    "expect": [
+      "vue/compile-optimization.md",
+      "vue/compiler-overview.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue 3 的生命周期钩子有哪些？",
+    "expect": [
+      "vue/lifecycle-v3.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vuex 是怎么实现响应式的？",
+    "expect": [
+      "vue/vuex.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "浏览器 HTTP 缓存有哪些方式？",
+    "expect": [
+      "browser/storage-cache.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "什么是跨域？有哪些解决方案？",
+    "expect": [
+      "browser/cross-origin.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "从输入 URL 到页面渲染发生了什么？",
+    "expect": [
+      "browser/overview.md",
+      "browser/dns.md",
+      "browser/tcp.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "WebSocket 和 SSE 有什么区别？",
+    "expect": [
+      "browser/websocket.md",
+      "browser/sse.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "常见的前端安全问题有哪些？",
+    "expect": [
+      "browser/security.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "HTTPS 的握手过程是怎样的？",
+    "expect": [
+      "browser/https.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "什么是闭包？",
+    "expect": [
+      "javascript/closure.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "浏览器的事件循环、宏任务和微任务是什么？",
+    "expect": [
+      "javascript/event-loop.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "原型和原型链是什么？",
+    "expect": [
+      "javascript/prototype.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "怎么实现 Promise 的并发控制？",
+    "expect": [
+      "javascript/async-concurrency.md",
+      "javascript/async.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "发布订阅模式怎么实现？",
+    "expect": [
+      "javascript/pubsub.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "ES6 有哪些新特性？",
+    "expect": [
+      "javascript/es6.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "CSS 的 BFC 是什么？有什么用？",
+    "expect": [
+      "css/bfc.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "Flex 和 Grid 布局有什么区别？",
+    "expect": [
+      "css/flex-grid.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "CSS 动画性能优化有哪些手段？",
+    "expect": [
+      "browser/css-rendering.md",
+      "css/raf-ric.md",
+      "css/content-visibility.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "移动端适配有哪些方案？",
+    "expect": [
+      "css/mobile-adaptation.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "如何优化页面首屏加载速度？",
+    "expect": [
+      "performance/first-screen.md",
+      "performance/optimization.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "虚拟列表如何实现？",
+    "expect": [
+      "performance/virtual-list.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "前端错误监控如何实现？",
+    "expect": [
+      "performance/error-monitoring.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "常见的前端性能指标有哪些？",
+    "expect": [
+      "performance/metrics.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "怎么做前端性能监控和数据上报？",
+    "expect": [
+      "performance/monitoring.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "微前端是怎么实现的？",
+    "expect": [
+      "engineering/micro-frontend.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "monorepo 有哪些方案和优缺点？",
+    "expect": [
+      "engineering/monorepo.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "前端构建优化有哪些手段？",
+    "expect": [
+      "engineering/build-optimization.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "前端的 CI/CD 流程是怎么做的？",
+    "expect": [
+      "engineering/cicd.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "SSR、SSG、CSR 有什么区别？",
+    "expect": [
+      "engineering/rendering.md",
+      "engineering/islands.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "MySQL 索引是怎么实现的（B+ 树）？",
+    "expect": [
+      "service/mysql-advanced.md",
+      "service/database.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Redis 缓存的穿透、击穿、雪崩是什么？",
+    "expect": [
+      "service/redis-intro.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Node 服务怎么部署上线？",
+    "expect": [
+      "service/node-deployment.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Koa 中间件的洋葱模型是什么？",
+    "expect": [
+      "service/koa.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "分布式锁有哪些实现方式？",
+    "expect": [
+      "service/data-distribution-locks.md",
+      "service/concurrency-locks.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "什么是 RAG（检索增强生成）？",
+    "expect": [
+      "ai-agent/rag/introduction.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "Function Calling 是怎么工作的？",
+    "expect": [
+      "ai-agent/function-calling.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "本地部署大模型有哪些方式？",
+    "expect": [
+      "ai-agent/llm-landscape.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "AI 应用里 LangChain 是怎么用的？",
+    "expect": [
+      "ai-agent/langchain-introduction.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "二分查找有哪些变体？",
+    "expect": [
+      "algorithms/binary-search-variations.md",
+      "algorithms/binary-search.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "快速排序是怎么实现的？",
+    "expect": [
+      "algorithms/quick-sort.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "小程序和 H5 有什么区别？",
+    "expect": [
+      "frontend/mini-program.md"
+    ],
+    "category": "大前端"
+  },
+  {
+    "q": "Hybrid 混合开发是怎么做的？",
+    "expect": [
+      "frontend/hybrid.md"
+    ],
+    "category": "大前端"
+  },
+  {
+    "q": "Vuex 中 mutations 是同步还是异步？",
+    "expect": [
+      "vue/vuex.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue Router 的 Hash 模式如何监听 URL 变化？",
+    "expect": [
+      "vue/vue-router.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "如何处理 Attributes 与 Properties 的映射关系？",
+    "expect": [
+      "vue/renderer-design.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3中新增属性是否需要特殊处理？",
+    "expect": [
+      "vue/primitive-reactive.md",
+      "vue/reactive.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "使用 ... 解构响应式对象会导致响应丢失吗？",
+    "expect": [
+      "vue/primitive-reactive.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue2中patchVnode如何处理文本节点？",
+    "expect": [
+      "vue/patch-compare.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3中openBlock如何收集动态节点？",
+    "expect": [
+      "vue/open-block.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "为什么 Proxy 的 get 需要第三个参数 receiver？",
+    "expect": [
+      "vue/non-primitive-reactive.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3中setup函数执行顺序是什么？",
+    "expect": [
+      "vue/lifecycle-v3.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue2中created和mounted钩子的执行顺序是什么？",
+    "expect": [
+      "vue/lifecycle-v2.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "如何清除遗留的副作用？",
+    "expect": [
+      "vue/effect.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "数据变化时如何通知订阅者更新？",
+    "expect": [
+      "vue/double-binding.md",
+      "javascript/pubsub.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Diff 算法如何通过 key 复用节点？",
+    "expect": [
+      "vue/diff-history.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3 的 Diff 算法相比 Vue2 有什么优势？",
+    "expect": [
+      "vue/diff-compare.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "计算属性值变化为何无法触发 effect 重新执行？",
+    "expect": [
+      "vue/computed-watch.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3 组件实例中 props 和 attrs 的区别是什么？",
+    "expect": [
+      "vue/component-instance.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3 编译器如何将模板转换为 JS 渲染函数？",
+    "expect": [
+      "vue/compiler-overview.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3 编译器如何通过 patchFlag 标记优化动态属性？",
+    "expect": [
+      "vue/compile-optimization.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "Vue3中KeepAlive组件如何实现缓存？",
+    "expect": [
+      "vue/built-in-components.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "如何设置异步组件的延迟加载时间？",
+    "expect": [
+      "vue/async-component.md"
+    ],
+    "category": "Vue"
+  },
+  {
+    "q": "如何通过 selector 读取 Zustand 的状态？",
+    "expect": [
+      "react/zustand.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何使用 TanStack Query 管理 API 缓存？",
+    "expect": [
+      "react/tanstack-query.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "在 Legacy 模式下，如何实现 setState 批量更新？",
+    "expect": [
+      "react/state.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "状态更新中 lane 冒泡的作用是什么？",
+    "expect": [
+      "react/state-update.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React Scheduler 如何根据优先级执行任务？",
+    "expect": [
+      "react/scheduler.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何在 React Router 中实现 Hash 模式路由？",
+    "expect": [
+      "react/router.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何判断 PureComponent 是否需要更新？",
+    "expect": [
+      "react/render-optimization.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "Ref 在函数组件中如何使用？",
+    "expect": [
+      "react/ref.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "Reconciler 的 beginWork 和 completeWork 顺序是什么？",
+    "expect": [
+      "react/reconciler.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何判断单节点是否可以复用？",
+    "expect": [
+      "react/reconcile-algorithm.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React Native 的渲染流程是什么？",
+    "expect": [
+      "react/react-native.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "ReactDOM 的 render 方法如何触发 DOM 更新？",
+    "expect": [
+      "react/react-dom.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React 优先级调度中 Lane 和 SchedulerPriority 如何转换？",
+    "expect": [
+      "react/priority.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "setState传入相同值为何能跳过render？",
+    "expect": [
+      "react/performance.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "Next.js 的路由系统是基于文件结构吗？",
+    "expect": [
+      "react/nextjs.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React 18 中如何实现自动批量更新？",
+    "expect": [
+      "react/new-features.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "函数组件如何解决逻辑复用和状态管理问题？",
+    "expect": [
+      "react/logic-reuse.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "类组件挂载时执行哪些生命周期方法？",
+    "expect": [
+      "react/lifecycle.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "JSX 转译后如何调用 React.createElement？",
+    "expect": [
+      "react/jsx.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "useEffect 依赖数组不传会每次渲染后执行吗？",
+    "expect": [
+      "react/hooks-summary.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React如何将状态变化同步到DOM？",
+    "expect": [
+      "react/react-dom.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "Hooks 为什么不能用在条件语句中？",
+    "expect": [
+      "react/fc-hook.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React 事件系统如何处理原生事件差异？",
+    "expect": [
+      "react/event-system.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "在 componentDidCatch 中 setState 会触发额外渲染吗？",
+    "expect": [
+      "react/error-handling.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何通过 useLog 实现点击日志上报？",
+    "expect": [
+      "react/custom-hooks.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "CSS Modules 编译后类名如何生成？",
+    "expect": [
+      "react/css-modules.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "新 API 如何避免 Context 中断问题？",
+    "expect": [
+      "react/context.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React 如何通过时间切片解决 CPU 瓶颈？",
+    "expect": [
+      "react/concept.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "Commit 阶段为何不能被中断？",
+    "expect": [
+      "react/commit.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "在非合成事件中如何实现批量更新？",
+    "expect": [
+      "react/batched-update.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "React.lazy 如何处理异步加载的组件？",
+    "expect": [
+      "react/async-render.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何在 NestJS 中配置 TypeORM 连接 MySQL？",
+    "expect": [
+      "service/typeorm.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Java堆内存溢出如何排查？",
+    "expect": [
+      "service/troubleshooting.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Spring AOP 是通过动态代理实现的吗？",
+    "expect": [
+      "service/spring-principles.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "注册中心挂了服务还能调吗？",
+    "expect": [
+      "service/spring-cloud.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Spring Boot 中如何实现依赖注入？",
+    "expect": [
+      "service/spring-boot.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "短链接生成后如何保证高并发读取性能？",
+    "expect": [
+      "service/short-url-design.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何在 Vercel 上快速部署函数？",
+    "expect": [
+      "service/serverless.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何判断一个 API 是否符合 RESTful 规范？",
+    "expect": [
+      "service/restful-api.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "缓存击穿如何解决？",
+    "expect": [
+      "service/redis-intro.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何区分 PM2 的 restart 和 reload 命令？",
+    "expect": [
+      "service/pm2.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "RBAC模型中如何实现角色继承？",
+    "expect": [
+      "service/permission-design.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Node.js 适合 IO 密集型场景吗？",
+    "expect": [
+      "service/node-vs-java.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何利用 cluster 实现 Node.js 多核部署？",
+    "expect": [
+      "service/node-high-concurrency.md",
+      "service/node-core.md",
+      "service/node-deployment.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何确保代码上线前符合规范？",
+    "expect": [
+      "service/node-deployment.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何在 Node.js 中运行 JavaScript 文件？",
+    "expect": [
+      "service/node-core.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何在 NestJS 中实现模块间依赖注入？",
+    "expect": [
+      "service/nest.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "为什么联合索引不支持中间字段缺失的查询？",
+    "expect": [
+      "service/mysql-advanced.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "MyBatis-Plus 中如何实现分页查询？",
+    "expect": [
+      "service/mybatis-plus.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "为什么用 Kafka 实现削峰填谷？",
+    "expect": [
+      "service/mq-intro.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何查看日志中出现次数最多的 IP？",
+    "expect": [
+      "service/linux-basics.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何在 Koa 中使用中间件记录请求时间？",
+    "expect": [
+      "service/koa.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "JVM 内存分区中堆和方法区有什么区别？",
+    "expect": [
+      "service/java-jvm.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "限流和降级如何配合实现高可用？",
+    "expect": [
+      "service/java-high-concurrency.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Java 服务如何优化 JVM 参数提升性能？",
+    "expect": [
+      "service/java-deployment.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Java 中如何保证多线程下的可见性和有序性？",
+    "expect": [
+      "service/java-concurrency.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "HashMap 的扩容机制是怎样的？",
+    "expect": [
+      "service/java-collections.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Java 中如何将 JS 的对象字面量转换为类实例？",
+    "expect": [
+      "service/java-basics.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何通过 GraphQL 查询嵌套数据？",
+    "expect": [
+      "service/graphql.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何在 Fastify 中获取路径参数？",
+    "expect": [
+      "service/fastify.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Express 中间件如何处理请求和响应？",
+    "expect": [
+      "service/express.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "Elasticsearch 和 MySQL 在数据一致性上有何不同？",
+    "expect": [
+      "service/elasticsearch.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何配置 Egg.js 的路由规则？",
+    "expect": [
+      "service/egg.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何在 Docker 中运行一个简单的 Node.js 应用？",
+    "expect": [
+      "service/docker.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "如何实现分布式事务的最终一致性？",
+    "expect": [
+      "service/distributed-basics.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "工厂模式在Spring中如何体现？",
+    "expect": [
+      "service/design-patterns.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "数据库中为什么不能用浮点数存储金额？",
+    "expect": [
+      "service/database.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "主从复制下写一致性如何保证？",
+    "expect": [
+      "service/data-distribution-locks.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "多个线程修改同一内存数据如何保证线程安全？",
+    "expect": [
+      "service/concurrency-locks.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "BFF 架构如何解决前端调用多个微服务的问题？",
+    "expect": [
+      "service/bff.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "后端测试中为什么单元测试比例最大？",
+    "expect": [
+      "service/backend-testing.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "根据 Session ID 查找会 sessions 存储里对应的会话数据是什么操作？",
+    "expect": [
+      "service/auth.md"
+    ],
+    "category": "服务端"
+  },
+  {
+    "q": "虚拟滚动如何计算可见项的起始索引？",
+    "expect": [
+      "performance/virtual-list.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "文件分片时如何确定分片大小？",
+    "expect": [
+      "performance/upload-idea.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "如何避免 JavaScript 阻塞用户交互？",
+    "expect": [
+      "performance/smooth.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "如何优化网页的首次内容绘制时间？",
+    "expect": [
+      "performance/optimization.md",
+      "performance/first-screen.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "如何确保 SDK 在微前端架构下正常工作？",
+    "expect": [
+      "performance/monitoring.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "FMP和LCP有什么区别？",
+    "expect": [
+      "performance/metrics.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "首屏时间主要消耗在哪些阶段？",
+    "expect": [
+      "performance/first-screen.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "如何捕获 HTTP 请求错误？",
+    "expect": [
+      "performance/error-monitoring.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "如何优化DOM操作中的频繁查询？",
+    "expect": [
+      "performance/best-practices.md"
+    ],
+    "category": "性能"
+  },
+  {
+    "q": "TypeScript 的 unknown 类型和 any 类型有什么区别？",
+    "expect": [
+      "javascript/typescript.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "发布订阅模式中如何实现事件解耦？",
+    "expect": [
+      "javascript/pubsub.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "如何判断对象的属性是自身还是继承的？",
+    "expect": [
+      "javascript/prototype.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "如何在 CommonJS 中导出模块？",
+    "expect": [
+      "javascript/module.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "Object.prototype.toString.call(null) 返回什么？",
+    "expect": [
+      "javascript/memory.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "setTimeout(fn, 0) 会立即执行吗？",
+    "expect": [
+      "javascript/event-loop.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "ES6中let和const有什么区别？",
+    "expect": [
+      "javascript/es6.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "JavaScript 中宏任务包括哪些？",
+    "expect": [
+      "javascript/event-loop.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "闭包中如何访问外部函数的变量？",
+    "expect": [
+      "javascript/closure.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "Promise 三种状态分别是什么？",
+    "expect": [
+      "javascript/async.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "Promise.all([]) 会立即 resolve 吗？",
+    "expect": [
+      "javascript/async-concurrency.md"
+    ],
+    "category": "JavaScript"
+  },
+  {
+    "q": "为什么需要及时响应代码审查请求？",
+    "expect": [
+      "engineering/team-management.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "React Server Components 和 SSR 在数据获取上有什么不同？",
+    "expect": [
+      "engineering/server-components.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "哪种渲染方式适合内容更新不频繁的网站？",
+    "expect": [
+      "engineering/rendering.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "Vue 的双向绑定如何实现？",
+    "expect": [
+      "engineering/react-vs-vue.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "如何注册 Service Worker？",
+    "expect": [
+      "engineering/pwa.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "如何实现 H5 多版本离线包的缓存隔离？",
+    "expect": [
+      "engineering/pwa-best-practices.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "如何通过规则引擎和Schema解决多租户SaaS中的代码膨胀问题？",
+    "expect": [
+      "engineering/product-feature.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "pnpm 如何解决幽灵依赖问题？",
+    "expect": [
+      "engineering/package-managers.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "Monorepo 和微前端有什么区别？",
+    "expect": [
+      "engineering/monorepo.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "微前端如何实现不同框架的子应用隔离？",
+    "expect": [
+      "engineering/micro-frontend.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "Islands 架构如何实现局部水合？",
+    "expect": [
+      "engineering/islands.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "如何选择适合 Vue 项目的国际化方案？",
+    "expect": [
+      "engineering/i18n.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "客户不升级怎么办？",
+    "expect": [
+      "engineering/git-flow.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "类型检查是什么作用？",
+    "expect": [
+      "javascript/typescript.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "如何选择适合项目场景的前端构建工具？",
+    "expect": [
+      "engineering/build-optimization.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "为什么需要 BFF 层来聚合微服务接口？",
+    "expect": [
+      "engineering/bff.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "如何实现前端项目的微前端架构？",
+    "expect": [
+      "engineering/micro-frontend.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "架构师如何判断决策是否符合结构性、影响面大和难回退？",
+    "expect": [
+      "engineering/architect.md"
+    ],
+    "category": "工程化"
+  },
+  {
+    "q": "如何获取元素实际显示的宽度和高度？",
+    "expect": [
+      "css/width-height.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "如何利用 rIC 在浏览器空闲时执行任务？",
+    "expect": [
+      "css/raf-ric.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "伪元素和伪类在语法上有何区别？",
+    "expect": [
+      "css/pseudo.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "如何通过 rem 实现移动端适配？",
+    "expect": [
+      "css/mobile-adaptation.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "如何实现水平垂直居中？",
+    "expect": [
+      "css/layout.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "如何实现水平垂直居中？",
+    "expect": [
+      "css/layout-best-practices.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "如何实现垂直居中？",
+    "expect": [
+      "css/ifc.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "Flex 布局中如何设置主轴方向？",
+    "expect": [
+      "css/flex-grid.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "content-visibility: hidden 和 display: none 有什么区别？",
+    "expect": [
+      "css/content-visibility.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "什么是标准盒子模型中 width 的计算范围？",
+    "expect": [
+      "css/bfc.md"
+    ],
+    "category": "CSS"
+  },
+  {
+    "q": "原生 App 启动速度比 Web App 快多少？",
+    "expect": [
+      "frontend/native-app.md"
+    ],
+    "category": "大前端"
+  },
+  {
+    "q": "小程序页面生命周期钩子有哪些？",
+    "expect": [
+      "frontend/mini-program.md"
+    ],
+    "category": "大前端"
+  },
+  {
+    "q": "如何在 Hybrid App 中实现 Web 调用原生功能？",
+    "expect": [
+      "frontend/hybrid.md"
+    ],
+    "category": "大前端"
+  },
+  {
+    "q": "如何通过主进程获取用户数据目录路径？",
+    "expect": [
+      "frontend/desktop.md"
+    ],
+    "category": "大前端"
+  },
+  {
+    "q": "为什么 WebSocket 需要协议升级？",
+    "expect": [
+      "browser/websocket.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "HTML解析器如何处理自闭合标签？",
+    "expect": [
+      "browser/toy-browser.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "确认号的作用是什么？",
+    "expect": [
+      "browser/tcp.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "localStorage 与 Cookie 的容量差异是什么？",
+    "expect": [
+      "browser/storage-cache.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "SSE 适合什么场景？",
+    "expect": [
+      "browser/sse.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "如何防御存储型 XSS 攻击？",
+    "expect": [
+      "browser/security.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "用户输入 URL 后如何解析域名？",
+    "expect": [
+      "browser/overview.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "HTTPS 的会话密钥是如何生成的？",
+    "expect": [
+      "browser/https.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "POST方法是否属于安全方法？",
+    "expect": [
+      "browser/http-methods.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "HTTP/1.0 的状态码有哪些？",
+    "expect": [
+      "browser/http-history.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "DNS 递归查询和迭代查询的区别是什么？",
+    "expect": [
+      "browser/dns.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "CSS 渲染阻塞是指什么？",
+    "expect": [
+      "browser/css-rendering.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "POST请求携带JSON头会触发预检吗",
+    "expect": [
+      "browser/cross-origin.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "内联关键 CSS 能否减少首屏加载时间？",
+    "expect": [
+      "browser/critical-css.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "如何查询CSS特性在不同浏览器中的支持情况？",
+    "expect": [
+      "browser/compatibility.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "用户长时间不刷新页面如何确保获取最新资源？",
+    "expect": [
+      "browser/app-update.md"
+    ],
+    "category": "浏览器"
+  },
+  {
+    "q": "如何处理RK算法中哈希值过大的问题？",
+    "expect": [
+      "algorithms/string-matching.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "快速排序中如何交换数组元素？",
+    "expect": [
+      "algorithms/quick-sort.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "堆排序建堆的时间复杂度是多少？",
+    "expect": [
+      "algorithms/heap.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "散列表线性探测法的最坏时间复杂度是多少？",
+    "expect": [
+      "algorithms/hash-table.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "冒泡排序中如何优化减少交换次数？",
+    "expect": [
+      "algorithms/bubble-insert-selection.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "如何删除二叉查找树中具有两个子节点的节点？",
+    "expect": [
+      "algorithms/bst.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "广度优先遍历如何用队列实现？",
+    "expect": [
+      "algorithms/binary-tree.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "二分查找的时间复杂度是多少？",
+    "expect": [
+      "algorithms/binary-search.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "如何查找第一个值大于等于给定值的元素？",
+    "expect": [
+      "algorithms/binary-search-variations.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "查找算法的均摊时间复杂度是多少？",
+    "expect": [
+      "algorithms/basic.md"
+    ],
+    "category": "算法"
+  },
+  {
+    "q": "如何实现 Agent CLI 的 L1 MVP 层？",
+    "expect": [
+      "ai-agent/self-built-cli.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何在 Python 中安全获取字典中的值？",
+    "expect": [
+      "ai-agent/python-basics.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "Python 在 AI 生态中为何是事实标准？",
+    "expect": [
+      "ai-agent/python-ai-ecosystem.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "大模型的闭源和开源有什么区别？",
+    "expect": [
+      "ai-agent/llm-landscape.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何计算 API 调用的 Token 费用？",
+    "expect": [
+      "ai-agent/llm-api-basics.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "为什么 LangChain 从链转向 Agent 编排？",
+    "expect": [
+      "ai-agent/langchain-introduction.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "工具使用与函数调用有何区别？",
+    "expect": [
+      "ai-agent/function-calling.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "用户如何通过Function Calling查询天气？",
+    "expect": [
+      "ai-agent/function-calling.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "知识库 AI 助理如何实现动态 RAG 检索？",
+    "expect": [
+      "ai-agent/function-calling-rag-upgrade.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何评估AI应用的输出质量？",
+    "expect": [
+      "ai-agent/app-engineering.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何管理 Chat 模式中的消息历史？",
+    "expect": [
+      "ai-agent/app-architecture.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何正确放置不同范围的状态？",
+    "expect": [
+      "react/best-practices/state-management.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何避免不必要的组件重渲染？",
+    "expect": [
+      "react/best-practices/performance-checklist.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "如何拆分频繁渲染的组件以优化性能？",
+    "expect": [
+      "react/best-practices/component-design.md"
+    ],
+    "category": "React"
+  },
+  {
+    "q": "Spec-First 是什么？",
+    "expect": [
+      "ai-agent/spec-first/guide.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何确保 AI 实际执行验证命令并记录结果？",
+    "expect": [
+      "ai-agent/harness-engineering/quality-control.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何在保留CLI对话体验下实现Function Calling硬校验？",
+    "expect": [
+      "ai-agent/harness-engineering/function-calling-upgrade.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何通过 YAML 工作流约束 AI 开发流程？",
+    "expect": [
+      "ai-agent/harness-engineering/dev-agent-harness.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "没有Harness Engineering时如何确保代码可复用？",
+    "expect": [
+      "ai-agent/harness-engineering/core-concepts.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何管理 AI Agent 的配置文件？",
+    "expect": [
+      "ai-agent/harness-engineering/best-practices.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "Qoder 如何实现任务粒度从单次函数到功能模块级别的提升？",
+    "expect": [
+      "ai-agent/case-studies/qoder.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何通过插件扩展 DeepSeek Harness 的功能？",
+    "expect": [
+      "ai-agent/case-studies/deepseek-harness.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "用 X 不用 Y 的纠正会被 Auto Memory 记住吗？",
+    "expect": [
+      "ai-agent/case-studies/claude-code-memory.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何通过 Skill 实现提示词的复用与治理？",
+    "expect": [
+      "ai-agent/prompt-engineering/skills.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何通过优化提示提升AI回答质量？",
+    "expect": [
+      "ai-agent/prompt-engineering/basics.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何通过多次回答提高代码质量？",
+    "expect": [
+      "ai-agent/prompt-engineering/advanced.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何通过切分策略和索引范围优化RAG检索效果？",
+    "expect": [
+      "ai-agent/rag/retrieval-optimization.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "你的知识库为什么用 RAG 不用微调？",
+    "expect": [
+      "ai-agent/rag/rag-vs-finetuning.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何选择适合搭建知识库的大语言模型？",
+    "expect": [
+      "ai-agent/rag/knowledge-base.md"
+    ],
+    "category": "AI Agent"
+  },
+  {
+    "q": "如何将API文档转换为RAG可检索的格式？",
+    "expect": [
+      "ai-agent/rag/introduction.md"
+    ],
+    "category": "AI Agent"
+  }
+]

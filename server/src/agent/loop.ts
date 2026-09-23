@@ -3,7 +3,9 @@ import type { SourceItem, ToolImplementations } from './tools.js'
 
 export type LoopEvent =
   | { type: 'token'; content: string }
-  | { type: 'tool'; name: string; args: unknown; sources: SourceItem[] }
+  // tool 事件：sources 供前端展示来源；content 是工具产出的文本（检索到的资料原文），
+  // 生成层评估需要它来判断"回答是否忠实于资料"（线上 chat 只读 sources，不读该字段）
+  | { type: 'tool'; name: string; args: unknown; sources: SourceItem[]; content: string }
 
 type LoopOptions = {
   messages: OpenAI.Chat.ChatCompletionMessageParam[]
@@ -19,7 +21,7 @@ type LoopOptions = {
  *
  * 产出事件流：
  * - token：模型生成的流式文本（工具决策轮与最终回答轮都会产出，最终回答是主体）
- * - tool：每次工具执行完成后产出，携带该工具产生的来源（供前端 sources 聚合）
+ * - tool：每次工具执行完成后产出，携带来源（供前端聚合）与工具产出文本（供评估判断忠实度）
  */
 export async function* runAgentLoop(opts: LoopOptions): AsyncGenerator<LoopEvent> {
   const { messages, definitions, implementations, client, model, maxIterations = 3 } = opts
@@ -42,6 +44,11 @@ export async function* runAgentLoop(opts: LoopOptions): AsyncGenerator<LoopEvent
       }
       if (delta?.tool_calls) {
         for (const tc of delta.tool_calls) {
+          // 按 OpenAI 官方协议，流式 tool_call 分片是会带 index 的
+          // 但代码要兼容非标准实现（自建服务、部分兼容代理），它们可能不返回 index。万一
+          // index 是 undefined，toolCalls[undefined] 在 JS 里不报错但语义是错的
+          //  兜底成 toolCalls.length，即"当作追加到数组末尾"——在单工具场景能正常工作（0 →
+          //  1 → …），属于降级容错
           const idx = tc.index ?? toolCalls.length
           if (!toolCalls[idx]) {
             toolCalls[idx] = { id: tc.id ?? `call_${idx}`, type: 'function', function: { name: '', arguments: '' } }
@@ -88,7 +95,7 @@ export async function* runAgentLoop(opts: LoopOptions): AsyncGenerator<LoopEvent
       }
 
       messages.push({ role: 'tool', tool_call_id: tc.id, content: result.content })
-      yield { type: 'tool', name: tc.function.name, args, sources: result.sources }
+      yield { type: 'tool', name: tc.function.name, args, sources: result.sources, content: result.content }
     }
   }
 }

@@ -95,7 +95,12 @@
 
 ## 个人项目（AI 应用实践）
 
-**RAG 知识库问答系统**（2026 ｜ [github.com/jun2333/knowledge](https://github.com/jun2333/knowledge)）：Koa + TypeScript + Ollama（qwen3:8b / bge-m3）+ Chroma + LangChain + SSE。实现"文档语义切分 → 向量化入库 → 相似度检索 → LLM 生成"全链路，并升级为 Agent 工具调用循环（检索 / 取全文两个工具），支持多轮追问与来源引用；完全本地运行，零 API 成本。
+**RAG 知识库问答系统**（2026 ｜ [github.com/jun2333/knowledge](https://github.com/jun2333/knowledge)）：Koa + TypeScript + Ollama（qwen3:8b / bge-m3）+ Chroma + LangChain + SSE，完全本地运行、零 API 成本。
+
+- **问答链路**：文档语义切分 → 向量化入库 → 相似度检索 → LLM 生成，并升级为 Agent 工具调用循环（检索 / 取全文），支持多轮追问与来源引用
+- **检索评估**：自建 250 题分层回归测试集 + 阈值门禁与基线对比，量化驱动检索优化（Hit@5 98% / Hit@1 88%），并沉淀"负结果"复盘
+- **批注协作**：把文档批注做成"与 AI 的沟通接口"——AI 产出内容后，对存疑处直接批注、提交给 AI 迭代打磨
+- **基座化**：将知识库基座与个人内容解耦（索引范围 / 评估集可配置），目标是让任何人都能快速搭建自己的知识库
 
 **DevAgent Harness · AI 开发工作流工具箱**（2026 ｜ [github.com/jun2333/dev-agent-harness](https://github.com/jun2333/dev-agent-harness)）：约束 AI 辅助开发流程的通用框架，核心理念为"流程约束 + 精准上下文 + 阶段产出 + 经验闭环"。含 6 种内置工作流、阶段 gate 门禁、两层架构（通用层 + 项目层，git submodule 嵌入）、经验自动沉淀——把 AI 开发从"随机对话"变为可复现的工程流程。
 

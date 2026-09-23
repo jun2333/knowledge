@@ -46,21 +46,29 @@ export const config = {
 
 ## 三、索引链路：`rag:index`
 
-对应 `pnpm rag:index`，流程是"全量重建"：
+索引有**全量重建**和**增量更新**两种模式，默认增量、自动判断：
 
 ```mermaid
 flowchart TD
-  A[glob 扫描 docs 下所有 md] --> B[gray-matter 剥离 frontmatter]
-  B --> C[提取标题：frontmatter.title 或正文 h1]
-  C --> D[chunker 切分为块]
-  D --> E[每块拼上标题前缀]
-  E --> F[删除旧的 Chroma 集合]
+  A[glob 扫描 docs 下所有 md] --> B[按内容 sha256 与上次清单对比]
+  B --> C{有变更或删除?}
+  C -->|都没有| Z[跳过：索引已是最新]
+  C -->|有| D[gray-matter 剥离 frontmatter + 提取标题]
+  D --> E[chunker 切分 + 块首拼标题]
+  E --> F[按 source 删除变更/删除文件的旧块]
   F --> G[分批 embedding + 写入]
+  G --> H[更新索引清单 manifest]
 ```
 
-### 关键代码 1：扫描与元数据提取
+- **首次运行 / 集合不存在 / `pnpm rag:index:full`** → 全量重建（清空集合、全部重写）
+- **平时 `pnpm rag:index`** → 增量：只有内容变了的文件才重新切分、向量化、写入，没变的一律跳过
+
+差距很直观：全量约 **4 分钟**，增量在无变更时 **1 秒**。
+
+### 关键代码 1：扫描、内容哈希与差异计算
 
 ```ts
+// ① 扫描：glob 按通配符匹配文件（** = 任意层级，* = 任意文件名）
 const files = await glob('**/*.md', {
   cwd: config.docsPath,
   // 排除非知识正文：面试题与正文同质，会挤占检索结果
@@ -68,23 +76,27 @@ const files = await glob('**/*.md', {
   absolute: true,
 })
 
+// ② 内容哈希：作为"文件有没有变"的判据
+const current = new Map<string, { raw: string; hash: string }>()
 for (const file of files) {
   const raw = await fs.readFile(file, 'utf-8')
-  const { content, data } = matter(raw)          // 正文 / frontmatter
-  const relativePath = path.relative(config.docsPath, file)
-  // frontmatter 没有 title 时，回退到正文第一个一级标题
-  const h1 = content.match(/^#\s+(.+)$/m)?.[1]?.trim()
-  docs.push(new Document({
-    pageContent: content,
-    metadata: { source: relativePath, title: data.title || h1 || '' },
-  }))
+  const rel = path.relative(config.docsPath, file)
+  current.set(rel, { raw, hash: hashContent(raw) })   // hashContent = sha256
 }
+
+// ③ 差异：与上次清单（manifest）对比
+const manifest = forceFull ? {} : readManifest()      // relativePath -> sha256
+const changed = [...current]
+  .filter(([rel, info]) => manifest[rel] !== info.hash)
+  .map(([rel]) => rel)
+const removed = Object.keys(manifest).filter((rel) => !current.has(rel))
 ```
 
-两个细节：
+三个细节：
 
-- **`gray-matter`**：把 Markdown 顶部的 `---` 元数据块和正文分开。不剥掉的话，元数据也会被切成块、混进向量里，成为检索噪声。
-- **h1 兜底**：只有 1/4 的笔记写了 frontmatter title，所以用正文的一级标题兜底，避免退化成英文文件路径。
+- **为什么用内容哈希，而不是文件修改时间（mtime）**：mtime 在 `git checkout`、复制文件、重新 clone 时都会变，会导致"没改也算变更"（白跑一遍 embedding）；**内容哈希只在内容真的变了时才变**，判断更准。
+- **h1 兜底标题**：只有约 1/4 的笔记写了 frontmatter title，其余用正文一级标题兜底（`data.title || h1 || ''`），避免块上下文退化成英文文件路径。
+- **`gray-matter`**：把 Markdown 顶部的 `---` 元数据块和正文分开。不剥掉的话，元数据也会被切成块、混进向量，成为检索噪声。
 
 ### 关键代码 2：块前缀
 
@@ -107,7 +119,43 @@ for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
 }
 ```
 
-同时每次索引都是**删掉旧集合再重建**（`deleteCollection`），避免随机 ID 造成数据重复累积。
+> 分批的目的是**规避 Chroma 的请求体限制**，不是为了省内存——所有块始终都在内存里（文档总量约 2.4MB，Node 堆毫无压力）。
+
+### 关键代码 4：增量更新（只重索引变了的文件）
+
+全量重建用 `deleteCollection` 清空重来；增量则要**精准删掉"变更/删除"文件的旧块**，否则同一文件会在库里累积多份向量：
+
+```ts
+// 按 metadata.source 过滤删除（Chroma 支持按 metadata 删）
+const collection = await vectorStore.ensureCollection()
+for (const rel of [...changed, ...removed]) {
+  await collection.delete({ where: { source: rel } })
+}
+
+// 然后只把 changed 的文件重新切分、向量化、写入
+const docs = changed.map((rel) => toDocument(rel, current.get(rel)!.raw))
+const chunks = await chunkDocuments(docs)
+await writeChunks(vectorStore, chunks)
+```
+
+最后把新的 `relativePath -> hash` 清单写盘，供下次对比：
+
+```ts
+const next: Record<string, string> = {}
+for (const [rel, info] of current) next[rel] = info.hash
+writeManifest(next)   // server/data/index-manifest.json
+```
+
+**实测四种场景**（脚本自动判断模式）：
+
+| 场景 | 行为 | 耗时 |
+|------|------|------|
+| 无文件变更 | 直接跳过 | **1 秒** |
+| 新增 1 个文件 | 只切分/写入该文件 | 秒级 |
+| 删除 1 个文件 | 从库里删掉它的块 | 秒级 |
+| 首次 / `rag:index:full` | 清空集合、全量重建 | ~4 分钟 |
+
+> 风险提示：全量重建是"先删集合、再写入"，若写入中途失败（例如 Chroma 服务挂了），**索引会变空**。更稳的做法是"写入临时集合、成功后再切换"，当前项目没做这层保护——重建后留意日志。
 
 ### 切分策略：`chunker.ts`
 
@@ -137,6 +185,57 @@ export async function searchDocs(query: string, k: number = 5) {
 }
 ```
 
+### 认识两个关键对象：`embeddings` 与 `store`
+
+`searchDocs` 第一行的 `getVectorStore()` 里有两个关键对象，先搞懂它们，后面的流程就好理解了。
+
+**① `embeddings` —— "文本 → 向量"的能力对象**
+
+```ts
+const embeddings = new OpenAIEmbeddings({
+  modelName: config.embeddingModel,                 // 'bge-m3'
+  apiKey: 'ollama',                                 // 占位（Ollama 不校验，但 SDK 要求非空）
+  configuration: { baseURL: config.ollamaBaseUrl }, // http://localhost:11434/v1
+  batchSize: 10,
+})
+```
+
+它本身**不存任何数据**，只有两个核心方法：
+
+| 方法 | 用途 | 何时用 |
+|------|------|--------|
+| `embedQuery(text)` | 把一个**问题**转成向量 | 检索时 |
+| `embedDocuments(texts[])` | 把**一批文档**转成向量 | 索引时 |
+
+它叫 `OpenAIEmbeddings` 却在调 Ollama，是因为 **Ollama 提供了 OpenAI 兼容的 API**（`POST /v1/embeddings`），只改 `baseURL` 就能复用现成的适配类。
+
+**② `store` —— 连到 Chroma 的句柄，几乎不占内存**
+
+```ts
+cachedStore = await Chroma.fromExistingCollection(embeddings, {
+  collectionName: config.collectionName,
+  url: `http://${config.chromaHost}:${config.chromaPort}`,
+})
+```
+
+一个常见担心：向量数据是不是都塞进 Node 内存了？**没有**——
+
+- 这里用的是 **Chroma Server 模式**（独立 Docker 服务），`store` 只是一根**远程连接句柄**，Node 侧仅持有"连哪、连哪个集合"的元数据；
+- 向量数据在 **Chroma 服务端**（持久化到 `server/data/chroma`）。按当前约 2750 块 × 1024 维估算，原始向量仅 ~11MB 量级，加 HNSW 索引开销也就几十 MB，可忽略；
+- 内存真正的大头是**模型**（bge-m3 ~1.2GB、qwen3:8b ~5.2GB），但那在 Ollama 进程里，和 `store` 无关。
+
+`cachedStore` 缓存的是**连接**而非数据，为的是免去每次检索重复建连。由于 `rag:index` 会删库重建、导致旧句柄失效，所以用 `cacheValidated` 标记 + `invalidateRetriever()` 触发重建：
+
+```ts
+let cachedStore: Chroma | null = null
+let cacheValidated = false
+
+// rag:index 删库重建后，调用方（tools.ts 的检索重试）调用它让句柄失效
+export function invalidateRetriever() {
+  cacheValidated = false
+}
+```
+
 ### 先看懂：`similaritySearchWithScore` 内部发生了什么
 
 上面看似一行的 `store.similaritySearchWithScore(query, k)`，内部是跨两层的两步：
@@ -150,16 +249,9 @@ export async function searchDocs(query: string, k: number = 5) {
 
 把上面第 1 步展开，是一条贯穿 4 层的调用链。先说结论：**我们仓库里没有向量化算法本身**——bge-m3 模型跑在 Ollama 里，我们的代码只负责"配置它指向哪、触发它调用"。
 
-**① 我们的代码 · `server/src/rag/retriever.ts`** —— 只做配置和触发：
+**① 我们的代码 · `server/src/rag/retriever.ts`** —— 只做配置和触发（`embeddings` 的构造见上一节）：
 
 ```ts
-const embeddings = new OpenAIEmbeddings({
-  modelName: config.embeddingModel,   // 'bge-m3'
-  apiKey: 'ollama',
-  configuration: { baseURL: config.ollamaBaseUrl },  // http://localhost:11434/v1
-  batchSize: 10,
-})
-
 // searchDocs 里的一行触发一切：
 const candidates = await store.similaritySearchWithScore(query, k)
 ```

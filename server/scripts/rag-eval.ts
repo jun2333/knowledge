@@ -1,58 +1,106 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { getRetriever } from '../src/rag/retriever.js'
+import { config } from '../src/config/index.js'
+import { finalize, printCompare, warnIfCasesChanged } from './eval-utils.js'
 
-// 检索质量回归测试集：期望命中文件命中 top5 任一即算该题通过
-const cases: Array<{ q: string; expect: string[] }> = [
-  { q: 'React 中 useMemo 和 useCallback 的区别是什么？', expect: ['react/logic-reuse.md', 'react/hooks-summary.md', 'react/performance.md'] },
-  { q: '浏览器 HTTP 缓存有哪些方式？', expect: ['browser/storage-cache.md'] },
-  { q: '什么是闭包？', expect: ['javascript/closure.md'] },
-  { q: 'Vue 的响应式原理是什么？', expect: ['vue/reactive.md', 'vue/double-binding.md', 'vue/primitive-reactive.md'] },
-  { q: '如何优化页面首屏加载速度？', expect: ['performance/first-screen.md', 'performance/optimization.md'] },
-  { q: '浏览器的事件循环、宏任务和微任务是什么？', expect: ['javascript/event-loop.md'] },
-  { q: 'CSS 的 BFC 是什么？有什么用？', expect: ['css/bfc.md'] },
-  { q: 'React Fiber 的调度原理是什么？', expect: ['react/scheduler.md', 'react/reconciler.md'] },
-  { q: '什么是跨域？有哪些解决方案？', expect: ['browser/cross-origin.md'] },
-  { q: '虚拟列表如何实现？', expect: ['performance/virtual-list.md'] },
-  { q: 'TypeScript 相比 JavaScript 有什么优势？', expect: ['javascript/typescript.md'] },
-  { q: '前端错误监控如何实现？', expect: ['performance/error-monitoring.md'] },
-]
+// 检索质量回归测试集：数据在 eval/retrieval-cases.json（与逻辑分离，便于扩充/维护）。
+// 指标口径：
+//   Hit@k     —— topK 内是否命中"至少一篇"期望文档（宽松）
+//   Hit@1     —— 期望文档是否排第一（严格）
+//   Recall@k  —— topK 内命中的期望文档数 / 期望文档总数（多篇期望的部分分，最严格）
+//   MRR       —— 最佳命中排名的倒数平均（排名越靠前越高）
+type EvalCase = { q: string; expect: string[]; category: string }
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const CASES_PATH = path.resolve(__dirname, '../eval/retrieval-cases.json')
+const cases: EvalCase[] = JSON.parse(fs.readFileSync(CASES_PATH, 'utf-8'))
 
 const TOP_K = 5
 
-/** 期望文档在检索结果中最早出现的排名（1-based），未命中返回 0 */
-function rankOf(sources: string[], expect: string[]): number {
-  for (let i = 0; i < sources.length; i++) {
-    if (expect.some((e) => sources[i].includes(e))) return i + 1
-  }
-  return 0
+/** 路径规范化：去掉 ./ 前缀、统一分隔符，保证精确比较 */
+const normalize = (p: string) => p.replace(/^\.\//, '').replace(/\\/g, '/')
+
+type Result = { bestRank: number; hitCount: number }
+
+/** 精确匹配（不再用子串）：返回最佳命中排名 + topK 内命中的期望文档数 */
+function evaluate(sources: string[], expect: string[], k: number): Result {
+  const expected = new Set(expect.map(normalize))
+  const topK = sources.slice(0, k).map(normalize)
+  let bestRank = 0
+  const hit = new Set<string>()
+
+  topK.forEach((src, i) => {
+    if (expected.has(src)) {
+      if (bestRank === 0) bestRank = i + 1
+      hit.add(src)
+    }
+  })
+  return { bestRank, hitCount: hit.size }
 }
+
+type Stat = { total: number; hitK: number; hit1: number; recallSum: number; mrrSum: number }
+const newStat = (): Stat => ({ total: 0, hitK: 0, hit1: 0, recallSum: 0, mrrSum: 0 })
 
 async function main() {
   const retriever = await getRetriever(TOP_K)
-  let hitTopK = 0
-  let hitTop1 = 0
-  let mrrSum = 0
+  const overall = newStat()
+  const byCategory = new Map<string, Stat>()
 
   for (const c of cases) {
     const docs = await retriever.invoke(c.q)
     const sources = docs.map((d) => d.metadata.source as string)
-    const rank = rankOf(sources, c.expect)
-    const passTopK = rank > 0
-    const passTop1 = rank === 1
-    if (passTopK) hitTopK++
-    if (passTop1) hitTop1++
-    mrrSum += rank > 0 ? 1 / rank : 0
+    const { bestRank, hitCount } = evaluate(sources, c.expect, TOP_K)
+    const recall = hitCount / c.expect.length
 
-    const icon = passTop1 ? '🥇' : passTopK ? '✅' : '❌'
-    console.log(`${icon} ${c.q}`)
-    console.log(`   期望: ${c.expect.join(', ')}   命中排名: ${rank || '未命中'}`)
+    const stat = byCategory.get(c.category) ?? newStat()
+    for (const s of [overall, stat]) {
+      s.total++
+      if (bestRank > 0) s.hitK++
+      if (bestRank === 1) s.hit1++
+      s.recallSum += recall
+      s.mrrSum += bestRank > 0 ? 1 / bestRank : 0
+    }
+    byCategory.set(c.category, stat)
+
+    const icon = bestRank === 1 ? '🥇' : bestRank > 0 ? '✅' : '❌'
+    console.log(`${icon} [${c.category}] ${c.q}`)
+    console.log(`   期望: ${c.expect.join(', ')}`)
+    console.log(`   命中排名: ${bestRank || '未命中'} | 覆盖 ${hitCount}/${c.expect.length}`)
     sources.forEach((s, i) => console.log(`   ${i + 1}. ${s}`))
     console.log()
   }
 
-  console.log('==== 汇总 ====')
-  console.log(`Top${TOP_K} 命中率: ${hitTopK}/${cases.length} (${((hitTopK / cases.length) * 100).toFixed(0)}%)`)
-  console.log(`Top1 命中率: ${hitTop1}/${cases.length} (${((hitTop1 / cases.length) * 100).toFixed(0)}%)`)
-  console.log(`MRR: ${(mrrSum / cases.length).toFixed(3)}`)
+  const pct = (n: number, total: number) => `${((n / total) * 100).toFixed(0)}%`
+  const line = (name: string, s: Stat) =>
+    `${name}：${s.total} 题 | Hit@${TOP_K} ${pct(s.hitK, s.total)} | Hit@1 ${pct(s.hit1, s.total)} | Recall@${TOP_K} ${(s.recallSum / s.total).toFixed(3)} | MRR ${(s.mrrSum / s.total).toFixed(3)}`
+
+  console.log('==== 总览 ====')
+  console.log(`Hit@${TOP_K}: ${overall.hitK}/${overall.total} (${pct(overall.hitK, overall.total)})`)
+  console.log(`Hit@1: ${overall.hit1}/${overall.total} (${pct(overall.hit1, overall.total)})`)
+  console.log(`Recall@${TOP_K}: ${(overall.recallSum / overall.total).toFixed(3)}`)
+  console.log(`MRR: ${(overall.mrrSum / overall.total).toFixed(3)}`)
+
+  console.log('\n==== 分类统计（定位弱项）====')
+  for (const [name, s] of byCategory) console.log(line(name, s))
+
+  // 指标快照 -> 对比 -> 留档 -> 阈值门禁
+  const metrics = {
+    hit5: overall.hitK / overall.total,
+    hit1: overall.hit1 / overall.total,
+    recall5: overall.recallSum / overall.total,
+    mrr: overall.mrrSum / overall.total,
+  }
+  const env = {
+    embeddingModel: config.embeddingModel,
+    topK: TOP_K,
+    cases: cases.length,
+  }
+  printCompare('retrieval', metrics, env)
+  const passed = finalize('retrieval', metrics, env)
+  warnIfCasesChanged()
+  if (!passed) process.exit(1)
 }
 
 main().catch((err) => {

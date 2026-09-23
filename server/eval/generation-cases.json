@@ -1,0 +1,13 @@
+[
+  { "q": "什么是闭包？", "category": "知识库内", "expectAnswer": true },
+  { "q": "Vue 3 的响应式原理是什么？", "category": "知识库内", "expectAnswer": true },
+  { "q": "React Fiber 的调度原理是什么？", "category": "知识库内", "expectAnswer": true },
+  { "q": "MySQL 索引是怎么实现的？", "category": "知识库内", "expectAnswer": true },
+  { "q": "什么是 RAG？", "category": "知识库内", "expectAnswer": true },
+  { "q": "对比一下 React 和 Vue 在响应式实现上的差异", "category": "跨文档", "expectAnswer": true },
+  { "q": "前端错误监控如何实现？", "category": "知识库内", "expectAnswer": true },
+
+  { "q": "今天上海的天气怎么样？", "category": "知识库外(负例)", "expectAnswer": false },
+  { "q": "请介绍一下 Kubernetes 的 Pod 调度机制", "category": "知识库外(负例)", "expectAnswer": false },
+  { "q": "2025 年世界杯冠军是谁？", "category": "知识库外(负例)", "expectAnswer": false }
+]

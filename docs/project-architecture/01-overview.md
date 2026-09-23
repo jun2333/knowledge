@@ -82,7 +82,7 @@ flowchart TB
 
 三条独立的数据流要分清：
 
-1. **写入流**（离线）：`rag:index` 读 `docs` 下的 md → 切块 → bge-m3 向量化 → 写入 Chroma。
+1. **写入流**（离线）：`rag:index` 读 `docs` 下的 md → 切块 → bge-m3 向量化 → 写入 Chroma（默认增量，只处理内容变更的文件）。
 2. **问答流**（在线）：用户提问 → Koa → Agent 循环（可能多次检索）→ qwen3:8b 生成 → SSE 流式回前端。
 3. **展示流**：VitePress 静态站点（笔记页面 + 聊天 UI）。
 
@@ -176,7 +176,7 @@ pnpm ollama:pull-embed    # bge-m3
 
 # 3. 向量库 + 索引
 pnpm chroma:start         # Docker 启动 Chroma
-pnpm rag:index            # 构建索引（文档更新后要重跑）
+pnpm rag:index            # 增量更新索引（文档改动后跑，只处理变更的文件）
 
 # 4. 启动
 pnpm dev                  # 前后端一起（docs 5173 / server 3000）
@@ -191,7 +191,8 @@ pnpm dev                  # 前后端一起（docs 5173 / server 3000）
 | `pnpm dev:docs` / `pnpm dev:server` | 单独启动文档站 / 后端 |
 | `pnpm build` | 构建文档站（默认带 `BASE_PATH=/knowledge/`） |
 | `pnpm preview` | 预览构建产物（同样带 base） |
-| `pnpm rag:index` | 重建向量索引 |
+| `pnpm rag:index` | 增量更新向量索引（只处理变更的文件） |
+| `pnpm rag:index:full` | 全量重建索引（首次或需要重建时） |
 | `pnpm --filter @knowledge/server rag:eval` | 跑检索质量评估 |
 
 ## 九、接下来读什么

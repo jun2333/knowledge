@@ -111,5 +111,5 @@
 ## 关联阅读
 
 - [什么是架构师](/engineering/architect) - 本叙事稿的框架依据
-- [自研模板编辑器](/misc/template-editor) - 编辑器架构细节
+- [自研模板编辑器](/template-editor/) - 编辑器架构细节
 - [Function Calling 引入计划](/ai-agent/harness-engineering/function-calling-upgrade) - AI 工作流硬校验的演进方向
