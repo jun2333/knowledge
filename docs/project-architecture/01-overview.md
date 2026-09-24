@@ -88,13 +88,13 @@ flowchart TB
 
 ## 四、基座包与实例
 
-**通用能力在独立仓库 `../kb-base`（基座），本仓库是一个「实例」**——只放内容、配置与数据；
-实例单向依赖基座，基座不含任何个人内容。本地开发期通过 `link:` 指向基座仓库，发布 npm 后改为版本号依赖。
+通用能力在**基座包** `@kb/core`、`@kb/site` 里（作为依赖接入，不含任何个人内容）；
+本仓库是一个「实例」——只放内容、配置与数据，单向依赖基座。
 
 | 包 / 目录 | 职责 | 入口 |
 |----|------|------|
-| `@kb/core`（基座 `../kb-base/packages/core`） | RAG 引擎（索引/切分/检索/重排）、Agent 工具调用、Koa 服务、评估框架、CLI | `src/cli.ts`（命令 `kb`） |
-| `@kb/site`（基座 `../kb-base/packages/site`） | VitePress 主题、批注与 AI 组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
+| `@kb/core` | RAG 引擎（索引/切分/检索/重排）、Agent 工具调用、Koa 服务、评估框架、CLI | `cli.ts`（命令 `kb`） |
+| `@kb/site` | VitePress 主题、批注与 AI 组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
 | 仓库根（实例） | 内容 `docs/`、配置 `knowledge.config.mjs`、数据 `eval/` 与 `data/` | `knowledge.config.mjs` |
 | `resume/` | 简历与面试准备资料（不参与构建） | — |
 

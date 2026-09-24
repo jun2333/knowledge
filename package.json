@@ -25,8 +25,7 @@
     "ollama:pull-chat": "ollama pull qwen3:8b",
     "ollama:pull-embed": "ollama pull bge-m3:latest",
     "sync": "node scripts/sync-local.mjs",
-    "sync:starter": "node ../kb-base/scripts/sync-starter.mjs",
-    "create:kb": "node ../kb-base/scripts/create-kb.mjs"
+    "sync:starter": "node scripts/sync-starter.mjs"
   },
   "dependencies": {
     "@kb/core": "link:../kb-base/packages/core",

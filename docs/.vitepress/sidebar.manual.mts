@@ -1,18 +1,6 @@
 // 本实例精修的 sidebar（个人维护）。
 // 模板 / 新实例把此文件留为空对象 {}，即可走自动生成（见 sidebar.mjs）。
 export default {
-      '/guide/': [
-        {
-          text: '指南',
-          items: [
-            { text: '快速开始', link: '/guide/quick-start' },
-            { text: '学习路径', link: '/guide/learning-path' },
-            { text: '面试准备', link: '/guide/interview-prep' },
-            { text: '导航总览', link: '/guide/navigation-overview' },
-          ]
-        }
-      ],
-
       '/javascript/': [
         {
           text: '语言基础',

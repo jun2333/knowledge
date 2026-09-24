@@ -4,10 +4,10 @@
 
 ## 一、后端包结构（`@kb/core`）
 
-代码在**基座仓库** `../kb-base/packages/core/src/`（本仓库只依赖它，通过 `kb` CLI 调用）：
+后端代码在基座包 `@kb/core` 里（装好后位于 `node_modules/@kb/core`）：
 
 ```
-packages/core/src/
+src/
 ├── index.ts            # Koa 入口：装配中间件与路由
 ├── config/index.ts     # 统一配置（模型、端口、切分参数…）
 ├── routes/

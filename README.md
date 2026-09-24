@@ -19,13 +19,12 @@ front-end-knowledge-summary/
 ├── data/                      # 本地数据产物（向量库 / 索引清单 / 评估历史与基线）
 ├── scripts/                   # 个人脚本（简历同步、部署）
 ├── archive/  resume/          # 个人内容（不参与构建）
-├── package.json               # 实例依赖：@kb/core、@kb/site（link 到基座仓库）
+├── package.json               # 实例依赖：@kb/core、@kb/site
 └── pnpm-workspace.yaml
 ```
 
-> **基座与实例分离**：通用能力在**独立仓库** `../kb-base`（`@kb/core`、`@kb/site`，零个人内容）；
-> 本仓库是「一个实例」，只放内容、配置与数据，通过 `link:` 单向依赖基座。
-> 基座发布 npm 后，依赖会从 `link:../kb-base/...` 换成版本号。
+> **基座与实例分离**：通用能力在独立的基座包 `@kb/core`、`@kb/site` 里（零个人内容）；
+> 本仓库是「一个实例」，只放内容、配置与数据，单向依赖基座。
 
 ## 快速开始
 
@@ -192,8 +191,10 @@ site: {
 
 ### 搭一个自己的知识库
 
+脚手架是基座能力，可生成一个全新的知识库实例（不复制任何个人内容）：
+
 ```bash
-pnpm create:kb my-kb                                   # 交互式（转发到 ../kb-base）
+pnpm create:kb my-kb                                   # 交互式
 pnpm create:kb my-kb --yes --name "我的知识库" --collection my_kb --port 3100  # 非交互
 ```
 
@@ -205,11 +206,8 @@ cd my-kb && pnpm install
 pnpm chroma:start && pnpm rag:index && pnpm dev
 ```
 
-> 脚手架脚本与实例骨架都在**基座仓库** `../kb-base`（`scripts/create-kb.mjs`、`templates/instance`）；
-> 本仓库的 `create:kb` / `sync:starter` 命令只是转发过去。
->
-> 站点 sidebar 默认按内容目录**自动生成**（基座能力，见 `@kb/site`）；本仓库作为个人实例保留了精修的 sidebar
-> （`docs/.vitepress/sidebar.manual.mts`，由 `site.autoSidebar` 控制是否叠加自动生成）。
+> 脚手架与实例骨架都由基座提供。站点 sidebar 默认按内容目录**自动生成**（`@kb/site` 的能力）；
+> 本仓库作为个人实例保留了精修的 sidebar（`docs/.vitepress/sidebar.manual.mts`，由 `site.autoSidebar` 控制是否叠加自动生成）。
 
 ## 内容统计
 

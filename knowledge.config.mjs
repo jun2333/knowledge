@@ -139,7 +139,6 @@ export default {
           { text: '读书笔记', link: '/books/js-you-dont-know' },
           { text: '面试题', link: '/interview-questions/' },
           { text: '项目架构', link: '/project-architecture/' },
-          { text: '指南', link: '/guide/quick-start' },
           { text: 'Agent CLI', link: '/agent-cli/' },
           { text: '模板编辑器', link: '/template-editor/' },
           { text: '简历', link: '/resume/v4-frontend' },
