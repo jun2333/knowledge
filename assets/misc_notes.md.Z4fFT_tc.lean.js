@@ -1,0 +1,1 @@
+import{_ as i,o as a,c as n,a4 as h}from"./chunks/framework.BBs01uty.js";const g=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"misc/notes.md","filePath":"misc/notes.md"}'),k={name:"misc/notes.md"};function p(l,s,t,e,E,r){return a(),n("div",null,[...s[0]||(s[0]=[h("",58)])])}const y=i(k,[["render",p]]);export{g as __pageData,y as default};
