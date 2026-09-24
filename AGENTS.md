@@ -9,27 +9,27 @@
 - 不要随意删除文件，需要请示用户
 
 ## 项目说明
-- 这是一个 pnpm Monorepo 项目，包含三个子包：
-  - `docs/`：VitePress 知识库文档站点 + AI 聊天 UI 组件
-  - `server/`：Koa 后端服务，提供 RAG 向量检索和 AI 聊天 API
-  - `resume/`：简历与面试资料（不参与构建）
-- 文档目录：`docs/`
-- 后端代码：`server/src/`；索引与评估脚本：`server/scripts/`；评估数据集：`server/eval/`
-- 启动开发服务器：`pnpm dev`（前后端同时启动，文档端口 5173，API 端口 3000）
-- 启动 Chroma 数据库：`pnpm chroma:start`（需要 Docker）
-- 构建向量索引：`pnpm rag:index`（增量，只处理变更文件）；全量重建用 `pnpm rag:index:full`
-- 检索质量评估：`pnpm test:rag`（检索层 + 阈值门禁，约 30 秒）；`pnpm test:rag:full`（追加生成层评估）
+- 本仓库是**一个「知识库实例」**；通用能力在**独立基座仓库** `../kb-base`（本地通过 `link:` 依赖）
+  - `@kb/core`：RAG 引擎 + Agent + 评估框架 + CLI（`kb`）→ `../kb-base/packages/core`
+  - `@kb/site`：VitePress 主题、批注与 AI 组件、站点配置派生（`defineSite`）→ `../kb-base/packages/site`
+- 仓库根 = 实例：内容（`docs/`）+ 配置（`knowledge.config.mjs`）+ 数据（`eval/`、`data/`）
+- `resume/`：简历与面试资料（不参与构建）
+- **实例配置**：根目录 `knowledge.config.mjs`（内容目录 / 模型 / 向量集合名 / 导航 等，唯一入口）
+- **CLI**：`kb index | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`（根 `package.json` 的脚本是其封装）
+- 站点壳：`docs/.vitepress/{config.mts,theme/index.js}`（各几行，逻辑都在基座包）；个人精修 sidebar：`docs/.vitepress/sidebar.manual.mts`
+- 评估集：`eval/`；索引与评估脚本在基座仓库：`../kb-base/packages/core/src/`
+- 脚手架与上手文同步：`pnpm create:kb <目录>`、`pnpm sync:starter`（转发到 `../kb-base/scripts/`）
 - 旧版笔记归档在 `archive/` 目录
 
 ## 经验与方法
 
 ### 评估集审核（RAG）
-- 审核 / 初筛 RAG 评估集时，严格遵循 `server/eval/REVIEW-PLAYBOOK.md` 的流程与判断规则
+- 审核 / 初筛 RAG 评估集时，严格遵循 `../kb-base/packages/core/eval/REVIEW-PLAYBOOK.md` 的流程与判断规则
 - 结论只有三种：**保留 / 改标注 / 删除**；判断"文档有没有讲该知识点"**必须 grep 验证，禁止凭语义印象**
-- 流程：`rag:gen-cases`（生成初稿）→ 过滤技术目录合并 → `rag:review-cases`（自动筛可疑，A/B 两类）→ 逐条审核修正 → `pnpm test:rag` 验证 + `test:rag:baseline` 固化
+- 流程：`kb cases:gen`（生成初稿）→ 过滤技术目录合并 → `kb cases:review`（自动筛可疑，A/B 两类）→ 逐条审核修正 → `kb eval` 验证 + `kb eval:baseline` 固化
 
 ### React 原理探索
-- 探索 React 原理时，优先查看本地源码：`/Users/tsuna2751/Documents/Jun/code/react`
+- 探索 React 原理时，优先查看本地的 React 源码仓库（路径因机器而异，按需在本地找一份）
 - 通过源码验证结论，而不是仅凭记忆或网络资料
 
 ### 绘图规范

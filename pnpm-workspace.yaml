@@ -1,6 +1,4 @@
 packages:
-  - 'docs'
-  - 'server'
   - 'resume'
 allowBuilds:
   esbuild: true

@@ -32,7 +32,7 @@ flowchart LR
 
 ### 3.1 数据集
 
-数据**独立存放**在 `server/eval/retrieval-cases.json`——**数据与评估逻辑分离**，加题/改题只改数据、不碰代码，也便于 diff 和多人维护。
+数据**独立存放**在 `eval/retrieval-cases.json`——**数据与评估逻辑分离**，加题/改题只改数据、不碰代码，也便于 diff 和多人维护。
 
 ```ts
 type EvalCase = { q: string; expect: string[]; category: string }
@@ -134,7 +134,7 @@ Vue：  5 题 | Hit@5 100% | Hit@1 100% | Recall@5 0.833 | MRR 1.000
 pnpm rag:gen-cases --limit 20   # 用本地 LLM 逐篇文档生成"能由它回答的问题"
 ```
 
-它遍历文档、让模型基于内容出一个问题，产出 `server/eval/retrieval-cases.generated.json` 作为**初稿**。
+它遍历文档、让模型基于内容出一个问题，产出 `eval/retrieval-cases.generated.json` 作为**初稿**。
 
 **但必须人工审核**——实测生成结果里混进了 `index.md`、`GUIDE.md` 这类**项目说明文档**（不属于技术知识，不该进评估集）；措辞、期望文档的准确性也要人工过一遍。审核通过后再合并进 `retrieval-cases.json`。
 
@@ -157,7 +157,7 @@ pnpm rag:gen-cases --limit 20   # 用本地 LLM 逐篇文档生成"能由它回�
    - **拒答检测**：负例题是否如实说"没有/未找到/无法提供"
 2. **LLM-as-judge**：用本地 `qwen3:8b` 按 rubric 给三项各打 1~5 分（输出 JSON）
    - 局限：8B 模型自评可能不够客观，需人工校准
-3. **人工复核**：脚本把"问题 + 检索来源 + 回答 + 评分"写进 `server/data/gen-eval-report.md`，人工过一遍
+3. **人工复核**：脚本把"问题 + 检索来源 + 回答 + 评分"写进 `data/gen-eval-report.md`，人工过一遍
 
 ### 4.3 负例题：专门测"不知道就说不知道"
 
@@ -211,9 +211,9 @@ pnpm rag:gen-cases --limit 20   # 用本地 LLM 逐篇文档生成"能由它回�
 
 | 文件 | 角色 | 说明 |
 |------|------|------|
-| `server/eval/thresholds.json` | **硬底线** | 跌破即 `exit 1`（数值可调，不用改代码） |
-| `server/data/eval-history.jsonl` | **流水账** | 每次运行追加一行 → 支持"较上次"与长期趋势 |
-| `server/data/eval-baseline.json` | **参考靶子** | 被认可的某次成绩 → 回答"现在离达标版差多少" |
+| `eval/thresholds.json` | **硬底线** | 跌破即 `exit 1`（数值可调，不用改代码） |
+| `data/eval-history.jsonl` | **流水账** | 每次运行追加一行 → 支持"较上次"与长期趋势 |
+| `data/eval-baseline.json` | **参考靶子** | 被认可的某次成绩 → 回答"现在离达标版差多少" |
 
 三者互补：**阈值管"不许退化到底线以下"，基线管"和认可的那版比差多少"，历史管"最近一路怎么走的"**。
 

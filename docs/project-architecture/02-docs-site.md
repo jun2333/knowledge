@@ -29,32 +29,50 @@ base: process.env.BASE_PATH || '/',
 
 > 这个变量必须**构建期**注入。构建后 base 就写死在产物里了，预览时也要用同样的值（见本节末尾的"预览"）。
 
-### 设计 2：一套配置派生"本地版 / 线上版"
+### 设计 2：nav 兼任"仅本地"的唯一来源
 
-有些内容是个人隐私（读书笔记、面试题、运动、杂项等），本地要看、线上不公开。做法是**单一数据源** `LOCAL_ONLY`，其它配置全部从它派生，避免多处手写不同步：
+有些内容是个人隐私（读书笔记、面试题、运动、杂项等），本地要看、线上不公开。做法是**让 `site.nav` 兼任唯一配置**：给导航项加 `onlyLocal`，它既在线上隐藏，其路径又会被排除出编译 / sidebar / 死链检查——**只维护 nav 一份**，不用再单独维护"哪些是私密内容"的列表：
 
-```ts
-const LOCAL_ONLY = [
-  { path: 'sports', desc: '个人兴趣（乒乓球 / 游泳）' },
-  { path: 'misc', desc: '杂项笔记' },
-  { path: 'java-practice', desc: 'Java 学习实战（自用）' },
-  { path: 'guide', desc: '指南类文章（自用，对外价值不高）' },
-  { path: 'algorithms', desc: '算法笔记（质量待完善）' },
-  { path: 'books', desc: '读书笔记（个人阅读记录，不公开）' },
-  { path: 'service/roadmap.md', desc: '前端转全栈学习路线（自用）', isFile: true },
-  { path: 'interview-questions', desc: '面试题（个人笔记，仅本地）' },
-]
-
-// 以下是派生，不要手写
-const LOCAL_ONLY_PATHS = LOCAL_ONLY.map((i) => (i.isFile ? i.path : `${i.path}/**`))
-const LOCAL_ONLY_SIDEBAR_KEYS = LOCAL_ONLY.filter((i) => !i.isFile).map((i) => `/${i.path}/`)
-const LOCAL_ONLY_LINKS = LOCAL_ONLY.filter((i) => i.isFile).map((i) => toSlug(i.path))
-const IGNORED_DEAD_LINKS = LOCAL_ONLY.map(
-  (i) => new RegExp(`^${toSlug(i.path)}${i.isFile ? '' : '\\/'}`),
-)
+```js
+// knowledge.config.mjs（实例配置，唯一入口）
+site: {
+  nav: [
+    { text: '算法', link: '/algorithms/basic', onlyLocal: 'algorithms' },            // 整个目录
+    { text: 'Service', link: '/service/roadmap', onlyLocal: 'service/roadmap.md' }, // 单个文件
+    { text: '个人记录', onlyLocal: ['books', 'resume'], items: [ /* … */ ] },        // 多项
+  ],
+}
 ```
 
-派生出的四份配置各自负责：
+```ts
+// 实例的 docs/.vitepress/config.mts（全部逻辑在基座包 @kb/site 里）
+import { defineSite } from '@kb/site'
+import instanceConfig from '../../knowledge.config.mjs'
+import manualSidebar from './sidebar.manual.mts'
+
+export default defineSite({
+  config: instanceConfig,
+  manualSidebar,
+  metaUrl: import.meta.url,
+  mode: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
+  includeLocal: process.env.INCLUDE_LOCAL === '1',
+})
+```
+
+`@kb/site` 的 `defineSite()` 内部从 nav 派生四份配置：
+
+ ```js
+// 基座 @kb/site 的 config/define-site.mjs（节选）
+const navSource = site.nav?.length ? site.nav : buildAutoNav({ contentRoot, labels: categories })
+const {
+  paths,        // → srcExclude（生产不构建）
+  sidebarKeys,  // → 侧边栏分组过滤
+  links,        // → 侧边栏单条链接过滤
+  deadLinks,    // → ignoreDeadLinks
+} = deriveLocalOnly(resolveLocalEntries(collectLocalPaths(navSource), contentRoot))
+```
+
+派生出四份配置各自负责：
 
 | 派生结果 | 作用 |
 |---------|------|
@@ -63,7 +81,7 @@ const IGNORED_DEAD_LINKS = LOCAL_ONLY.map(
 | `LOCAL_ONLY_LINKS` | 过滤掉单文件形式的侧边栏条目 |
 | `IGNORED_DEAD_LINKS` | 忽略"其他文章指向这些被排除内容"的死链，否则构建会失败 |
 
-**以后要新增"仅本地"内容，只需要在 `LOCAL_ONLY` 加一行**，其余自动生效——这是这份配置最值得学的地方。
+**以后要新增"仅本地"内容，只需要在 nav 给它加 `onlyLocal: '路径'`**（目录 / 文件自动识别），其余自动生效——这是这份配置最值得学的地方。
 
 ### 设计 3：环境判断与临时开关
 
@@ -77,7 +95,7 @@ const excludeLocal = isProd && !includeLocal               // 是否排除本地
 
 ```ts
 srcExclude: excludeLocal ? LOCAL_ONLY_PATHS : [],
-nav: excludeLocal ? prodNav : localNav,
+nav,
 ignoreDeadLinks: isProd
   ? excludeLocal
     ? IGNORED_DEAD_LINKS
@@ -85,15 +103,24 @@ ignoreDeadLinks: isProd
   : false,
 ```
 
+其中 `nav` 由**同一份 `site.nav`** 派生，本地 / 线上共用：
+
+```ts
+// buildNav：过滤 onlyLocal 项 → 空分组移除 → 只剩 1 项的分组提到顶层（用子项名字）
+const nav = buildNav(navSource, { excludeLocal })
+```
+
 于是有三种行为：
 
 | 场景 | `excludeLocal` | 结果 |
 |------|---------------|------|
 | `pnpm dev`（本地） | false | 全量内容、全量菜单 |
-| `pnpm build`（默认） | true | 排除本地专属内容 |
+| `pnpm build`（默认） | true | 排除本地专属内容、过滤 `onlyLocal` 项 |
 | `INCLUDE_LOCAL=1 pnpm build` | false | **线上也全量**（临时用，比如自己看） |
 
 > 全量模式下额外忽略 `/localhost/` 死链，因为面试题里有指向本地调试地址的链接。
+
+> **导航与侧边栏都支持"从内容目录自动生成"**（基座能力，见 `@kb/site` 的 `config/nav.mjs`、`config/sidebar.mjs`）：`site.nav` 留空则按内容目录自动生成极简导航；`site.autoSidebar: true` 时 sidebar 也自动生成、手写项优先覆盖。本实例保留了精修的 sidebar。
 
 侧边栏过滤函数同样只认 `excludeLocal`：
 
@@ -176,7 +203,7 @@ const isProd = import.meta.env.PROD
 根 `package.json`：
 
 ```json
-"build": "BASE_PATH=${BASE_PATH:-/knowledge/} pnpm --filter @knowledge/docs build"
+"build": "BASE_PATH=${BASE_PATH:-/knowledge/} pnpm --filter @kb/site build"
 ```
 
 `${BASE_PATH:-/knowledge/}` 是"默认 `/knowledge/`，允许外部覆盖"的写法，保证平时不用记着加环境变量。
@@ -184,7 +211,7 @@ const isProd = import.meta.env.PROD
 ### 预览
 
 ```json
-"preview": "BASE_PATH=/knowledge/ pnpm --filter @knowledge/docs preview"
+"preview": "BASE_PATH=/knowledge/ pnpm --filter @kb/site preview"
 ```
 
 **必须和构建用同一个 `BASE_PATH`**，否则服务器在 `/` 下服务、产物里的资源却是 `/knowledge/...`，就会满屏 404。访问时也要带路径：`http://localhost:4173/knowledge/`。

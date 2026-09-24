@@ -86,15 +86,20 @@ flowchart TB
 2. **问答流**（在线）：用户提问 → Koa → Agent 循环（可能多次检索）→ qwen3:8b 生成 → SSE 流式回前端。
 3. **展示流**：VitePress 静态站点（笔记页面 + 聊天 UI）。
 
-## 四、三个包的职责
+## 四、基座包与实例
 
-这是 pnpm workspace（见 `pnpm-workspace.yaml`），根 `package.json` 只做命令转发。
+**通用能力在独立仓库 `../kb-base`（基座），本仓库是一个「实例」**——只放内容、配置与数据；
+实例单向依赖基座，基座不含任何个人内容。本地开发期通过 `link:` 指向基座仓库，发布 npm 后改为版本号依赖。
 
-| 包 | 职责 | 入口 |
+| 包 / 目录 | 职责 | 入口 |
 |----|------|------|
-| `docs/` | VitePress 文档站、主题扩展、AI 聊天 UI | `.vitepress/config.mts` |
-| `server/` | Koa 后端、RAG 索引与检索、Agent 工具调用 | `src/index.ts` |
+| `@kb/core`（基座 `../kb-base/packages/core`） | RAG 引擎（索引/切分/检索/重排）、Agent 工具调用、Koa 服务、评估框架、CLI | `src/cli.ts`（命令 `kb`） |
+| `@kb/site`（基座 `../kb-base/packages/site`） | VitePress 主题、批注与 AI 组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
+| 仓库根（实例） | 内容 `docs/`、配置 `knowledge.config.mjs`、数据 `eval/` 与 `data/` | `knowledge.config.mjs` |
 | `resume/` | 简历与面试准备资料（不参与构建） | — |
+
+> 命令行统一走基座 CLI：`kb index | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`；
+> 根 `package.json` 里的 `pnpm rag:index` / `pnpm test:rag` 等只是它的封装。
 
 > `archive/` 是历史归档，只读，不参与构建。
 
@@ -193,7 +198,7 @@ pnpm dev                  # 前后端一起（docs 5173 / server 3000）
 | `pnpm preview` | 预览构建产物（同样带 base） |
 | `pnpm rag:index` | 增量更新向量索引（只处理变更的文件） |
 | `pnpm rag:index:full` | 全量重建索引（首次或需要重建时） |
-| `pnpm --filter @knowledge/server rag:eval` | 跑检索质量评估 |
+| `kb eval` | 跑检索质量评估 |
 
 ## 九、接下来读什么
 

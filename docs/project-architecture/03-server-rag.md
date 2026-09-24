@@ -2,10 +2,12 @@
 
 > 目标：搞清笔记是怎么变成向量的（索引链路）、提问时怎么查（检索链路）、以及怎么衡量"查得准不准"。
 
-## 一、`server` 包结构
+## 一、后端包结构（`@kb/core`）
+
+代码在**基座仓库** `../kb-base/packages/core/src/`（本仓库只依赖它，通过 `kb` CLI 调用）：
 
 ```
-server/src/
+packages/core/src/
 ├── index.ts            # Koa 入口：装配中间件与路由
 ├── config/index.ts     # 统一配置（模型、端口、切分参数…）
 ├── routes/
@@ -23,26 +25,26 @@ server/src/
 
 ## 二、统一配置
 
-`src/config/index.ts` 集中了所有可调参数，改模型或调参只动这里：
+配置集中在**实例根**的 `knowledge.config.mjs`（单一入口），由基座包的 `@kb/core` 里 `config/loader.ts` 加载并归一化
+（定位 → 动态 import → 相对路径转绝对路径 → 合并 env）：
 
-```ts
-export const config = {
-  ollamaBaseUrl: 'http://localhost:11434/v1',  // Ollama 兼容 OpenAI API 格式
-  chatModel: 'qwen3:8b',
-  embeddingModel: 'bge-m3',
-  chromaHost: process.env.CHROMA_HOST || 'localhost',
-  chromaPort: parseInt(process.env.CHROMA_PORT || '8000'),
+```js
+// knowledge.config.mjs（实例）
+export default {
+  contentRoot: './docs',        // 内容目录（可绝对路径 / 仓库外）
   collectionName: 'knowledge_base',
-  docsPath: path.resolve(__dirname, '../../../docs'),  // 直接扫 docs 目录
-  chunkSize: 1000,
-  chunkOverlap: 200,
-  rerankEnabled: false,   // 实测反而变差，默认关
-  rerankCandidates: 20,
-  port: parseInt(process.env.PORT || '3000'),
+  dataDir: './data',
+  evalDir: './eval',
+  models: { ollamaBaseUrl: 'http://localhost:11434/v1', chat: 'qwen3:8b', embedding: 'bge-m3' },
+  chunk: { size: 1000, overlap: 200 },
+  rerank: { enabled: false, candidates: 20 },  // 实测反而变差，默认关
+  chroma: { host: 'localhost', port: 8000 },
+  port: 3000,
 }
 ```
 
-注意 `docsPath` 指向 `docs/`，所以**索引直接复用文档站的笔记**，不需要另外维护一份语料。
+> 加载后的绝对路径以 `config.docsPath` 等形式提供给运行时代码。配置里 `contentRoot` 指向的内容目录
+> **与文档站共用同一批 Markdown**，不需要另外维护一份语料；`CHROMA_HOST/PORT`、`PORT` 可被环境变量覆盖。
 
 ## 三、索引链路：`rag:index`
 
@@ -143,7 +145,7 @@ await writeChunks(vectorStore, chunks)
 ```ts
 const next: Record<string, string> = {}
 for (const [rel, info] of current) next[rel] = info.hash
-writeManifest(next)   // server/data/index-manifest.json
+writeManifest(next)   // data/index-manifest.json
 ```
 
 **实测四种场景**（脚本自动判断模式）：
@@ -221,7 +223,7 @@ cachedStore = await Chroma.fromExistingCollection(embeddings, {
 一个常见担心：向量数据是不是都塞进 Node 内存了？**没有**——
 
 - 这里用的是 **Chroma Server 模式**（独立 Docker 服务），`store` 只是一根**远程连接句柄**，Node 侧仅持有"连哪、连哪个集合"的元数据；
-- 向量数据在 **Chroma 服务端**（持久化到 `server/data/chroma`）。按当前约 2750 块 × 1024 维估算，原始向量仅 ~11MB 量级，加 HNSW 索引开销也就几十 MB，可忽略；
+- 向量数据在 **Chroma 服务端**（持久化到 `data/chroma`）。按当前约 2750 块 × 1024 维估算，原始向量仅 ~11MB 量级，加 HNSW 索引开销也就几十 MB，可忽略；
 - 内存真正的大头是**模型**（bge-m3 ~1.2GB、qwen3:8b ~5.2GB），但那在 Ollama 进程里，和 `store` 无关。
 
 `cachedStore` 缓存的是**连接**而非数据，为的是免去每次检索重复建连。由于 `rag:index` 会删库重建、导致旧句柄失效，所以用 `cacheValidated` 标记 + `invalidateRetriever()` 触发重建：
@@ -249,7 +251,7 @@ export function invalidateRetriever() {
 
 把上面第 1 步展开，是一条贯穿 4 层的调用链。先说结论：**我们仓库里没有向量化算法本身**——bge-m3 模型跑在 Ollama 里，我们的代码只负责"配置它指向哪、触发它调用"。
 
-**① 我们的代码 · `server/src/rag/retriever.ts`** —— 只做配置和触发（`embeddings` 的构造见上一节）：
+**① 我们的代码 · `@kb/core` 的 `rag/retriever.ts`** —— 只做配置和触发（`embeddings` 的构造见上一节）：
 
 ```ts
 // searchDocs 里的一行触发一切：
@@ -332,7 +334,7 @@ function dedupeBySource(results: [Document, number][], k: number) {
 | **MRR** | 期望文档排名倒数的平均，越接近 1 越好 |
 
 ```bash
-pnpm --filter @knowledge/server rag:eval
+kb eval
 ```
 
 > 一开始只有"命中率"，结果 12 题全是 100%，**任何优化都测不出差别**。加上 Top1/MRR 后才有区分度——这是做优化前必须先补好的基础设施。

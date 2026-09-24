@@ -12,7 +12,7 @@
 | 向量模型 | bge-m3 | 中文检索质量显著更好（做过对比实测） |
 | 问答流程 | Function Calling（Agent） | 让模型自己决定检不检索、检索几次，比固定流程灵活 |
 | 部署方式 | 本地构建推 `gh-pages` | 账号 GitHub Actions 有 billing 限制，绕开它 |
-| 个人内容 | 本地/生产双菜单 + 单一数据源 | 一份 `LOCAL_ONLY` 派生四份配置，避免多处手写不同步 |
+| 个人内容 | nav 兼任「仅本地」唯一来源（`knowledge.config.mjs`） | `site.nav` 里带 `onlyLocal` 的项派生"线上隐藏 + 排除编译/sidebar/死链"，只维护一份 |
 | 检索结果 | 按来源去重 | 避免同一篇占满 top5，提升给 LLM 的上下文多样性 |
 
 ## 二、踩过的坑
@@ -67,7 +67,7 @@ function escapeText(text) {
 **解法**：预览也用同一个 base，并固化到脚本里：
 
 ```json
-"preview": "BASE_PATH=/knowledge/ pnpm --filter @knowledge/docs preview"
+"preview": "BASE_PATH=/knowledge/ pnpm --filter @kb/site preview"
 ```
 
 访问时要带路径：`http://localhost:4173/knowledge/`（根 `/` 本身 404 是正常的）。
@@ -215,7 +215,7 @@ flowchart TD
 2. **负结果也是结果**：别用"设计上更优雅"替代"实测更有效"，两次回退都是靠数据说话。
 3. **索引范围是一等公民**：不是"能塞进去就塞"，同质内容会稀释检索质量。
 4. **环境变量要在同一条链路上保持一致**：base 在构建和预览不一致会直接导致 404。
-5. **配置用单一数据源派生**：`LOCAL_ONLY` 一份数据派生四份配置，加内容只改一处，避免遗漏。
+5. **配置用单一数据源派生**：`site.nav` 一份数据派生 `srcExclude` / `ignoreDeadLinks` / sidebar 过滤 / nav 过滤，加内容只改一处，避免遗漏。
 
 ---
 

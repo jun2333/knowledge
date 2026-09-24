@@ -6,34 +6,33 @@
 
 ```
 front-end-knowledge-summary/
-├── docs/                      # VitePress 文档站点
-│   ├── .vitepress/            # 主题、站点配置、AI 聊天组件
-│   ├── ai-agent/              # AI Agent 知识（RAG / Function Calling…）
-│   ├── react/ vue/ browser/   # 前端各领域笔记
-│   ├── javascript/ css/ performance/ engineering/
-│   ├── service/               # 服务端（Node / Java / DB / 部署）
-│   ├── algorithms/ frontend/  # 算法 / 大前端
-│   └── ...                    # 其余分类（含部分"仅本地"内容）
-├── server/                    # Koa 后端服务（RAG + Agent）
-│   ├── src/
-│   │   ├── agent/             # Agent 循环 + 工具（Function Calling）
-│   │   ├── rag/               # 索引 / 切分 / 检索 / 重排
-│   │   ├── routes/            # API 路由（/api/chat，SSE 流式）
-│   │   └── config/            # 统一配置
-│   ├── scripts/               # 索引与评估脚本
-│   └── eval/                  # 评估数据集与阈值
-├── scripts/                   # 部署、面试题同步脚本
-├── archive/                   # 历史归档（只读）
-├── package.json               # Monorepo 根配置
-└── pnpm-workspace.yaml        # pnpm 工作区
+├── knowledge.config.mjs       # ★ 实例配置（内容目录 / 模型 / 集合名 / 导航…，唯一入口）
+├── docs/                      # 内容 + 站点壳（VitePress）
+│   ├── .vitepress/
+│   │   ├── config.mts         # 几行：defineSite(...)
+│   │   ├── theme/index.js     # 一行：再导出 @kb/site 的主题
+│   │   └── sidebar.manual.mts # 本实例精修的 sidebar（个人）
+│   ├── getting-started/       # 快速上手（随基座分发）
+│   ├── ai-agent/ react/ vue/  # 你的知识内容（目录即分类）
+│   └── ...
+├── eval/                      # 评估集（测试集 / 阈值 / 已审核记录）
+├── data/                      # 本地数据产物（向量库 / 索引清单 / 评估历史与基线）
+├── scripts/                   # 个人脚本（简历同步、部署）
+├── archive/  resume/          # 个人内容（不参与构建）
+├── package.json               # 实例依赖：@kb/core、@kb/site（link 到基座仓库）
+└── pnpm-workspace.yaml
 ```
+
+> **基座与实例分离**：通用能力在**独立仓库** `../kb-base`（`@kb/core`、`@kb/site`，零个人内容）；
+> 本仓库是「一个实例」，只放内容、配置与数据，通过 `link:` 单向依赖基座。
+> 基座发布 npm 后，依赖会从 `link:../kb-base/...` 换成版本号。
 
 ## 快速开始
 
 ### 前置条件
 
-- **Node.js** >= 18
-- **pnpm** >= 8
+- **Node.js** >= 20.6
+- **pnpm** >= 9
 - **Docker**（运行 Chroma 向量数据库）
 - **Ollama**（本地运行 AI 模型）
 
@@ -98,6 +97,8 @@ pnpm ollama:pull-chat # 下载聊天模型（qwen3:8b）
 pnpm ollama:pull-embed # 下载向量模型（bge-m3）
 ```
 
+> 上面这些命令都是基座 CLI **`kb`** 的封装；也可以直接用 `kb index` / `kb eval` / `kb dev` / `kb build`。
+
 ## AI 知识问答
 
 右下角 AI 助手按钮，基于 RAG（检索增强生成），**全部本地运行，无需联网**：
@@ -115,7 +116,7 @@ pnpm ollama:pull-embed # 下载向量模型（bge-m3）
 
 改检索逻辑或 prompt 后，跑一条命令就能确认有没有把质量改退化：
 
-- **检索层**（50 题，按主题分层）：`Hit@5` / `Hit@1` / `Recall@5` / `MRR`
+- **检索层**（250 题，按主题分层）：`Hit@5` / `Hit@1` / `Recall@5` / `MRR`
 - **生成层**（10 题，含"知识库外"负例）：引用准确性、忠实度、完整性（本地 LLM 打分）
 - **阈值门禁**：指标跌破底线即非零退出；每次结果留档，输出"较上次 / 较基线"变化
 
@@ -125,7 +126,90 @@ pnpm test:rag:full     # 大改动后跑全量（~15 分钟）
 pnpm test:rag:baseline # 认可某次结果时，固化为新基线
 ```
 
-> 设计细节见 `docs/project-architecture/06-evaluation.md`。
+> 设计细节见 `docs/project-architecture/06-evaluation.md`。评估集审核流程见 `server/eval/REVIEW-PLAYBOOK.md`。
+
+## 实例配置与基座化
+
+本项目既是「个人知识库实例」，也是一份可复用的「基座」——任何人都能用它搭自己的知识库。
+
+### 实例配置（唯一入口）
+
+内容目录、模型、向量集合等全部集中在根目录 `knowledge.config.mjs`：
+
+```js
+export default {
+  name: 'my-knowledge',
+  contentRoot: './docs',        // 内容目录；支持绝对路径（可放到仓库外）
+  collectionName: 'my_kb',      // 向量集合名（一实例一库）
+  dataDir: './data',            // 索引清单 / 向量库 / 评估历史
+  evalDir: './eval',            // 评估集 / 阈值
+  models: { chat: 'qwen3:8b', embedding: 'bge-m3' },
+  // ...
+}
+```
+
+换一份内容只需改这一份配置。**内容目录支持绝对路径**，因此可以把内容放在仓库外部的目录里。
+
+### 默认本地，可切远程
+
+模型与向量库**默认全部走本地**（Ollama + Chroma），也可以指向远程服务——密钥只从环境变量读，不写进配置：
+
+```js
+models: {
+  baseUrl: 'http://localhost:11434/v1',   // 本地默认
+  apiKeyEnv: 'OPENAI_API_KEY',            // 远程时 Key 从这个环境变量读
+  chat: 'qwen3:8b',
+  embedding: 'bge-m3',
+  // 远程示例：
+  // chat: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', apiKeyEnv: 'DEEPSEEK_API_KEY' },
+  // embedding: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'BAAI/bge-m3', apiKeyEnv: 'SILICONFLOW_API_KEY' },
+},
+
+chroma: {
+  host: 'localhost', port: 8000,          // 本地默认
+  // 远程 / 云示例：url: 'https://xxx.chromadb.cloud', tokenEnv: 'CHROMA_TOKEN', tenant: '…', database: '…'
+},
+```
+
+- 聊天模型走**任意 OpenAI 兼容接口**（DeepSeek / 硅基流动 / OpenAI…）；向量模型同理
+- 本地 Ollama 会自动走原生 `/api/chat`（可用 `think:false` 提速）；远程则走标准 `chat.completions`
+- 向量库远程时填 `url`（http/https），云端用 `tokenEnv` 读 token，支持 `tenant` / `database`
+
+**顶部导航（nav）是「仅本地」的唯一来源**——本地 / 线上共用这一份。给任一项（分组或单项）加 `onlyLocal`，它就会**线上隐藏**，并让**其路径被排除出编译**（`srcExclude`）、sidebar 与死链检查。路径自动识别目录 / 文件，`.md` 可省略：
+
+```js
+site: {
+  nav: [
+    { text: 'AI Agent', link: '/ai-agent/' },
+    { text: '算法', link: '/algorithms/basic', onlyLocal: 'algorithms' },            // 整个目录
+    { text: 'Service', link: '/service/roadmap', onlyLocal: 'service/roadmap.md' }, // 单个文件
+    { text: '个人记录', onlyLocal: ['books', 'resume'], items: [ /* … */ ] },        // 多项
+  ],
+}
+```
+
+过滤后若某分组**只剩 1 项**，该项会自动提到顶层；`site.nav` 留空则按内容目录自动生成。
+
+### 搭一个自己的知识库
+
+```bash
+pnpm create:kb my-kb                                   # 交互式（转发到 ../kb-base）
+pnpm create:kb my-kb --yes --name "我的知识库" --collection my_kb --port 3100  # 非交互
+```
+
+脚手架**只生成实例骨架**（不复制基座实现、不剥离个人内容）：`knowledge.config.mjs` + `docs/`（含快速上手与示例文档）
++ `eval/` 示例评估集 + `package.json`（依赖 `@kb/core`、`@kb/site`）。之后：
+
+```bash
+cd my-kb && pnpm install
+pnpm chroma:start && pnpm rag:index && pnpm dev
+```
+
+> 脚手架脚本与实例骨架都在**基座仓库** `../kb-base`（`scripts/create-kb.mjs`、`templates/instance`）；
+> 本仓库的 `create:kb` / `sync:starter` 命令只是转发过去。
+>
+> 站点 sidebar 默认按内容目录**自动生成**（基座能力，见 `@kb/site`）；本仓库作为个人实例保留了精修的 sidebar
+> （`docs/.vitepress/sidebar.manual.mts`，由 `site.autoSidebar` 控制是否叠加自动生成）。
 
 ## 内容统计
 
@@ -145,6 +229,7 @@ pnpm test:rag:baseline # 认可某次结果时，固化为新基线
 ## 技术栈
 
 - **文档**: VitePress + Mermaid
+- **基座**: `@kb/core`（Koa + RAG 引擎 + Agent + 评估 + CLI）、`@kb/site`（VitePress 主题 / 批注 / AI 组件）
 - **后端**: Koa + TypeScript
 - **向量数据库**: Chroma（Docker，Server 模式）
 - **Embedding 模型**: bge-m3（本地 Ollama）

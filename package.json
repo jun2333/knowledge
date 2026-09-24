@@ -3,25 +3,37 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --parallel -r run dev",
-    "dev:docs": "pnpm --filter @knowledge/docs dev",
-    "dev:server": "pnpm --filter @knowledge/server dev",
-    "preview": "BASE_PATH=/knowledge/ pnpm --filter @knowledge/docs preview",
-    "build": "BASE_PATH=${BASE_PATH:-/knowledge/} pnpm --filter @knowledge/docs build",
-    "rag:index": "pnpm --filter @knowledge/server rag:index",
-    "rag:index:full": "pnpm --filter @knowledge/server rag:index --full",
-    "rag:eval": "pnpm --filter @knowledge/server rag:eval",
-    "rag:gen-eval": "pnpm --filter @knowledge/server rag:gen-eval",
-    "test:rag": "pnpm --filter @knowledge/server rag:eval",
-    "test:rag:full": "pnpm --filter @knowledge/server rag:eval && pnpm --filter @knowledge/server rag:gen-eval",
-    "test:rag:baseline": "pnpm --filter @knowledge/server rag:baseline",
-    "chroma:start": "docker run -d -p 8000:8000 --name chroma -v ./server/data/chroma:/data chromadb/chroma:latest",
+    "dev": "kb dev",
+    "dev:docs": "vitepress dev docs",
+    "dev:server": "kb serve",
+    "build": "BASE_PATH=${BASE_PATH:-/knowledge/} kb build",
+    "preview": "BASE_PATH=/knowledge/ kb preview",
+    "rag:index": "kb index",
+    "rag:index:full": "kb index --full",
+    "rag:eval": "kb eval",
+    "rag:gen-eval": "kb eval --full",
+    "test:rag": "kb eval",
+    "test:rag:full": "kb eval --full",
+    "test:rag:baseline": "kb eval:baseline",
+    "rag:gen-cases": "kb cases:gen",
+    "rag:review-cases": "kb cases:review",
+    "chroma:start": "docker run -d -p 8000:8000 --name chroma -v ./data/chroma:/data chromadb/chroma:latest",
     "chroma:stop": "docker stop chroma && docker rm chroma",
     "ollama:ps": "ollama ps",
     "ollama:list": "ollama list",
     "ollama:stop": "ollama stop qwen3:8b && ollama stop bge-m3:latest",
     "ollama:pull-chat": "ollama pull qwen3:8b",
     "ollama:pull-embed": "ollama pull bge-m3:latest",
-    "sync": "node scripts/sync-local.mjs"
+    "sync": "node scripts/sync-local.mjs",
+    "sync:starter": "node ../kb-base/scripts/sync-starter.mjs",
+    "create:kb": "node ../kb-base/scripts/create-kb.mjs"
+  },
+  "dependencies": {
+    "@kb/core": "link:../kb-base/packages/core",
+    "@kb/site": "link:../kb-base/packages/site"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.0"
   }
 }

@@ -7,7 +7,6 @@ yarn.lock
 dist/
 build/
 .out/
-server/dist/
 
 # VitePress
 **/.vitepress/cache/
@@ -45,19 +44,19 @@ Thumbs.db
 .cache/
 
 # Chroma local data
-server/data/chroma/
+data/chroma/
 
 # 向量索引清单（增量索引用，本地生成）
-server/data/index-manifest.json
+data/index-manifest.json
 
 # 评估集生成初稿（待人工审核，不入库）
-server/eval/retrieval-cases.generated.json
-server/eval/retrieval-cases.suspects.json
-server/data/gen-eval-report.md
+eval/retrieval-cases.generated.json
+eval/retrieval-cases.suspects.json
+data/gen-eval-report.md
 
 # 评估历史与基线（本地数据）
-server/data/eval-history.jsonl
-server/data/eval-baseline.json
+data/eval-history.jsonl
+data/eval-baseline.json
 
 # Environment variables
 .env
