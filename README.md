@@ -194,22 +194,24 @@ site: {
 
 ### 搭一个自己的知识库
 
-脚手架是基座能力，可生成一个全新的知识库实例（不复制任何个人内容）：
+唯一的路径：**装包 → `kb init` → 放内容 → 跑起来**（不复制任何个人内容）：
 
 ```bash
-pnpm create:kb my-kb                                   # 交互式
-pnpm create:kb my-kb --yes --name "我的知识库" --collection my_kb --port 3100  # 非交互
+mkdir my-kb && cd my-kb
+pnpm init
+pnpm add @kb/core @kb/site      # ① 装包
+pnpm kb init --install          # ② 生成实例骨架（交互式问答，或加 --yes 一路默认）
 ```
 
-脚手架**只生成实例骨架**（不复制基座实现、不剥离个人内容）：`knowledge.config.mjs` + `docs/`（含快速上手与示例文档）
-+ `eval/` 示例评估集 + `package.json`（依赖 `@kb/core`、`@kb/site`）。之后：
+`kb init` **只生成实例骨架**：`knowledge.config.mjs` + `docs/`（含首页、示例文档、快速上手）+
+`package.json`（依赖 `@kb/core`、`@kb/site`）。之后：
 
 ```bash
-cd my-kb && pnpm install
 pnpm chroma:start && pnpm kb index && pnpm dev
 ```
 
-> 脚手架与实例骨架都由基座提供。站点 sidebar 默认按内容目录**自动生成**（`@kb/site` 的能力）；
+> 基座还没发布到 npm 时，加 `--local <基座目录>` 让生成的实例指向本地基座。
+> 站点 sidebar 默认按内容目录**自动生成**（`@kb/site` 的能力）；
 > 本仓库作为个人实例保留了精修的 sidebar（`docs/.vitepress/sidebar.manual.mts`，由 `site.autoSidebar` 控制是否叠加自动生成）。
 
 ## 内容统计
