@@ -41,6 +41,13 @@ export default {
   // Rerank 重排（实测 bge-reranker-base 弱于 bge-m3 向量本身，默认关闭）
   rerank: { enabled: false, candidates: 20 },
 
+  // 检索策略：混合检索（向量 + BM25 关键词），默认开启
+  // 纯向量在精确词（英文缩写 / 专有名词 / 代码标识符）上最弱，BM25 正好互补。
+  // 实测：Hit@5 98.4%→100%，Hit@1 87.6%→89.6%，MRR 0.923→0.944（零模型成本）
+  retrieval: {
+    hybrid: { enabled: true, candidates: 50, vectorWeight: 0.7, bm25Weight: 0.3 },
+  },
+
   // 向量库：默认本地 Chroma；远程 / 云给 url + tokenEnv（可被 CHROMA_HOST / CHROMA_PORT 覆盖）
   chroma: {
     host: 'localhost',

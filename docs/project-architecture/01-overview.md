@@ -78,6 +78,9 @@ flowchart TB
 
 对应的代码只有一行 `store.similaritySearchWithScore(query, k)`，内部就是这两步——**相似度计算发生在 Chroma 服务端**（HNSW 近似检索），应用层拿到的只是排好序的结果。
 
+> 除了这一路，检索器还有**第二路：BM25 关键词检索**（内存中建的倒排索引）。
+> 两路结果归一化后加权融合 → 这就是**混合检索**，默认开启（详见 [03 篇](./03-server-rag.md)）。
+
 所以图上的"分层"是按**职责**划分（提供能力 vs 提供数据），不是调用链的串联：模型层不查库、存储层不算向量，谁也不依赖谁；而模型层和存储层都是应用层的下游依赖。
 
 三条独立的数据流要分清：
@@ -93,7 +96,7 @@ flowchart TB
 
 | 包 / 目录 | 职责 | 入口 |
 |----|------|------|
-| `@kb/core` | RAG 引擎（索引/切分/检索/重排）、Agent 工具调用、Koa 服务、评估框架、CLI | `cli.ts`（命令 `kb`） |
+| `@kb/core` | RAG 引擎（索引/切分/检索/BM25 混合/重排）、Agent 工具调用、Koa 服务、评估框架、CLI | `cli.ts`（命令 `kb`） |
 | `@kb/site` | VitePress 主题、批注与 AI 组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
 | 仓库根（实例） | 内容 `docs/`、配置 `knowledge.config.mjs`、数据 `eval/` 与 `data/` | `knowledge.config.mjs` |
 | `resume/` | 简历与面试准备资料（不参与构建） | — |
@@ -111,9 +114,10 @@ flowchart TB
 | 图表 | Mermaid 11 | 客户端按需加载渲染，支持点击放大 |
 | 后端 | Koa + TypeScript | 轻量；`koa-bodyparser` / `@koa/cors` / `@koa/router` |
 | RAG 框架 | LangChain.js 0.3 | 用它封装的文本切分器与 Chroma / Embeddings 适配 |
-| 向量库 | Chroma（Docker） | 轻量、可持久化到本地目录 |
+| 向量库 | Chroma（Docker） | 轻量、可持久化到本地目录；可换远程 / 云 |
 | 向量模型 | bge-m3（Ollama） | 中文检索质量好 |
 | 生成模型 | qwen3:8b（Ollama） | 本地 8B，够用于"检索 + 总结" |
+| **混合检索** | 向量 + BM25（加权融合） | 补上纯向量在**精确词**（缩写 / 专名 / 代码标识符）上的短板；零模型成本 |
 | 流式 | SSE（`text/event-stream`） | 后端手写 SSE，前端 `fetch` + `ReadableStream` 解析 |
 
 ## 六、目录结构（简化）
@@ -132,7 +136,7 @@ front-end-knowledge-summary/
 │       ├── config/index.ts   # 统一配置
 │       ├── routes/chat.ts    # 聊天接口（SSE）
 │       ├── agent/            # Agent 循环 + 工具实现
-│       └── rag/              # 索引 / 切分 / 检索 / 重排
+│       └── rag/              # 索引 / 切分 / 检索 / 重排 / BM25
 ├── resume/                   # 简历与面试资料
 ├── scripts/                  # 部署脚本、面试题同步脚本
 └── package.json              # 根：命令转发
@@ -154,7 +158,7 @@ sequenceDiagram
   S->>L: 进入循环（最多 3 轮）
   L->>M: 请求（附工具定义）
   M-->>L: 决定调用 search_knowledge
-  L->>V: 问题向量化 + 相似度检索
+  L->>V: 向量检索 + BM25 关键词检索（融合）
   V-->>L: 相关文档片段
   L->>M: 把片段回传，继续生成
   M-->>L: 流式输出（含 [来源N]）

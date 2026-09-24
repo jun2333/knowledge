@@ -176,14 +176,18 @@ separators: ['\n## ', '\n### ', '\n---\n', '\n\n', '\n', ' ', '']
 ```ts
 export async function searchDocs(query: string, k: number = 5) {
   const store = await getVectorStore()
-  const candidates = await store.similaritySearchWithScore(query, Math.max(k, config.rerankCandidates))
+  const depth = config.hybridEnabled
+    ? Math.max(k, config.hybridCandidates)   // 混合检索要两路各取 50 做融合
+    : Math.max(k, config.rerankCandidates)
 
-  if (!config.rerankEnabled) {
-    return dedupeBySource(candidates, k)
-  }
+  const candidates = await store.similaritySearchWithScore(query, depth)
 
-  const ranked = await rerank(query, candidates.map(([doc]) => doc), candidates.length)
-  return dedupeBySource(ranked.map((r) => [r.doc, r.score] as [Document, number]), k)
+  // 开了 rerank 就以精排为准（不再叠加混合检索，避免两套排序打架）
+  if (config.rerankEnabled) { /* ... */ }
+
+  if (!config.hybridEnabled) return dedupeBySource(candidates, k)
+
+  return hybridFuse(query, candidates, k)   // 向量 + BM25 加权融合
 }
 ```
 
@@ -322,6 +326,33 @@ function dedupeBySource(results: [Document, number][], k: number) {
 ### 3. 可选重排（默认关闭）
 
 `reranker.ts` 用本地 cross-encoder（`bge-reranker-base`）对 `(query, doc)` 一起编码打分，精度理论上高于向量。但**实测在本项目里反而变差**（Top1 83% → 58%），因此 `config.rerankEnabled = false`，代码保留待换更强的模型再验证。
+
+> 后来又重测了一次：修好 2 道题，但代价是 **33.5 秒 / 每次查询**，性价比仍然不够，维持关闭。
+
+### 4. 混合检索（默认开启，本项目收益最大的一项）
+
+`bm25.ts` + `retriever.ts` 的 `hybridFuse`：向量召回与 BM25 关键词召回**两路并行**，各自归一化后加权相加。
+
+**为什么需要**：纯向量在**精确词**上最弱——英文缩写、专有名词、代码标识符这类内容在向量空间里容易和无关文档"漂"到一起。实测本项目所有"文档明明讲了却没捞到"的题都带精确词（`FMP`/`LCP`、`## 代码审查文化`…）。
+
+```ts
+// 两路各自取 50 → 分别除以本查询内的最大值归一 → 加权相加
+score[source] = (1 - distance / dMax) * 0.7 + (bm25 / bm25Max) * 0.3
+```
+
+几个关键取舍（都是实测出来的，不是照抄最佳实践）：
+
+| 选择 | 为什么 |
+|---|---|
+| 中文用**字符 bigram** 而非 jieba | 零依赖，不必装原生模块；噪声大，所以权重只给到 0.3 |
+| 用**归一化加权**而非行业默认的等权 RRF | 等权 RRF 实测把 Hit@1 从 87.6% 打到 86.4%（17 道原本排第一的被 BM25 噪声挤下去） |
+| **必须归一化** | 不归一化的话两个分数尺度不可比，向量会被压制（Hit@1 反而降到 88%） |
+| 语料从**向量库**读而非重新扫文件 | 保证两路面对的"块"完全一致，也不会因切分逻辑改动而漂移 |
+| 建索引失败时**降级为纯向量** | 新实例还没跑过 `kb index` 时集合不存在，不能让关键词这路把检索拖挂 |
+
+**实测收益**（250 题评估集）：Hit@5 98.4%→**100%**，Hit@1 87.6%→**90%**，MRR 0.923→**0.944**，Recall@5 0.964→**0.985**；成本是零模型、微秒级。
+
+配置在实例 `knowledge.config.mjs` 的 `retrieval.hybrid`，可一键关掉回退纯向量。
 
 ## 五、怎么衡量"查得准不准"
 
