@@ -59,7 +59,7 @@ pnpm ollama:pull-embed    # 向量模型 bge-m3
 pnpm chroma:start
 
 # 4. 建立向量索引（把文档切块入库；首次较慢，之后增量很快）
-pnpm rag:index
+pnpm kb index
 
 # 5. 启动开发服务
 pnpm dev
@@ -67,7 +67,7 @@ pnpm dev
 
 打开 `http://localhost:5173` 就能看到站点；右下角的助手可以直接提问。
 
-> 文档有更新时，重新跑一次 `pnpm rag:index` 即可（增量，只处理改动过的文件）。
+> 文档有更新时，重新跑一次 `pnpm kb index` 即可（增量，只处理改动过的文件）。
 > 上面这些命令都是基座 CLI **`kb`** 的封装，也可以直接用 `kb index` / `kb eval` / `kb dev`。
 
 ## 三、换成你自己的内容
@@ -124,7 +124,7 @@ chroma: {
 
 - 聊天模型支持**任意 OpenAI 兼容接口**（DeepSeek / 硅基流动 / OpenAI…），向量模型同理
 - 本地 Ollama 会自动走原生接口（可用 `think:false` 提速）；远程则走标准接口
-- 配好后**重新 `pnpm rag:index`**（换了向量模型必须重建索引，向量空间不同）
+- 配好后**重新 `pnpm kb index`**（换了向量模型必须重建索引，向量空间不同）
 
 ## 四、从零生成一个新实例（脚手架）
 
@@ -135,7 +135,7 @@ pnpm create:kb my-kb        # 交互式问答，一路回车即可
 cd my-kb
 pnpm install
 pnpm chroma:start
-pnpm rag:index
+pnpm kb index
 pnpm dev
 ```
 
@@ -149,9 +149,9 @@ pnpm dev
 | 命令 | 作用 |
 |------|------|
 | `pnpm dev` | 启动前后端（文档 5173 / API 3000） |
-| `pnpm rag:index` | 增量更新向量索引（改完文档跑这个） |
-| `pnpm rag:index:full` | 全量重建索引（换向量模型后必须） |
-| `pnpm chroma:start` / `chroma:stop` | 启动 / 停止向量库 |
+| `pnpm kb index` | 增量更新向量索引（改完文档跑这个） |
+| `pnpm kb index --full` | 全量重建索引（换向量模型后必须） |
+| `pnpm chroma:start` / `pnpm chroma:stop` | 启动 / 停止向量库 |
 | `pnpm test:rag` | 检索质量回归 + 阈值门禁（约 30 秒） |
 | `pnpm build` | 构建静态站点（生产） |
 | `pnpm create:kb <目录>` | 生成一个新的知识库实例 |
@@ -161,12 +161,12 @@ pnpm dev
 | 现象 | 原因 / 解决 |
 |------|------------|
 | 启动后提问报错、搜不到东西 | 向量库没起：`docker ps` 看 chroma 是否在跑，否则 `pnpm chroma:start` |
-| `rag:index` 连不上 | 同上；Docker 关闭后需重新启动容器 |
-| 回答很慢 / 卡住 | 本地模型首轮加载较慢，属正常；`pnpm ollama:ps` 看模型是否已加载 |
-| 改了文档但问答没变 | 忘了重新索引：再跑一次 `pnpm rag:index` |
+| `pnpm kb index` 连不上 | 同上；Docker 关闭后需重新启动容器 |
+| 回答很慢 / 卡住 | 本地模型首轮加载较慢，属正常；`ollama ps` 看模型是否已加载 |
+| 改了文档但问答没变 | 忘了重新索引：再跑一次 `pnpm kb index` |
 | 端口被占用 | 改 `knowledge.config.mjs` 的 `port`，或关掉占用 5173/3000 的程序 |
 | 远程模型报 401 / 鉴权失败 | 检查配置里的 `apiKeyEnv` 对应的环境变量是否已在 `.env` 中设置 |
-| 换过向量模型后检索变差 | 向量空间变了，需要 `pnpm rag:index:full` 重建索引 |
+| 换过向量模型后检索变差 | 向量空间变了，需要 `pnpm kb index --full` 重建索引 |
 
 ## 七、下一步
 

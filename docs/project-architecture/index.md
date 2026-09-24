@@ -27,7 +27,7 @@ pnpm install          # 安装依赖
 pnpm ollama:pull-chat # 下载 qwen3:8b（约 5.2GB，首次）
 pnpm ollama:pull-embed # 下载 bge-m3（约 1.2GB，首次）
 pnpm chroma:start     # 启动 Chroma（Docker）
-pnpm rag:index        # 构建向量索引
+pnpm kb index        # 构建向量索引
 pnpm dev              # 启动前后端
 ```
 

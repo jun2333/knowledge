@@ -59,7 +59,7 @@ pnpm ollama:pull-embed   # bge-m3，约 1.2GB
 pnpm chroma:start
 
 # 构建向量索引（首次或文档更新后执行；默认增量，只处理变更的文件）
-pnpm rag:index
+pnpm kb index
 
 # 启动前后端开发服务
 pnpm dev
@@ -71,32 +71,35 @@ pnpm dev
 
 ```bash
 # 开发
-pnpm dev              # 启动前后端开发服务
-pnpm dev:docs         # 仅启动文档站点
-pnpm dev:server       # 仅启动后端服务
-pnpm build            # 构建文档生产版本
-pnpm preview          # 预览构建产物
+pnpm dev               # 启动前后端开发服务
+pnpm kb serve          # 只启动后端 API
+pnpm build             # 构建文档生产版本（带 BASE_PATH）
+pnpm preview           # 预览构建产物
 
 # 向量索引
-pnpm chroma:start     # 启动 Chroma（Docker）
-pnpm chroma:stop      # 停止 Chroma
-pnpm rag:index        # 增量更新索引（只处理内容变更的文件，推荐）
-pnpm rag:index:full   # 全量重建索引（首次或需要重建时）
+pnpm kb index          # 增量更新索引（只处理内容变更的文件，推荐）
+pnpm kb index --full   # 全量重建索引（首次或需要重建时）
 
 # 检索质量评估（详见下方）
-pnpm test:rag         # 检索评估 + 阈值门禁（约 30 秒）
-pnpm test:rag:full    # 追加生成层评估（约 15 分钟）
-pnpm test:rag:baseline # 把当前成绩固化为基线
+pnpm test:rag           # 检索评估 + 阈值门禁（约 30 秒）
+pnpm test:rag:full      # 追加生成层评估（约 15 分钟）
+pnpm test:rag:baseline  # 把当前成绩固化为基线
 
-# Ollama 模型管理
-pnpm ollama:ps        # 查看运行中的模型
-pnpm ollama:list      # 查看已下载的模型
-pnpm ollama:stop      # 停掉模型释放内存
-pnpm ollama:pull-chat # 下载聊天模型（qwen3:8b）
+# 评估集维护
+pnpm kb cases:gen      # LLM 生成评估题初稿（--limit N 限量）
+pnpm kb cases:review   # 自动筛出可疑题目
+
+# 向量库 / 模型
+pnpm chroma:start      # 启动 Chroma（Docker）
+pnpm chroma:stop       # 停止 Chroma
+pnpm ollama:pull-chat  # 下载聊天模型（qwen3:8b）
 pnpm ollama:pull-embed # 下载向量模型（bge-m3）
+pnpm ollama:stop       # 停掉模型释放内存
+ollama ps / ollama list # 查看运行中 / 已下载的模型
 ```
 
-> 上面这些命令都是基座 CLI **`kb`** 的封装；也可以直接用 `kb index` / `kb eval` / `kb dev` / `kb build`。
+> 只有 `dev` / `build` / `preview`（注入了 `BASE_PATH`）与 `test:rag*`（回归入口）保留为 npm 脚本；
+> 其余都是基座 CLI 的子命令，直接 `pnpm kb <子命令>` 即可（`pnpm kb` 看全部）。
 
 ## AI 知识问答
 
@@ -203,7 +206,7 @@ pnpm create:kb my-kb --yes --name "我的知识库" --collection my_kb --port 31
 
 ```bash
 cd my-kb && pnpm install
-pnpm chroma:start && pnpm rag:index && pnpm dev
+pnpm chroma:start && pnpm kb index && pnpm dev
 ```
 
 > 脚手架与实例骨架都由基座提供。站点 sidebar 默认按内容目录**自动生成**（`@kb/site` 的能力）；

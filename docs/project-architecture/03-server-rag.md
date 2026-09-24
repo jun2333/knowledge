@@ -46,7 +46,7 @@ export default {
 > 加载后的绝对路径以 `config.docsPath` 等形式提供给运行时代码。配置里 `contentRoot` 指向的内容目录
 > **与文档站共用同一批 Markdown**，不需要另外维护一份语料；`CHROMA_HOST/PORT`、`PORT` 可被环境变量覆盖。
 
-## 三、索引链路：`rag:index`
+## 三、索引链路：`kb index`
 
 索引有**全量重建**和**增量更新**两种模式，默认增量、自动判断：
 
@@ -62,8 +62,8 @@ flowchart TD
   G --> H[更新索引清单 manifest]
 ```
 
-- **首次运行 / 集合不存在 / `pnpm rag:index:full`** → 全量重建（清空集合、全部重写）
-- **平时 `pnpm rag:index`** → 增量：只有内容变了的文件才重新切分、向量化、写入，没变的一律跳过
+- **首次运行 / 集合不存在 / `pnpm kb index --full`** → 全量重建（清空集合、全部重写）
+- **平时 `pnpm kb index`** → 增量：只有内容变了的文件才重新切分、向量化、写入，没变的一律跳过
 
 差距很直观：全量约 **4 分钟**，增量在无变更时 **1 秒**。
 
@@ -155,7 +155,7 @@ writeManifest(next)   // data/index-manifest.json
 | 无文件变更 | 直接跳过 | **1 秒** |
 | 新增 1 个文件 | 只切分/写入该文件 | 秒级 |
 | 删除 1 个文件 | 从库里删掉它的块 | 秒级 |
-| 首次 / `rag:index:full` | 清空集合、全量重建 | ~4 分钟 |
+| 首次 / `pnpm kb index --full` | 清空集合、全量重建 | ~4 分钟 |
 
 > 风险提示：全量重建是"先删集合、再写入"，若写入中途失败（例如 Chroma 服务挂了），**索引会变空**。更稳的做法是"写入临时集合、成功后再切换"，当前项目没做这层保护——重建后留意日志。
 
@@ -226,13 +226,13 @@ cachedStore = await Chroma.fromExistingCollection(embeddings, {
 - 向量数据在 **Chroma 服务端**（持久化到 `data/chroma`）。按当前约 2750 块 × 1024 维估算，原始向量仅 ~11MB 量级，加 HNSW 索引开销也就几十 MB，可忽略；
 - 内存真正的大头是**模型**（bge-m3 ~1.2GB、qwen3:8b ~5.2GB），但那在 Ollama 进程里，和 `store` 无关。
 
-`cachedStore` 缓存的是**连接**而非数据，为的是免去每次检索重复建连。由于 `rag:index` 会删库重建、导致旧句柄失效，所以用 `cacheValidated` 标记 + `invalidateRetriever()` 触发重建：
+`cachedStore` 缓存的是**连接**而非数据，为的是免去每次检索重复建连。由于 `kb index` 会删库重建、导致旧句柄失效，所以用 `cacheValidated` 标记 + `invalidateRetriever()` 触发重建：
 
 ```ts
 let cachedStore: Chroma | null = null
 let cacheValidated = false
 
-// rag:index 删库重建后，调用方（tools.ts 的检索重试）调用它让句柄失效
+// kb index 删库重建后，调用方（tools.ts 的检索重试）调用它让句柄失效
 export function invalidateRetriever() {
   cacheValidated = false
 }

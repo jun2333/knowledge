@@ -47,7 +47,7 @@ flowchart TB
     CH[(向量集合 knowledge_base)]:::db
   end
 
-  IX["离线任务：rag:index 索引脚本"]:::box
+  IX["离线任务：kb index 索引脚本"]:::box
 
   C -->|POST /api/chat| R
   R --> L
@@ -82,7 +82,7 @@ flowchart TB
 
 三条独立的数据流要分清：
 
-1. **写入流**（离线）：`rag:index` 读 `docs` 下的 md → 切块 → bge-m3 向量化 → 写入 Chroma（默认增量，只处理内容变更的文件）。
+1. **写入流**（离线）：`pnpm kb index` 读 `docs` 下的 md → 切块 → bge-m3 向量化 → 写入 Chroma（默认增量，只处理内容变更的文件）。
 2. **问答流**（在线）：用户提问 → Koa → Agent 循环（可能多次检索）→ qwen3:8b 生成 → SSE 流式回前端。
 3. **展示流**：VitePress 静态站点（笔记页面 + 聊天 UI）。
 
@@ -99,7 +99,7 @@ flowchart TB
 | `resume/` | 简历与面试准备资料（不参与构建） | — |
 
 > 命令行统一走基座 CLI：`kb index | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`；
-> 根 `package.json` 里的 `pnpm rag:index` / `pnpm test:rag` 等只是它的封装。
+> 实例里直接 `pnpm kb <子命令>` 即可（`package.json` 只保留 `dev` / `build` / `preview` / `test:rag*` 等少数脚本）。
 
 > `archive/` 是历史归档，只读，不参与构建。
 
@@ -181,7 +181,7 @@ pnpm ollama:pull-embed    # bge-m3
 
 # 3. 向量库 + 索引
 pnpm chroma:start         # Docker 启动 Chroma
-pnpm rag:index            # 增量更新索引（文档改动后跑，只处理变更的文件）
+pnpm kb index            # 增量更新索引（文档改动后跑，只处理变更的文件）
 
 # 4. 启动
 pnpm dev                  # 前后端一起（docs 5173 / server 3000）
@@ -193,11 +193,11 @@ pnpm dev                  # 前后端一起（docs 5173 / server 3000）
 
 | 命令 | 作用 |
 |------|------|
-| `pnpm dev:docs` / `pnpm dev:server` | 单独启动文档站 / 后端 |
+| `pnpm kb dev` / `pnpm kb serve` | 启动全部（文档 + API）/ 只启动 API |
 | `pnpm build` | 构建文档站（默认带 `BASE_PATH=/knowledge/`） |
 | `pnpm preview` | 预览构建产物（同样带 base） |
-| `pnpm rag:index` | 增量更新向量索引（只处理变更的文件） |
-| `pnpm rag:index:full` | 全量重建索引（首次或需要重建时） |
+| `pnpm kb index` | 增量更新向量索引（只处理变更的文件） |
+| `pnpm kb index --full` | 全量重建索引（首次或需要重建时） |
 | `kb eval` | 跑检索质量评估 |
 
 ## 九、接下来读什么

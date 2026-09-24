@@ -106,7 +106,7 @@ for (const chunk of chunks) {
 
 **答**：
 
-> 每次执行 `pnpm rag:index` 会**全量重建**：先删除旧 collection，再重新写入。
+> 每次执行 `pnpm kb index` 会**全量重建**：先删除旧 collection，再重新写入。
 >
 > 之所以不做增量，是因为 Chroma 的文档 ID 是随机生成的——如果增量写入，同一篇文章的旧块不会被覆盖，而是**累积重复**，索引越跑越大且检索结果重复。全量重建最省心。
 
@@ -166,7 +166,7 @@ const embeddings = new OpenAIEmbeddings({
 
 > 用**单例缓存**：第一次调用时创建 Chroma 连接并缓存，后续复用，避免每次检索都重新建连接。
 >
-> 但这里有个坑：`rag:index` 会**删除并重建 collection**，此时旧的句柄就失效了，再检索会报错。所以我在检索失败时做了**失效重试**——捕获异常后调用 `invalidateRetriever()` 清掉缓存，再重试一次。
+> 但这里有个坑：`pnpm kb index` 会**删除并重建 collection**，此时旧的句柄就失效了，再检索会报错。所以我在检索失败时做了**失效重试**——捕获异常后调用 `invalidateRetriever()` 清掉缓存，再重试一次。
 
 **代码依据**：`server/src/rag/retriever.ts` + `server/src/agent/tools.ts`
 

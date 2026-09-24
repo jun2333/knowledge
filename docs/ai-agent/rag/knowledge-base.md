@@ -1020,7 +1020,7 @@ ollama pull bge-m3
 pnpm chroma:start
 
 # 4. 构建向量索引（首次或文档更新后）
-pnpm rag:index
+pnpm kb index
 
 # 5. 启动前后端服务
 pnpm dev

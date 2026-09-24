@@ -134,7 +134,7 @@ for hit in hits:
     print(hit.page_content[:100])
 ```
 
-> 对应到本项目：`pnpm rag:index` 做的事就是这个流程，只是用了本地 Ollama 的 embedding 模型（`mxbai-embed-large`）。
+> 对应到本项目：`pnpm kb index` 做的事就是这个流程，只是用了本地 Ollama 的 embedding 模型（`mxbai-embed-large`）。
 
 ## 学习优先级
 

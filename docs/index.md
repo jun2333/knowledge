@@ -31,7 +31,7 @@ pnpm install                # 1. 装依赖
 pnpm ollama:pull-chat       # 2. 下载模型（首次，约 6.5GB）
 pnpm ollama:pull-embed
 pnpm chroma:start           # 3. 启动向量库（需 Docker）
-pnpm rag:index              # 4. 建立索引
+pnpm kb index              # 4. 建立索引
 pnpm dev                    # 5. 启动 → http://localhost:5173
 ```
 
