@@ -8,10 +8,10 @@ importers:
 
   .:
     dependencies:
-      '@kb/core':
+      '@minijun/kb-core':
         specifier: link:../kb-base/packages/core
         version: link:../kb-base/packages/core
-      '@kb/site':
+      '@minijun/kb-site':
         specifier: link:../kb-base/packages/site
         version: link:../kb-base/packages/site
     devDependencies:

@@ -68,7 +68,7 @@ function escapeText(text) {
 **解法**：预览也用同一个 base，并固化到脚本里：
 
 ```json
-"preview": "BASE_PATH=/knowledge/ pnpm --filter @kb/site preview"
+"preview": "BASE_PATH=/knowledge/ kb preview"
 ```
 
 访问时要带路径：`http://localhost:4173/knowledge/`（根 `/` 本身 404 是正常的）。

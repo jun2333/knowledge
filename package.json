@@ -18,8 +18,8 @@
     "sync": "node scripts/sync-local.mjs"
   },
   "dependencies": {
-    "@kb/core": "link:../kb-base/packages/core",
-    "@kb/site": "link:../kb-base/packages/site"
+    "@minijun/kb-core": "link:../kb-base/packages/core",
+    "@minijun/kb-site": "link:../kb-base/packages/site"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",

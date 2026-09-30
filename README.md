@@ -10,7 +10,7 @@ front-end-knowledge-summary/
 ├── docs/                      # 内容 + 站点壳（VitePress）
 │   ├── .vitepress/
 │   │   ├── config.mts         # 几行：defineSite(...)
-│   │   ├── theme/index.js     # 一行：再导出 @kb/site 的主题
+│   │   ├── theme/index.js     # 一行：再导出 @minijun/kb-site 的主题
 │   ├── getting-started/       # 快速上手（随基座分发）
 │   ├── ai-agent/ react/ vue/  # 你的知识内容（目录即分类）
 │   └── ...
@@ -18,11 +18,11 @@ front-end-knowledge-summary/
 ├── data/                      # 本地数据产物（向量库 / 索引清单 / 评估历史与基线）
 ├── scripts/                   # 个人脚本（简历同步、部署）
 ├── archive/  resume/          # 个人内容（不参与构建）
-├── package.json               # 实例依赖：@kb/core、@kb/site
+├── package.json               # 实例依赖：@minijun/kb-core、@minijun/kb-site
 └── pnpm-workspace.yaml
 ```
 
-> **基座与实例分离**：通用能力在独立的基座包 `@kb/core`、`@kb/site` 里（零个人内容）；
+> **基座与实例分离**：通用能力在独立的基座包 `@minijun/kb-core`、`@minijun/kb-site` 里（零个人内容）；
 > 本仓库是「一个实例」，只放内容、配置与数据，单向依赖基座。
 
 ## 快速开始
@@ -204,19 +204,19 @@ site: {
 
 ```bash
 mkdir my-kb && cd my-kb
-pnpm add @kb/core               # ① 只装这一个包（提供 kb 命令）
+pnpm add @minijun/kb-core               # ① 只装这一个包（提供 kb 命令）
 pnpm kb init --install          # ② 生成实例骨架（交互式问答，或加 --yes 一路默认）
 ```
 
 `kb init` 生成的是**自包含**的实例骨架：`knowledge.config.mjs` + `docs/`（含首页、示例文档、快速上手）+
-`package.json` 脚本；实例真正需要的依赖（`@kb/core` + `@kb/site`）由它自动写好，你不用手写包名。之后：
+`package.json` 脚本；实例真正需要的依赖（`@minijun/kb-core` + `@minijun/kb-site`）由它自动写好，你不用手写包名。之后：
 
 ```bash
 pnpm chroma:start && pnpm kb index && pnpm dev
 ```
 
-> 基座还没发布到 npm 时，加 `--local <基座目录>` 让生成的实例指向本地基座。
-> 站点 sidebar 默认按内容目录**自动生成**（`@kb/site` 的能力）；
+> 想在本地基座源码上开发 / 调试（不装 npm 上的发布版），加 `--local <基座目录>` 让生成的实例指向本地基座。
+> 站点 sidebar 默认按内容目录**自动生成**（`@minijun/kb-site` 的能力）；
 > 菜单与侧边栏默认按目录推导；本仓库用 `menu.config.mjs` 完全接管（分组菜单 + 精修侧边栏）。
 
 ## 内容统计
@@ -237,7 +237,7 @@ pnpm chroma:start && pnpm kb index && pnpm dev
 ## 技术栈
 
 - **文档**: VitePress + Mermaid
-- **基座**: `@kb/core`（Koa + RAG 引擎 + Agent + 评估 + CLI）、`@kb/site`（VitePress 主题 / 批注 / AI 组件）
+- **基座**: `@minijun/kb-core`（Koa + RAG 引擎 + Agent + 评估 + CLI）、`@minijun/kb-site`（VitePress 主题 / 批注 / AI 组件）
 - **后端**: Koa + TypeScript
 - **向量数据库**: Chroma（Docker，Server 模式）
 - **Embedding 模型**: bge-m3（本地 Ollama）

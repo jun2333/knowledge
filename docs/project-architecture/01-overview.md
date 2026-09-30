@@ -8,7 +8,7 @@
 一个**完全跑在本地**的个人技术知识库，由两部分组成：
 
 1. **知识库站点**（实例根 `docs/`）：基于 VitePress 的静态文档站，承载 250+ 篇技术笔记（React/Vue 原理、浏览器、工程化、服务端、AI Agent 等）。
-2. **AI 问答服务**（基座包 `@kb/core`）：基于 Koa + TypeScript 的后端，把笔记做成向量索引（RAG），接本地大模型实现**带引用溯源**的自然语言问答。
+2. **AI 问答服务**（基座包 `@minijun/kb-core`）：基于 Koa + TypeScript 的后端，把笔记做成向量索引（RAG），接本地大模型实现**带引用溯源**的自然语言问答。
 
 **关键特性**：不联网、零 API 成本、数据不出本机——模型和向量库全部本地运行（Ollama + Docker 里的 Chroma）。
 
@@ -32,7 +32,7 @@ flowchart TB
     MG[内容管理面板 · 导入 / 归档]:::box
   end
 
-  subgraph L2["② 应用层 · 后端 @kb/core（Koa + TS）"]
+  subgraph L2["② 应用层 · 后端 @minijun/kb-core（Koa + TS）"]
     R[chat 路由 · SSE]:::box
     L[Agent 循环]:::box
     T[工具：检索 / 取全文]:::box
@@ -102,13 +102,13 @@ flowchart TB
 
 ## 四、基座包与实例
 
-通用能力在**基座包** `@kb/core`、`@kb/site` 里（作为依赖接入，不含任何个人内容）；
+通用能力在**基座包** `@minijun/kb-core`、`@minijun/kb-site` 里（作为依赖接入，不含任何个人内容）；
 本仓库是一个「实例」——只放内容、配置与数据，单向依赖基座。
 
 | 包 / 目录 | 职责 | 入口 |
 |----|------|------|
-| `@kb/core` | RAG 引擎（索引/切分/检索/BM25 混合/重排）、Agent 工具调用、Koa 服务、导入与归档后端、评估框架、CLI | `cli.ts`（命令 `kb`） |
-| `@kb/site` | VitePress 主题、批注 / AI 助手 / 内容管理组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
+| `@minijun/kb-core` | RAG 引擎（索引/切分/检索/BM25 混合/重排）、Agent 工具调用、Koa 服务、导入与归档后端、评估框架、CLI | `cli.ts`（命令 `kb`） |
+| `@minijun/kb-site` | VitePress 主题、批注 / AI 助手 / 内容管理组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
 | 仓库根（实例） | 内容 `docs/`、配置 `knowledge.config.mjs`、菜单 `menu.config.mjs`、数据 `eval/` 与 `data/` | `knowledge.config.mjs` |
 | `resume/` | 简历与面试准备资料（不参与构建） | — |
 
@@ -138,7 +138,7 @@ front-end-knowledge-summary/
 ├── docs/                     # 文档站（内容 + 站点壳）
 │   ├── .vitepress/
 │   │   ├── config.mts        # 几行：读 menu.config.mjs → 交给 defineSite
-│   │   └── theme/index.js    # 几行：扩展 @kb/site 的主题（Mermaid 等）
+│   │   └── theme/index.js    # 几行：扩展 @minijun/kb-site 的主题（Mermaid 等）
 │   ├── ai-agent/ javascript/ react/ vue/ ...   # 各类笔记（目录即分类）
 │   └── interview-questions/  # 面试题（由脚本从 resume 同步）
 ├── eval/                     # 评估集：测试题 / 阈值 / 已审核记录
@@ -150,7 +150,7 @@ front-end-knowledge-summary/
 └── package.json              # 脚本转发（kb / docker / ollama）
 ```
 
-> 后端与主题的**代码不在本仓库**——它们分别在基座包 `@kb/core`、`@kb/site` 里（装好后位于 `node_modules/`）。
+> 后端与主题的**代码不在本仓库**——它们分别在基座包 `@minijun/kb-core`、`@minijun/kb-site` 里（装好后位于 `node_modules/`）。
 
 ## 七、一次问答的完整链路
 

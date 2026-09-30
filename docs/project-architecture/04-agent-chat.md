@@ -2,7 +2,7 @@
 
 > 目标：搞清一次问答在前后端之间是怎么流转的——工具调用循环怎么跑、SSE 怎么推、前端怎么解析。
 >
-> 下文提到的文件都在基座包里：后端（`agent/`、`routes/`）在 `@kb/core`，前端（`composables/`）在 `@kb/site`，实例里没有这些源码。
+> 下文提到的文件都在基座包里：后端（`agent/`、`routes/`）在 `@minijun/kb-core`，前端（`composables/`）在 `@minijun/kb-site`，实例里没有这些源码。
 
 ## 一、为什么不是"先检索再回答"
 

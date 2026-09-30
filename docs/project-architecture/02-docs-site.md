@@ -6,7 +6,7 @@
 
 VitePress 把 `docs/` 下的 Markdown 编译成静态站点，同时提供：
 
-- 侧边栏 / 导航（由基座 `@kb/site` 从目录结构派生，或按 `menu.config.mjs` 渲染）
+- 侧边栏 / 导航（由基座 `@minijun/kb-site` 从目录结构派生，或按 `menu.config.mjs` 渲染）
 - 本地全文搜索（`search.provider: 'local'`）
 - 主题扩展能力（我们靠它挂了 Mermaid 渲染和 AI 聊天）
 
@@ -47,10 +47,10 @@ base: process.env.BASE_PATH || '/',
 > **关键语义：有配置文件就完全按配置渲染，不做任何兜底。** 不混合"自动 + 手写"是有意为之——混合时"哪一项真正生效"很难讲清，实例里就踩过"把开关关掉却还是手写生效"的困惑。
 
 ```ts
-// 实例的 docs/.vitepress/config.mts（全部逻辑在基座包 @kb/site 里）
+// 实例的 docs/.vitepress/config.mts（全部逻辑在基座包 @minijun/kb-site 里）
 import { fileURLToPath } from 'node:url'
-import { defineSite } from '@kb/site'
-import { loadMenu } from '@kb/site/config/menu.mjs'
+import { defineSite } from '@minijun/kb-site'
+import { loadMenu } from '@minijun/kb-site/config/menu.mjs'
 import instanceConfig from '../../knowledge.config.mjs'
 
 // 顶层 await：VitePress 的配置支持；没有 menu.config.mjs 时返回 null → 走默认推导
@@ -142,10 +142,10 @@ sidebar: filterSidebar(sidebarData, { excludeLocal, sidebarKeys, links })
 
 首页是一个 `layout: home` 的 hero 页：大标题 + 一句话 + 一个「快速上手」按钮 + 4 张特性卡 + 一份"五步跑起来"的命令清单。
 
-它**不是 `kb init` 拼字符串拼出来的**，而是骨架里的一个模板文件（`@kb/core` 的 `templates/instance/docs/index.md`）。`kb init` 把整个骨架 `cpSync` 过去，再只做一件事：**把 `{{name}}` 换成实例名**：
+它**不是 `kb init` 拼字符串拼出来的**，而是骨架里的一个模板文件（`@minijun/kb-core` 的 `templates/instance/docs/index.md`）。`kb init` 把整个骨架 `cpSync` 过去，再只做一件事：**把 `{{name}}` 换成实例名**：
 
 ```js
-// @kb/core 的 init.ts
+// @minijun/kb-core 的 init.ts
 fs.writeFileSync(file, src.replaceAll('{{name}}', () => o.name))
 ```
 
@@ -156,7 +156,7 @@ fs.writeFileSync(file, src.replaceAll('{{name}}', () => o.name))
 hero 的 `actions` 里只有「快速上手」。**GitHub 按钮是算出来的**——`defineSite` 在 `transformPageData` 里读 `site.socialLinks`：
 
 ```js
-// @kb/site/config/define-site.mjs
+// @minijun/kb-site/config/define-site.mjs
 function githubHeroAction(site) {
   const link = (site.socialLinks ?? []).find((s) => s?.icon === 'github')?.link
   return link ? { theme: 'alt', text: 'GitHub', link } : null
@@ -182,14 +182,14 @@ site: {
 
 ## 四、主题扩展
 
-实例的入口 `docs/.vitepress/theme/index.js` **只有两行**——主题实体在基座包 `@kb/site` 里：
+实例的入口 `docs/.vitepress/theme/index.js` **只有两行**——主题实体在基座包 `@minijun/kb-site` 里：
 
 ```js
 // docs/.vitepress/theme/index.js（实例）
-export { default } from '@kb/site/theme'
+export { default } from '@minijun/kb-site/theme'
 ```
 
-`@kb/site/theme/` 下：
+`@minijun/kb-site/theme/` 下：
 
 | 文件 | 作用 |
 |------|------|
@@ -232,7 +232,7 @@ router.onAfterRouteChanged = () => {
 
 ### 只在本地挂 AI 功能
 
-`@kb/site/theme/Layout.vue`：
+`@minijun/kb-site/theme/Layout.vue`：
 
 ```vue
 <script setup>
@@ -312,7 +312,7 @@ git push -f "$REMOTE" gh-pages:gh-pages
 
 > 每步的操作按钮都在**面板右下角**（`返回` / `确认导入` / `建立索引`），位置固定，不用跟着内容找。
 
-落盘规则（`@kb/core` 的 `import.ts`）：
+落盘规则（`@minijun/kb-core` 的 `import.ts`）：
 
 | 规则 | 说明 |
 |---|---|
@@ -350,7 +350,7 @@ git push -f "$REMOTE" gh-pages:gh-pages
 | `POST /api/manage/archive` · `/delete` | 归档到分类 / 从收件箱删除 |
 | `POST /api/index` | 建立索引，**SSE 流式**推进度 |
 
-命令行是同一套逻辑（`@kb/core` 里服务端与 CLI 共用 `import.ts` / `manage.ts`）：
+命令行是同一套逻辑（`@minijun/kb-core` 里服务端与 CLI 共用 `import.ts` / `manage.ts`）：
 
 ```bash
 pnpm kb import <目录> --dry-run     # 预检：看看会发生什么
@@ -393,7 +393,7 @@ pnpm kb import <目录>               # 真正导入
 
 内容其实**已经落盘了**（刷新页面就能看到文件），只是导航还没跟着重算。面板会在这些时机用**右上角提示**告诉你"重启 `pnpm dev` 才会更新"，别误以为操作失败。
 
-> 同一个原因：`menu.config.mjs`（以及 `@kb/site` 的所有配置代码）也**不参与热更新** ——
+> 同一个原因：`menu.config.mjs`（以及 `@minijun/kb-site` 的所有配置代码）也**不参与热更新** ——
 > 它不在 VitePress 的"配置依赖监听清单"里（那份清单只有 `docs/.vitepress/config.mts` 和 `knowledge.config.mjs`，
 > 因为 `menu.config.mjs` 是由 `loadMenu()` **动态 import** 的，esbuild 静态分析看不到）。
 > 所以改完菜单配置、或改完基座的 `define-site.mjs`，都要**重启 dev**。

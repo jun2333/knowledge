@@ -1,7 +1,7 @@
 // 知识库实例配置（唯一入口）。
 // 换一份内容只需改这里；路径支持相对本文件或绝对路径（内容可放在仓库外）。
 // 类型提示来自 server/src/config/types.ts。
-/** @type {import('@kb/core/types').KnowledgeConfig} */
+/** @type {import('@minijun/kb-core/types').KnowledgeConfig} */
 export default {
   name: 'front-end-knowledge',
 

@@ -2,9 +2,9 @@
 
 > 目标：搞清笔记是怎么变成向量的（索引链路）、提问时怎么查（检索链路）、以及怎么衡量"查得准不准"。
 
-## 一、后端包结构（`@kb/core`）
+## 一、后端包结构（`@minijun/kb-core`）
 
-后端代码在基座包 `@kb/core` 里（装好后位于 `node_modules/@kb/core`）：
+后端代码在基座包 `@minijun/kb-core` 里（装好后位于 `node_modules/@minijun/kb-core`）：
 
 ```
 src/
@@ -41,7 +41,7 @@ src/
 
 ## 二、统一配置
 
-配置集中在**实例根**的 `knowledge.config.mjs`（单一入口），由基座包的 `@kb/core` 里 `config/loader.ts` 加载并归一化
+配置集中在**实例根**的 `knowledge.config.mjs`（单一入口），由基座包的 `@minijun/kb-core` 里 `config/loader.ts` 加载并归一化
 （定位 → 动态 import → 相对路径转绝对路径 → 合并 env）：
 
 ```js
@@ -273,7 +273,7 @@ export function invalidateRetriever() {
 
 把上面第 1 步展开，是一条贯穿 4 层的调用链。先说结论：**我们仓库里没有向量化算法本身**——bge-m3 模型跑在 Ollama 里，我们的代码只负责"配置它指向哪、触发它调用"。
 
-**① 我们的代码 · `@kb/core` 的 `rag/retriever.ts`** —— 只做配置和触发（`embeddings` 的构造见上一节）：
+**① 我们的代码 · `@minijun/kb-core` 的 `rag/retriever.ts`** —— 只做配置和触发（`embeddings` 的构造见上一节）：
 
 ```ts
 // searchDocs 里的一行触发一切：
@@ -432,7 +432,7 @@ for (const seg of t.match(/[\u4e00-\u9fff\u3040-\u30ff]+/g) ?? []) {
 
 ## 五、怎么衡量"查得准不准"
 
-评估逻辑在基座包 `@kb/core` 的 `src/eval/rag-eval.ts`；**题目是数据**，放在实例的 `eval/retrieval-cases.json`（目前 249 题），每题标注期望命中的文档。输出四个指标：
+评估逻辑在基座包 `@minijun/kb-core` 的 `src/eval/rag-eval.ts`；**题目是数据**，放在实例的 `eval/retrieval-cases.json`（目前 249 题），每题标注期望命中的文档。输出四个指标：
 
 | 指标 | 含义 |
 |------|------|
