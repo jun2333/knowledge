@@ -204,9 +204,16 @@ site: {
 
 ```bash
 mkdir my-kb && cd my-kb
-pnpm add @minijun/kb-core               # ① 只装这一个包（提供 kb 命令）
-pnpm kb init --install          # ② 生成实例骨架（交互式问答，或加 --yes 一路默认）
+pnpm add @minijun/kb-core        # ① 只装这一个包（提供 kb 命令）
+npx kb init --install            # ② 生成实例骨架（注意：用 npx，不是 pnpm）
 ```
+
+> **② 为什么必须是 `npx`**：`pnpm <脚本>` 执行前会先做一次依赖检查（内部跑 `pnpm install`），
+> 而 ① 装进来的依赖里有带 install 脚本的包（`protobufjs`，来自 chromadb），pnpm 默认不执行
+> 它们并报 `ERR_PNPM_IGNORED_BUILDS` → 检查失败 → **`kb` 根本没启动**。
+> `npx` 只是在 `node_modules/.bin` 里找到 `kb` 执行，不经过这层检查。
+> ① 结尾那个报错**可以无视**（包已装好）；等 ② 生成出骨架里的 `pnpm-workspace.yaml`（`allowBuilds`），
+> 后续的 `pnpm install` / `pnpm kb xxx` 就都正常了。
 
 `kb init` 生成的是**自包含**的实例骨架：`knowledge.config.mjs` + `docs/`（含首页、示例文档、快速上手）+
 `package.json` 脚本；实例真正需要的依赖（`@minijun/kb-core` + `@minijun/kb-site`）由它自动写好，你不用手写包名。之后：
