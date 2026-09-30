@@ -354,14 +354,14 @@
   {
     "q": "小程序和 H5 有什么区别？",
     "expect": [
-      "frontend/mini-program.md"
+      "cross-platform/mini-program.md"
     ],
     "category": "大前端"
   },
   {
     "q": "Hybrid 混合开发是怎么做的？",
     "expect": [
-      "frontend/hybrid.md"
+      "cross-platform/hybrid.md"
     ],
     "category": "大前端"
   },
@@ -1345,28 +1345,28 @@
   {
     "q": "原生 App 启动速度比 Web App 快多少？",
     "expect": [
-      "frontend/native-app.md"
+      "cross-platform/native-app.md"
     ],
     "category": "大前端"
   },
   {
     "q": "小程序页面生命周期钩子有哪些？",
     "expect": [
-      "frontend/mini-program.md"
+      "cross-platform/mini-program.md"
     ],
     "category": "大前端"
   },
   {
     "q": "如何在 Hybrid App 中实现 Web 调用原生功能？",
     "expect": [
-      "frontend/hybrid.md"
+      "cross-platform/hybrid.md"
     ],
     "category": "大前端"
   },
   {
     "q": "如何通过主进程获取用户数据目录路径？",
     "expect": [
-      "frontend/desktop.md"
+      "cross-platform/desktop.md"
     ],
     "category": "大前端"
   },

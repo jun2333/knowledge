@@ -70,7 +70,7 @@ export default {
     service: '服务端',
     'ai-agent': 'AI Agent',
     algorithms: '算法',
-    frontend: '大前端',
+    'cross-platform': '大前端',
   },
 
   // 站点（docs/.vitepress 消费）

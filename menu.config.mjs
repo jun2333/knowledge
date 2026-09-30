@@ -54,7 +54,7 @@ export default {
         },
         {
           text: '泛前端',
-          link: '/frontend/hybrid'
+          link: '/cross-platform/hybrid'
         },
         {
           text: '架构设计',
@@ -773,25 +773,25 @@ export default {
         ]
       }
     ],
-    '/frontend/': [
+    '/cross-platform/': [
       {
         text: '大前端场景',
         items: [
           {
             text: 'Hybrid App 开发',
-            link: '/frontend/hybrid'
+            link: '/cross-platform/hybrid'
           },
           {
             text: '小程序开发',
-            link: '/frontend/mini-program'
+            link: '/cross-platform/mini-program'
           },
           {
             text: '桌面端应用',
-            link: '/frontend/desktop'
+            link: '/cross-platform/desktop'
           },
           {
             text: '原生 App 对比',
-            link: '/frontend/native-app'
+            link: '/cross-platform/native-app'
           }
         ]
       }
