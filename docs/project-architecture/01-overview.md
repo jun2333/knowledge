@@ -7,8 +7,8 @@
 
 一个**完全跑在本地**的个人技术知识库，由两部分组成：
 
-1. **知识库站点**（`docs/`）：基于 VitePress 的静态文档站，承载 250+ 篇技术笔记（React/Vue 原理、浏览器、工程化、服务端、AI Agent 等）。
-2. **AI 问答服务**（`server/`）：基于 Koa + TypeScript 的后端，把笔记做成向量索引（RAG），接本地大模型实现**带引用溯源**的自然语言问答。
+1. **知识库站点**（实例根 `docs/`）：基于 VitePress 的静态文档站，承载 250+ 篇技术笔记（React/Vue 原理、浏览器、工程化、服务端、AI Agent 等）。
+2. **AI 问答服务**（基座包 `@kb/core`）：基于 Koa + TypeScript 的后端，把笔记做成向量索引（RAG），接本地大模型实现**带引用溯源**的自然语言问答。
 
 **关键特性**：不联网、零 API 成本、数据不出本机——模型和向量库全部本地运行（Ollama + Docker 里的 Chroma）。
 
@@ -29,13 +29,15 @@ flowchart TB
     S[静态笔记页面]:::box
     C[AIChat 聊天组件]:::box
     AN[批注系统]:::box
+    MG[内容管理面板 · 导入 / 归档]:::box
   end
 
-  subgraph L2["② 应用层 · 后端 server（Koa + TS）"]
+  subgraph L2["② 应用层 · 后端 @kb/core（Koa + TS）"]
     R[chat 路由 · SSE]:::box
     L[Agent 循环]:::box
     T[工具：检索 / 取全文]:::box
     RT[检索器 retriever]:::box
+    IM[import / manage 路由]:::box
   end
 
   subgraph L3["③ 模型层 · Ollama（本机推理，提供计算能力）"]
@@ -47,6 +49,7 @@ flowchart TB
     CH[(向量集合 knowledge_base)]:::db
   end
 
+  FS[(内容源：docs/ 下的 Markdown)]:::db
   IX["离线任务：kb index 索引脚本"]:::box
 
   C -->|POST /api/chat| R
@@ -57,12 +60,19 @@ flowchart TB
   RT -->|"② 相似度检索"| CH
   L -->|生成回答| OL
   R -->|SSE 流式| C
-  IX -->|调用向量化| OE
-  IX -->|写入向量| CH
+
+  MG -->|"预检 / 执行 / 归档"| IM
+  IM -->|"写入 docs/imported/，再归档到分类"| FS
+  FS -->|"构建"| S
+  IX -->|"读取 Markdown 并切块"| FS
+  IX -->|"调用向量化"| OE
+  IX -->|"写入向量"| CH
 
   classDef box fill:#f6f8fa,stroke:#888,stroke-width:1px;
   classDef db fill:#eef,stroke:#88a,stroke-width:1px;
 ```
+
+> **入口有两条**：读（AI 问答，`C → R`）和写（整理内容，`MG → IM → FS`）。写的那条只在本地开发时挂载——面板会真的改文件（详见 [02 篇 · 内容管理](./02-docs-site.md#六、内容管理-导入与归档)）。
 
 **模型层（③）和存储层（④）不是同一级**，别被"都跑在本机"误导了：
 
@@ -83,11 +93,12 @@ flowchart TB
 
 所以图上的"分层"是按**职责**划分（提供能力 vs 提供数据），不是调用链的串联：模型层不查库、存储层不算向量，谁也不依赖谁；而模型层和存储层都是应用层的下游依赖。
 
-三条独立的数据流要分清：
+四条独立的数据流要分清：
 
-1. **写入流**（离线）：`pnpm kb index` 读 `docs` 下的 md → 切块 → bge-m3 向量化 → 写入 Chroma（默认增量，只处理内容变更的文件）。
-2. **问答流**（在线）：用户提问 → Koa → Agent 循环（可能多次检索）→ qwen3:8b 生成 → SSE 流式回前端。
-3. **展示流**：VitePress 静态站点（笔记页面 + 聊天 UI）。
+1. **整理流**（离线，仅本地）：散落的笔记 → 「内容管理」面板导入（预检 → 落进 `docs/imported/`）→ 归档到分类（`docs/<分类>/`）→ 触发索引更新。**它只动文件，不碰向量库**——所以归档完要再走一次写入流。
+2. **写入流**（离线）：`pnpm kb index` 读 `docs` 下的 md → 切块 → bge-m3 向量化 → 写入 Chroma（默认增量，只处理内容变更的文件）。
+3. **问答流**（在线）：用户提问 → Koa → Agent 循环（可能多次检索）→ qwen3:8b 生成 → SSE 流式回前端。
+4. **展示流**：VitePress 静态站点（笔记页面 + 聊天 UI）。
 
 ## 四、基座包与实例
 
@@ -96,13 +107,13 @@ flowchart TB
 
 | 包 / 目录 | 职责 | 入口 |
 |----|------|------|
-| `@kb/core` | RAG 引擎（索引/切分/检索/BM25 混合/重排）、Agent 工具调用、Koa 服务、评估框架、CLI | `cli.ts`（命令 `kb`） |
-| `@kb/site` | VitePress 主题、批注与 AI 组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
-| 仓库根（实例） | 内容 `docs/`、配置 `knowledge.config.mjs`、数据 `eval/` 与 `data/` | `knowledge.config.mjs` |
+| `@kb/core` | RAG 引擎（索引/切分/检索/BM25 混合/重排）、Agent 工具调用、Koa 服务、导入与归档后端、评估框架、CLI | `cli.ts`（命令 `kb`） |
+| `@kb/site` | VitePress 主题、批注 / AI 助手 / 内容管理组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
+| 仓库根（实例） | 内容 `docs/`、配置 `knowledge.config.mjs`、菜单 `menu.config.mjs`、数据 `eval/` 与 `data/` | `knowledge.config.mjs` |
 | `resume/` | 简历与面试准备资料（不参与构建） | — |
 
-> 命令行统一走基座 CLI：`kb index | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`；
-> 实例里直接 `pnpm kb <子命令>` 即可（`package.json` 只保留 `dev` / `build` / `preview` / `test:rag*` 等少数脚本）。
+> 命令行统一走基座 CLI：`kb init | import | index | menu:export | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`；
+> 实例里直接 `pnpm kb <子命令>` 即可（`package.json` 只保留 `dev` / `build` / `preview` / `test:rag*` / `chroma:*` / `ollama:*` 等少数脚本）。
 
 > `archive/` 是历史归档，只读，不参与构建。
 
@@ -124,23 +135,22 @@ flowchart TB
 
 ```
 front-end-knowledge-summary/
-├── docs/                     # 文档站
+├── docs/                     # 文档站（内容 + 站点壳）
 │   ├── .vitepress/
-│   │   ├── config.mts        # 站点配置（导航/侧边栏/环境区分）
-│   │   └── theme/            # 主题扩展：Mermaid 渲染、AIChat、批注
-│   ├── ai-agent/ javascript/ react/ vue/ ...   # 各类笔记
+│   │   ├── config.mts        # 几行：读 menu.config.mjs → 交给 defineSite
+│   │   └── theme/index.js    # 几行：扩展 @kb/site 的主题（Mermaid 等）
+│   ├── ai-agent/ javascript/ react/ vue/ ...   # 各类笔记（目录即分类）
 │   └── interview-questions/  # 面试题（由脚本从 resume 同步）
-├── server/
-│   └── src/
-│       ├── index.ts          # Koa 入口
-│       ├── config/index.ts   # 统一配置
-│       ├── routes/chat.ts    # 聊天接口（SSE）
-│       ├── agent/            # Agent 循环 + 工具实现
-│       └── rag/              # 索引 / 切分 / 检索 / 重排 / BM25
-├── resume/                   # 简历与面试资料
-├── scripts/                  # 部署脚本、面试题同步脚本
-└── package.json              # 根：命令转发
+├── eval/                     # 评估集：测试题 / 阈值 / 已审核记录
+├── data/                     # 索引清单、向量库（data/chroma）、评估基线与历史
+├── resume/                   # 简历与面试资料（不参与构建）
+├── scripts/                  # deploy-github.sh（部署）、sync-local.mjs（同步 resume 内容）
+├── knowledge.config.mjs      # 实例配置：模型 / 集合名 / 展示 / onlyLocal 内容策略
+├── menu.config.mjs           # 菜单与侧边栏（可选；有它就完全按它渲染，不兜底）
+└── package.json              # 脚本转发（kb / docker / ollama）
 ```
+
+> 后端与主题的**代码不在本仓库**——它们分别在基座包 `@kb/core`、`@kb/site` 里（装好后位于 `node_modules/`）。
 
 ## 七、一次问答的完整链路
 
@@ -180,8 +190,7 @@ sequenceDiagram
 pnpm install
 
 # 2. 模型（首次，共约 6.5GB）
-pnpm ollama:pull-chat     # qwen3:8b
-pnpm ollama:pull-embed    # bge-m3
+pnpm ollama:pull          # 按配置拉取聊天 + 向量模型
 
 # 3. 向量库 + 索引
 pnpm chroma:start         # Docker 启动 Chroma

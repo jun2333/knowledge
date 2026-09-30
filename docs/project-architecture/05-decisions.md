@@ -12,7 +12,8 @@
 | 向量模型 | bge-m3 | 中文检索质量显著更好（做过对比实测） |
 | 问答流程 | Function Calling（Agent） | 让模型自己决定检不检索、检索几次，比固定流程灵活 |
 | 部署方式 | 本地构建推 `gh-pages` | 账号 GitHub Actions 有 billing 限制，绕开它 |
-| 个人内容 | nav 兼任「仅本地」唯一来源（`knowledge.config.mjs`） | `site.nav` 里带 `onlyLocal` 的项派生"线上隐藏 + 排除编译/sidebar/死链"，只维护一份 |
+| 个人内容 | 「仅本地」是内容策略，独立成 `site.onlyLocal`（`knowledge.config.mjs`） | 它派生"线上隐藏 + 排除编译/sidebar/死链"，只维护一份；与"菜单怎么排"（`menu.config.mjs`）解耦 |
+| 菜单 / 侧边栏 | 默认按目录推导；要精细控制则 `pnpm kb menu:export` 生成 `menu.config.mjs` 接管 | 约定大于配置；有配置就**完全按配置、不兜底**，避免"自动 + 手写混合"时说不清谁生效 |
 | 检索结果 | 按来源去重 | 避免同一篇占满 top5，提升给 LLM 的上下文多样性 |
 
 ## 二、踩过的坑
@@ -32,7 +33,7 @@ Hello, {{name}}!
 - 大括号插值会被当成表达式求值，内容不是合法 JS 时就报错；
 - 副作用标签（script / style）即使在代码块或行内代码里也会被特殊处理而报错。
 
-**解法**：不直接引用，改用同步脚本 `scripts/sync-interview-questions.mjs`，只处理**围栏代码块之外**的内容：
+**解法**：不直接引用，改用同步脚本 `scripts/sync-local.mjs`，只处理**围栏代码块之外**的内容：
 
 ```js
 function escapeText(text) {
@@ -219,8 +220,8 @@ flowchart TD
 2. **负结果也是结果**：别用"设计上更优雅"替代"实测更有效"，两次回退都是靠数据说话。
 3. **索引范围是一等公民**：不是"能塞进去就塞"，同质内容会稀释检索质量。
 4. **环境变量要在同一条链路上保持一致**：base 在构建和预览不一致会直接导致 404。
-5. **配置用单一数据源派生**：`site.nav` 一份数据派生 `srcExclude` / `ignoreDeadLinks` / sidebar 过滤 / nav 过滤，加内容只改一处，避免遗漏。
+5. **配置用单一数据源派生**：`site.onlyLocal` 一份数据派生 `srcExclude` / `ignoreDeadLinks` / sidebar 过滤 / nav 过滤，加内容只改一处，避免遗漏。
+6. **约定大于配置，但留逃生舱**：菜单/侧边栏默认从目录推导（零配置）；需要精细控制时 `menu:export` 一键接管，且接管后**完全不兜底**——"要么全自动、要么全手写"比"混合"好懂得多。
 
 ---
 
-**回到**：[知识库项目架构](./index.md)

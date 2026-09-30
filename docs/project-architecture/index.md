@@ -8,7 +8,7 @@
 | 篇目 | 主题 | 你会了解到 |
 |------|------|-----------|
 | [01 · 总览与架构](./01-overview.md) | 全局 | 它是什么、解决什么问题、整体架构、技术栈、怎么跑起来 |
-| [02 · 文档站（docs）](./02-docs-site.md) | 前端 | VitePress 配置、本地/生产双菜单、主题扩展、构建与部署 |
+| [02 · 文档站（docs）](./02-docs-site.md) | 前端 | VitePress 配置、菜单与侧边栏（默认推导 / 导出接管）、仅本地内容、主题扩展、**内容管理（导入 / 归档）**、构建与部署 |
 | [03 · 后端与 RAG 检索](./03-server-rag.md) | 后端 | 向量索引怎么建、混合检索（向量 + BM25）怎么查、怎么评估检索质量 |
 | [04 · Agent 与流式对话](./04-agent-chat.md) | 链路 | 一次问答怎么跑通：工具调用循环 + SSE 流式 + 前端解析 |
 | [05 · 设计决策与踩坑](./05-decisions.md) | 经验 | 为什么这么选、踩过哪些坑、提高回答准确性的常用手段与选型 |
@@ -24,8 +24,7 @@
 
 ```bash
 pnpm install          # 安装依赖
-pnpm ollama:pull-chat # 下载 qwen3:8b（约 5.2GB，首次）
-pnpm ollama:pull-embed # 下载 bge-m3（约 1.2GB，首次）
+pnpm ollama:pull      # 按配置下载本地模型（聊天 + 向量）
 pnpm chroma:start     # 启动 Chroma（Docker）
 pnpm kb index         # 构建向量索引
 pnpm dev              # 启动前后端

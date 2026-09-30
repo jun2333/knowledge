@@ -9,9 +9,8 @@ hero:
     - theme: brand
       text: 快速上手
       link: /getting-started/
-    - theme: alt
-      text: GitHub
-      link: https://github.com/jun2333/knowledge
+    # GitHub 按钮不用写在这：在 knowledge.config.mjs 里配 site.socialLinks（icon: github）
+    # 就会自动出现在这里，也会出现在右上角
 
 features:
   - title: 默认本地运行
@@ -28,13 +27,8 @@ features:
 
 ```bash
 pnpm install               # 1. 装依赖
-pnpm ollama:pull-chat      # 2. 下载模型（首次，约 6.5GB）
-pnpm ollama:pull-embed
+pnpm ollama:pull           # 2. 下载模型（首次，约 6.5GB；聊天 + 向量一起）
 pnpm chroma:start          # 3. 启动向量库（需 Docker）
 pnpm kb index              # 4. 建立索引
 pnpm dev                   # 5. 启动 → http://localhost:5173
 ```
-
-> 第一次用？看 **[快速上手](/getting-started/)** —— 从装什么到换成你自己的内容，一步步来。
->
-> 想自己搭一个同款：见 **[快速上手](/getting-started/)** —— 装包 → `kb init` → 放你的内容。

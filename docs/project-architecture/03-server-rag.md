@@ -8,20 +8,36 @@
 
 ```
 src/
-├── index.ts            # Koa 入口：装配中间件与路由
-├── config/index.ts     # 统一配置（模型、端口、切分参数…）
+├── cli.ts              # CLI 入口（kb 命令：init / import / index / menu:export / serve / eval …）
+├── server.ts           # 组装 Koa 应用（中间件 + 路由）
+├── index.ts            # 进程入口
+├── config/
+│   ├── index.ts        # 统一配置出口
+│   ├── loader.ts       # 加载实例的 knowledge.config.mjs 并归一化
+│   └── types.ts        # 配置类型
 ├── routes/
 │   ├── chat.ts         # POST /api/chat（SSE 流式）
-│   └── health.ts       # 健康检查
+│   ├── health.ts       # 健康检查
+│   ├── import.ts       # 导入：预检 / 执行 / 收件箱计数
+│   └── manage.ts       # 收件箱树 / 归档 / 删除 / 建立索引（SSE）
+├── import.ts           # 导入逻辑（扫描、命名规范化、冲突检测、落盘）
+├── manage.ts           # 归档逻辑（收件箱树、分类、移动、删除）
+├── menu.ts             # 菜单配置导出（kb menu:export / --check）
+├── init.ts             # 生成实例骨架（kb init）
 ├── agent/
 │   ├── loop.ts         # Agent 工具调用循环
+│   ├── prompt.ts       # 系统提示词
 │   └── tools.ts        # 工具定义与实现
-└── rag/
-    ├── indexer.ts      # 建索引（离线）
-    ├── chunker.ts      # 文本切分
-    ├── retriever.ts    # 检索
-    └── reranker.ts     # 重排（默认关闭）
+├── rag/
+│   ├── indexer.ts      # 建索引（离线）
+│   ├── chunker.ts      # 文本切分
+│   ├── retriever.ts    # 检索
+│   ├── bm25.ts         # 关键词检索（混合检索的第二路）
+│   └── reranker.ts     # 重排（默认关闭）
+└── eval/               # 检索层 / 生成层评估（rag-eval、rag-gen-eval、出题与审核）
 ```
+
+> 导入与归档的服务端细节（落盘规则、预检字段、接口清单）见 [02 篇 · 内容管理](./02-docs-site.md#六、内容管理-导入与归档)。
 
 ## 二、统一配置
 
@@ -31,7 +47,6 @@ src/
 ```js
 // knowledge.config.mjs（实例）
 export default {
-  contentRoot: './docs',        // 内容目录（可绝对路径 / 仓库外）
   collectionName: 'knowledge_base',
   dataDir: './data',
   evalDir: './eval',
@@ -43,8 +58,11 @@ export default {
 }
 ```
 
-> 加载后的绝对路径以 `config.docsPath` 等形式提供给运行时代码。配置里 `contentRoot` 指向的内容目录
-> **与文档站共用同一批 Markdown**，不需要另外维护一份语料；`CHROMA_HOST/PORT`、`PORT` 可被环境变量覆盖。
+> 加载后的绝对路径以 `config.docsPath` 等形式提供给运行时代码。
+> **内容根固定为实例根下的 `docs/`**（不再可配）——内容与站点共用同一批 Markdown，不需要另外维护一份语料。
+> 早期版本支持把内容放到仓库外（`contentRoot` 可配），后来发现"两个根"带来的配置错配远多于收益，
+> 已收敛成一个目录：笔记搬进来比指过去更自然（搬迁用站点的导入能力）。
+> `CHROMA_HOST/PORT`、`PORT` 可被环境变量覆盖。
 
 ## 三、索引链路：`kb index`
 
@@ -414,12 +432,13 @@ for (const seg of t.match(/[\u4e00-\u9fff\u3040-\u30ff]+/g) ?? []) {
 
 ## 五、怎么衡量"查得准不准"
 
-`scripts/rag-eval.ts` 是一个 12 题的回归测试集，每题标注期望命中的文档，输出三个指标：
+评估逻辑在基座包 `@kb/core` 的 `src/eval/rag-eval.ts`；**题目是数据**，放在实例的 `eval/retrieval-cases.json`（目前 249 题），每题标注期望命中的文档。输出四个指标：
 
 | 指标 | 含义 |
 |------|------|
-| Top5 命中率 | 期望文档是否出现在前 5（宽松） |
-| **Top1 命中率** | 期望文档是否排第一（严格） |
+| Hit@5（Top5 命中率） | 期望文档是否出现在前 5（宽松） |
+| **Hit@1（Top1 命中率）** | 期望文档是否排第一（严格） |
+| Recall@5 | 期望文档有几个被前 5 覆盖（多标签题才有区分度） |
 | **MRR** | 期望文档排名倒数的平均，越接近 1 越好 |
 
 ```bash
@@ -429,6 +448,8 @@ kb eval
 > 一开始只有"命中率"，结果 12 题全是 100%，**任何优化都测不出差别**。加上 Top1/MRR 后才有区分度——这是做优化前必须先补好的基础设施。
 
 ### 已跑过的实验结论
+
+> 下表是**早期 12 题小集**上的实验记录，方向和结论仍然成立（当前 249 题的结果见 [06 篇](./06-evaluation.md)）。
 
 | 改动 | Top1 | MRR | 结论 |
 |------|------|-----|------|
@@ -441,4 +462,3 @@ kb eval
 
 ---
 
-**下一篇**：[04 · Agent 与流式对话](./04-agent-chat.md)

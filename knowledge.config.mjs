@@ -5,9 +5,6 @@
 export default {
   name: 'front-end-knowledge',
 
-  // 内容根目录：文档扫描与站点源码目录
-  contentRoot: './docs',
-
   // 索引范围（glob）。exclude 同时用于索引与评估出题，避免个人内容混入
   index: {
     include: ['**/*.md'],
@@ -78,81 +75,31 @@ export default {
 
   // 站点（docs/.vitepress 消费）
   site: {
-    dir: './docs', // 站点根（含 .vitepress 的目录）
     title: '知识库',
     description: '个人知识库',
+
+    // 「仅本地」的内容路径（相对 docs/，可省略 .md）—— 内容策略：
+    // 这些目录/文件只在本地产出（线上不构建、不进菜单、不进侧边栏）
+    onlyLocal: [
+      'algorithms',
+      'java-practice',
+      'books',
+      'sports',
+      'misc',
+      'interview-questions',
+      'project-architecture',
+      'template-editor',
+      'agent-cli',
+      'resume',
+    ],
     socialLinks: [{ icon: 'github', link: 'https://github.com/jun2333/knowledge' }],
 
     // AI 助手的文案（不写则用通用默认值）
     chat: {
-      title: '前端知识库助手',
-      welcome: '你好！我是前端知识库助手',
-      hints: '可以问我关于 JavaScript、Vue、React、CSS、性能优化等问题',
+      title: '知识库助手',
+      welcome: '你好！我是知识库助手',
+      hints: '可以问我关于本知识库涉及的任何问题',
     },
-    // 本实例保留精修的 sidebar（写在 docs/.vitepress/sidebar.manual.mts），故不启用自动生成
-    autoSidebar: false,
-
-    // 顶部导航 = 「仅本地」的唯一来源（本地 / 线上共用这一份）。
-    // 带 onlyLocal 的项：线上自动隐藏，且其路径会被排除出编译 / sidebar / 死链检查：
-    //   onlyLocal: 'algorithms'          → 排除整个目录
-    //   onlyLocal: 'service/roadmap.md'  → 只排除该文件（目录 / 文件自动识别，可省略 .md）
-    //   onlyLocal: ['a', 'b']            → 分组内多项
-    //   onlyLocal: true                  → 仅隐藏菜单，路径按该项 link 推导
-    // 某分组过滤后只剩 1 项时，该项会自动提到顶层。留空则按内容目录自动生成。
-    nav: [
-      { text: '快速上手', link: '/getting-started/' },
-      { text: 'AI Agent', link: '/ai-agent/' },
-      {
-        text: '前端',
-        items: [
-          { text: 'JavaScript', link: '/javascript/memory' },
-          { text: 'Vue', link: '/vue/double-binding' },
-          { text: 'React', link: '/react/concept' },
-          { text: 'CSS', link: '/css/bfc' },
-        ],
-      },
-      { text: '泛前端', link: '/frontend/hybrid' },
-      { text: '浏览器', link: '/browser/overview' },
-      {
-        text: '工程化',
-        items: [
-          { text: '性能优化', link: '/performance/best-practices' },
-          { text: '架构设计', link: '/engineering/micro-frontend' },
-          { text: 'React vs Vue', link: '/engineering/react-vs-vue' },
-        ],
-      },
-      {
-        text: '后端',
-        items: [
-          { text: 'Service（学习路线）', link: '/service/roadmap', onlyLocal: 'service/roadmap.md' },
-          { text: 'Service', link: '/service/node-core' },
-          { text: 'Java 实战', link: '/java-practice/', onlyLocal: 'java-practice' },
-        ],
-      },
-      { text: '算法', link: '/algorithms/basic', onlyLocal: 'algorithms' },
-      {
-        text: '个人记录',
-        onlyLocal: [
-          'books',
-          'sports',
-          'misc',
-          'guide',
-          'interview-questions',
-          'project-architecture',
-          'template-editor',
-          'resume',
-        ],
-        items: [
-          { text: '读书笔记', link: '/books/js-you-dont-know' },
-          { text: '面试题', link: '/interview-questions/' },
-          { text: '项目架构', link: '/project-architecture/' },
-          { text: 'Agent CLI', link: '/agent-cli/' },
-          { text: '模板编辑器', link: '/template-editor/' },
-          { text: '简历', link: '/resume/v4-frontend' },
-          { text: '运动', link: '/sports/breaststroke-for-beginners' },
-          { text: '杂项', link: '/misc/notes' },
-        ],
-      },
-    ],
   },
 }
+

@@ -11,7 +11,6 @@ front-end-knowledge-summary/
 │   ├── .vitepress/
 │   │   ├── config.mts         # 几行：defineSite(...)
 │   │   ├── theme/index.js     # 一行：再导出 @kb/site 的主题
-│   │   └── sidebar.manual.mts # 本实例精修的 sidebar（个人）
 │   ├── getting-started/       # 快速上手（随基座分发）
 │   ├── ai-agent/ react/ vue/  # 你的知识内容（目录即分类）
 │   └── ...
@@ -48,8 +47,7 @@ pnpm install
 ollama serve
 
 # 下载聊天模型和向量模型（首次需要，共约 6.5GB，需等待几分钟）
-pnpm ollama:pull-chat    # qwen3:8b，约 5.2GB
-pnpm ollama:pull-embed   # bge-m3，约 1.2GB
+pnpm ollama:pull         # 按配置拉取聊天 + 向量模型，缺什么拉什么
 ```
 
 ### 3. 启动服务
@@ -92,8 +90,7 @@ pnpm kb cases:review   # 自动筛出可疑题目
 # 向量库 / 模型
 pnpm chroma:start      # 启动 Chroma（Docker）
 pnpm chroma:stop       # 停止 Chroma
-pnpm ollama:pull-chat  # 下载聊天模型（qwen3:8b）
-pnpm ollama:pull-embed # 下载向量模型（bge-m3）
+pnpm ollama:pull       # 按配置下载本地模型（聊天 + 向量，缺什么拉什么）
 pnpm ollama:stop       # 停掉模型释放内存
 ollama ps / ollama list # 查看运行中 / 已下载的模型
 ```
@@ -141,7 +138,6 @@ pnpm test:rag:baseline # 认可某次结果时，固化为新基线
 ```js
 export default {
   name: 'my-knowledge',
-  contentRoot: './docs',        // 内容目录；支持绝对路径（可放到仓库外）
   collectionName: 'my_kb',      // 向量集合名（一实例一库）
   dataDir: './data',            // 索引清单 / 向量库 / 评估历史
   evalDir: './eval',            // 评估集 / 阈值
@@ -177,34 +173,43 @@ chroma: {
 - 本地 Ollama 会自动走原生 `/api/chat`（可用 `think:false` 提速）；远程则走标准 `chat.completions`
 - 向量库远程时填 `url`（http/https），云端用 `tokenEnv` 读 token，支持 `tenant` / `database`
 
-**顶部导航（nav）是「仅本地」的唯一来源**——本地 / 线上共用这一份。给任一项（分组或单项）加 `onlyLocal`，它就会**线上隐藏**，并让**其路径被排除出编译**（`srcExclude`）、sidebar 与死链检查。路径自动识别目录 / 文件，`.md` 可省略：
+### 菜单、侧边栏、仅本地
+
+**默认全部按目录推导**（不用配）：
+
+| 目录 | 结果 |
+|---|---|
+| `docs/A/` | 菜单里多一项「A」（名字取目录名，`categories` 可改显示名） |
+| `docs/A/index.md` | 点菜单进这一页；没有就取 A 里第一篇 |
+| 同一层有 **≥2 篇**页面 | 这一层自动获得一份侧边栏 |
+| 只有 1 篇的目录 | 不给侧边栏（一条的导航没意义） |
+
+**想完全接管菜单/侧边栏**（分组、外链、自定义顺序）：跑 `pnpm kb menu:export` 生成 `menu.config.mjs` 再改。
+**有它时站点完全按它渲染、不做任何推导** —— 新增文件要跟着改（`pnpm kb menu:export --check` 看差异）；删掉它就回到全自动。
+
+**想让内容"只在本地产出"**（线上不构建、不进菜单/侧边栏）：这是**内容策略**，写在 `knowledge.config.mjs` 的 `site.onlyLocal` 里 —— 与菜单配置解耦：
 
 ```js
 site: {
-  nav: [
-    { text: 'AI Agent', link: '/ai-agent/' },
-    { text: '算法', link: '/algorithms/basic', onlyLocal: 'algorithms' },            // 整个目录
-    { text: 'Service', link: '/service/roadmap', onlyLocal: 'service/roadmap.md' }, // 单个文件
-    { text: '个人记录', onlyLocal: ['books', 'resume'], items: [ /* … */ ] },        // 多项
-  ],
+  // 相对 docs/ 的路径，目录或文件都行（可省略 .md）
+  onlyLocal: ['algorithms', 'java-practice', 'books', 'resume', 'service/roadmap.md'],
 }
 ```
 
-过滤后若某分组**只剩 1 项**，该项会自动提到顶层；`site.nav` 留空则按内容目录自动生成。
+线上构建时，链接落在这些路径下的菜单项会自动隐藏（分组空了就移除、只剩 1 项就提到顶层）。
 
 ### 搭一个自己的知识库
 
-唯一的路径：**装包 → `kb init` → 放内容 → 跑起来**（不复制任何个人内容）：
+唯一的路径：**装一个包 → `kb init` → 放内容 → 跑起来**（不复制任何个人内容）：
 
 ```bash
 mkdir my-kb && cd my-kb
-pnpm init
-pnpm add @kb/core @kb/site      # ① 装包
+pnpm add @kb/core               # ① 只装这一个包（提供 kb 命令）
 pnpm kb init --install          # ② 生成实例骨架（交互式问答，或加 --yes 一路默认）
 ```
 
-`kb init` **只生成实例骨架**：`knowledge.config.mjs` + `docs/`（含首页、示例文档、快速上手）+
-`package.json`（依赖 `@kb/core`、`@kb/site`）。之后：
+`kb init` 生成的是**自包含**的实例骨架：`knowledge.config.mjs` + `docs/`（含首页、示例文档、快速上手）+
+`package.json` 脚本；实例真正需要的依赖（`@kb/core` + `@kb/site`）由它自动写好，你不用手写包名。之后：
 
 ```bash
 pnpm chroma:start && pnpm kb index && pnpm dev
@@ -212,7 +217,7 @@ pnpm chroma:start && pnpm kb index && pnpm dev
 
 > 基座还没发布到 npm 时，加 `--local <基座目录>` 让生成的实例指向本地基座。
 > 站点 sidebar 默认按内容目录**自动生成**（`@kb/site` 的能力）；
-> 本仓库作为个人实例保留了精修的 sidebar（`docs/.vitepress/sidebar.manual.mts`，由 `site.autoSidebar` 控制是否叠加自动生成）。
+> 菜单与侧边栏默认按目录推导；本仓库用 `menu.config.mjs` 完全接管（分组菜单 + 精修侧边栏）。
 
 ## 内容统计
 

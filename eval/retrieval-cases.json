@@ -47,7 +47,6 @@
   {
     "q": "Vue 3 的响应式原理是什么？",
     "expect": [
-      "vue/reactive.md",
       "vue/primitive-reactive.md",
       "vue/non-primitive-reactive.md"
     ],
@@ -204,8 +203,7 @@
   {
     "q": "如何优化页面首屏加载速度？",
     "expect": [
-      "performance/first-screen.md",
-      "performance/optimization.md"
+      "performance/first-screen.md"
     ],
     "category": "性能"
   },
@@ -391,8 +389,8 @@
   {
     "q": "Vue3中新增属性是否需要特殊处理？",
     "expect": [
-      "vue/primitive-reactive.md",
-      "vue/reactive.md"
+      "vue/double-binding.md",
+      "vue/non-primitive-reactive.md"
     ],
     "category": "Vue"
   },
@@ -1039,7 +1037,6 @@
   {
     "q": "如何优化网页的首次内容绘制时间？",
     "expect": [
-      "performance/optimization.md",
       "performance/first-screen.md"
     ],
     "category": "性能"
@@ -1307,13 +1304,6 @@
     "q": "如何通过 rem 实现移动端适配？",
     "expect": [
       "css/mobile-adaptation.md"
-    ],
-    "category": "CSS"
-  },
-  {
-    "q": "如何实现水平垂直居中？",
-    "expect": [
-      "css/layout.md"
     ],
     "category": "CSS"
   },

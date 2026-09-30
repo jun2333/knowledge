@@ -53,16 +53,16 @@ flowchart LR
 
 ### ① 装包
 
-在一个空目录里装基座的两个包：
+只装**一个包**就够了（`@kb/core` 提供 CLI，装完就有 `kb` 命令）：
 
 ```bash
 mkdir my-kb && cd my-kb
-pnpm init
-pnpm add @kb/core @kb/site
+pnpm add @kb/core
 ```
 
-- `@kb/core`：RAG 引擎 + Agent + CLI（`kb` 命令就来自它）
-- `@kb/site`：站点主题与配置派生
+> 不想装进项目？也可以全局装：`pnpm add -g @kb/core`。
+> 但**日常在实例里推荐用 `pnpm kb <子命令>`** —— 它走的是实例自己依赖里的版本，
+> 不会和全局版本搞混（全局那套只用来 `kb init`）。
 
 ### ② 用 `kb` 初始化
 
@@ -70,8 +70,11 @@ pnpm add @kb/core @kb/site
 pnpm kb init --install
 ```
 
-它会在当前目录生成实例骨架：`knowledge.config.mjs`（配置）+ `docs/`（含首页、示例文档、快速上手）+
-`.env.example` + `package.json` 脚本。`--install` 会顺带把依赖装好（不加就自己再跑一次 `pnpm install`）。
+它会在当前目录生成实例骨架：`knowledge.config.mjs`（配置）+ `docs/`（含首页与快速上手）+ `package.json` 脚本
++ `.env.example`（环境变量示例，接远程模型 / 向量库时才用得上）。
+
+骨架是**自包含**的，所以刚才只装了 `@kb/core` 也能完整生成；实例真正需要的两个依赖
+（`@kb/core` + `@kb/site`）由它自动写好，你不用管。`--install` 会顺带把依赖装好。
 
 > **基座还没发布到 npm 时**（本地开发阶段），加 `--local` 指向本地基座目录：
 > `pnpm kb init --local ../kb-base --install`
@@ -81,11 +84,10 @@ pnpm kb init --install
 ### ③ 放你的内容，然后跑起来
 
 ```bash
-# 下载本地模型（首次，约 6.5GB；用远程模型可跳过）
-pnpm ollama:pull-chat     # 聊天模型 qwen3:8b
-pnpm ollama:pull-embed    # 向量模型 bge-m3
+# 下载本地模型（首次，约 6.5GB；配的是远程模型会自动跳过）
+pnpm ollama:pull          # 按配置拉取聊天 + 向量模型，缺什么拉什么
 
-pnpm chroma:start         # 启动向量库（需 Docker 正在运行）
+pnpm chroma:start         # 启动向量库（需 Docker 正在运行；容器按实例命名，见「五、遇到问题」）
 pnpm kb index             # 建立向量索引
 pnpm dev                  # 启动 → http://localhost:5173
 ```
@@ -97,12 +99,11 @@ pnpm dev                  # 启动 → http://localhost:5173
 
 ## 三、放你的内容
 
-**内容放在哪、模型用哪个、向量库连哪**——全部集中在根目录的一个文件里：`knowledge.config.mjs`。
+**把你的 Markdown 放进 `docs/` 就行** —— 一个目录，没有别的概念。
 
 ```js
 export default {
   name: 'my-knowledge',
-  contentRoot: './docs',      // ← 你的内容目录（支持绝对路径，可放仓库外）
   collectionName: 'my_kb',    // 向量集合名（一个实例一个库）
   models: {
     baseUrl: 'http://localhost:11434/v1',  // 默认本地 Ollama
@@ -117,16 +118,34 @@ export default {
 
 几个要点：
 
-- **笔记不必搬进来**：`contentRoot` 支持**绝对路径**，可以直接指向你已有的笔记目录（甚至另一个仓库），不用复制。
-- **目录即分类**：`contentRoot` 下每建一个目录，站点的导航/侧边栏就多一块，不用手写。
-- **导航可定制**：在 `site.nav` 里写菜单；**给某项加 `onlyLocal`**，它就会线上隐藏，并从编译、侧边栏中一并排除（只维护这一份配置）：
+- **目录即分类**：`docs/` 下每建一个目录，站点的侧边栏就多一块、菜单也多一项，不用手写。
+- **菜单**：一级目录各一项，名字取目录名（想改显示名用 `categories`）。
+- **侧边栏**：**同一层有 ≥2 篇页面就自动有一份**（只有 1 篇的目录不给 —— 一条的导航没意义）。
+- **想让内容"只在本地产出"**（线上不构建、不进菜单/侧边栏）：列在 `knowledge.config.mjs` 的 `site.onlyLocal` 里。这是**内容策略**，和菜单是两件事：
 
   ```js
   site: {
-    nav: [
-      { text: '前端', items: [{ text: 'React', link: '/react/concept' }] },
-      { text: '私人笔记', link: '/private/x', onlyLocal: 'private' }, // 整个目录仅本地
-    ],
+    // 相对 docs/ 的路径，目录或文件都行（可省略 .md）
+    onlyLocal: ['私人笔记', 'resume', 'service/roadmap.md'],
+  }
+  ```
+
+- **想完全接管菜单/侧边栏**（分组、外链、自定义顺序、改名字）：
+
+  ```bash
+  pnpm kb menu:export          # 按当前目录结构导出一份 menu.config.mjs
+  pnpm kb menu:export --check  # 只看"目录里有什么"和"配置里写了什么"的差异
+  ```
+
+  有了 `menu.config.mjs` 之后，站点**完全按它渲染**（不再按目录推导）—— 新增/改名/删除文件时要跟着改；
+  想回到全自动，删掉该文件即可。
+
+- **首页**：就是 `docs/index.md`（hero 大标题、特性卡、命令清单），当成普通页面改就行。
+  想让首页出现 **GitHub 按钮**，不用改首页 —— 在配置里写一次仓库地址，右上角图标和首页按钮会同时出现：
+
+  ```js
+  site: {
+    socialLinks: [{ icon: 'github', link: 'https://github.com/你的用户名/你的仓库' }],
   }
   ```
 
@@ -150,22 +169,77 @@ chroma: {
 - 本地 Ollama 会自动走原生接口（可用 `think:false` 提速）；远程则走标准接口
 - 配好后**重新 `pnpm kb index`**（换了向量模型必须重建索引，向量空间不同）
 
+> **密钥在哪**：`apiKeyEnv` / `tokenEnv` 写的是"环境变量名"，**密钥本身放项目根目录的 `.env`**。
+> 骨架里带了一份 `.env.example`（里面列了这些变量名和说明），复制一份改名即可：
+>
+> ```bash
+> cp .env.example .env    # 然后填上真实值
+> ```
+>
+> `.env` 已被 `.gitignore` 排除，不会入库 —— 配置里**也没有"直接写密钥"的字段**，所以密钥不可能被误提交。
+
+### 已经有笔记了？用「导入 + 归档」搬进来
+
+以前写过的笔记**不用手动复制粘贴** —— 站点右下角的 **➕「内容管理」** 就是干这个的（本地开发时才显示）。
+
+**第一步：导入**（把文件搬进来）
+- 把 Markdown **拖进去**，或点「选择文件夹」/「选择文件」——**可以反复选，会累加到同一份清单**，不用一次挑完
+- **只支持 `.md`**：其他格式不扫描也不上传；图片不会一起搬（笔记里引用了本地图片的话，显示时会裂图）
+- 下一步是**预检**：先给你看一遍会发生什么 —— 待导入清单（可以逐项 ✕ 移除）、会新增哪些分类、哪些文件重名、哪些会被改名、哪些被忽略
+- 文件先落在 `docs/imported/`（**收件箱**），你原来的目录一个字节都不动
+
+**第二步：归档**（分配菜单）
+- 左边是收件箱里的文件和目录，右边是分类（**分类就是 `docs/` 下的目录**）
+- 勾选一批一起归档；也可以把整份目录拖到某个分类上，一次搬完
+- **不要的可以直接删**：收件箱里难免混进临时笔记、跑题内容 —— 点「删除」（会二次确认）
+- 归档完 `imported/` 就空了 —— 它是收件箱，不是分类
+
+> 每一步的操作按钮都在**面板右下角**，位置固定，不用跟着内容找。
+
+> ⚠️ **两件事都要记得**：
+> 1. 导入/归档/删除之后**更新索引** —— 入口是**面板底部那条常驻状态栏**（左侧会提示"内容有改动，索引未更新"），
+>    不在任何一个 tab 里，所以切到哪个 tab 都能点；否则 AI 问答还搜不到新内容；
+> 2. **导航与侧边栏要重启 `pnpm dev` 才会变** —— 它们是在 VitePress 加载站点配置时按目录算出来的，
+>    运行期不会重算（比如"收件箱有内容了 → 导航该多出「待归档」"）。面板会在这时用右上角提示提醒你。
+
+命令行也可以（适合大批量）：
+
+```bash
+pnpm kb import ~/old-notes --dry-run   # 只预检，不写文件
+pnpm kb import ~/old-notes             # 真的导入
+```
+
 ## 四、常用命令速查
 
 | 命令 | 作用 |
 |------|------|
 | `pnpm dev` | 启动前后端（文档 5173 / API 3000） |
-| `pnpm kb index` | 增量更新向量索引（改完文档跑这个） |
-| `pnpm kb index --full` | 全量重建索引（换向量模型后必须） |
-| `pnpm chroma:start` / `pnpm chroma:stop` | 启动 / 停止向量库 |
+| `pnpm index` | 增量更新向量索引（改完文档跑这个） |
+| `pnpm index:full` | 全量重建索引（换向量模型后必须） |
+| `pnpm chroma:start` / `pnpm chroma:stop` | 启动 / 停止**本实例自己的**向量库容器 |
+| `pnpm ollama:pull` / `pnpm ollama:stop` | 按配置拉取本地模型 / 停止本地模型（配远程模型会自动跳过） |
+| `pnpm kb import <目录>` | 把已有笔记导入 `docs/imported/`（`--dry-run` 只预检） |
 | `pnpm build` | 构建静态站点（生产） |
 | `pnpm kb init [目录]` | 生成一个新的知识库实例 |
 
-## 五、遇到问题
+## 五、本地放两个实例（互不干扰）
+
+向量库容器是**按实例区分**的：
+
+- 容器名 = `kb-chroma-<实例目录名>`（不再固定叫 `chroma`）
+- 端口 = `knowledge.config.mjs` 里的 `chroma.port`；`kb init` 会**自动挑一个没被占用的**
+- 数据目录 = 本实例的 `data/chroma`
+
+所以第二个实例 `pnpm chroma:start` 不会把第一个顶掉。唯一要自己改的是**服务端口**（`port`，默认 3000）——第二个实例记得改一下。
+
+> 老版本用固定容器名 `chroma`，两个实例会互相抢（谁后启动，容器就挂到谁的数据目录上，表现为"另一个实例的索引凭空消失"）。
+> 机器上还留着的话：`docker rm -f chroma`。
+
+## 六、遇到问题
 
 | 现象 | 原因 / 解决 |
 |------|------------|
-| 启动后提问报错、搜不到东西 | 向量库没起：`docker ps` 看 chroma 是否在跑，否则 `pnpm chroma:start` |
+| 启动后提问报错、搜不到东西 | 向量库没起：`docker ps` 看 `kb-chroma-<实例目录名>` 在不在跑，否则 `pnpm chroma:start` |
 | `pnpm kb index` 连不上 | 同上；Docker 关闭后需重新启动容器 |
 | 回答很慢 / 卡住 | 本地模型首轮加载较慢，属正常；`ollama ps` 看模型是否已加载 |
 | 改了文档但问答没变 | 忘了重新索引：再跑一次 `pnpm kb index` |
@@ -173,6 +247,6 @@ chroma: {
 | 远程模型报 401 / 鉴权失败 | 检查配置里的 `apiKeyEnv` 对应的环境变量是否已在 `.env` 中设置 |
 | 换过向量模型后检索变差 | 向量空间变了，需要 `pnpm kb index --full` 重建索引 |
 
-## 六、下一步
+## 七、下一步
 
 - **想发布出去**：`pnpm build` 产出静态站点；个人内容可通过 `onlyLocal` 控制在本地。

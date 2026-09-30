@@ -6,16 +6,16 @@
     "dev": "kb dev",
     "build": "BASE_PATH=${BASE_PATH:-/knowledge/} kb build",
     "preview": "BASE_PATH=/knowledge/ kb preview",
+    "index": "kb index",
+    "index:full": "kb index --full",
     "test:rag": "kb eval",
     "test:rag:full": "kb eval --full",
     "test:rag:baseline": "kb eval:baseline",
-    "chroma:start": "docker run -d -p 8000:8000 --name chroma -v ./data/chroma:/data chromadb/chroma:latest",
-    "chroma:stop": "docker stop chroma && docker rm chroma",
-    "ollama:stop": "ollama stop qwen3:8b && ollama stop bge-m3:latest",
-    "ollama:pull-chat": "ollama pull qwen3:8b",
-    "ollama:pull-embed": "ollama pull bge-m3:latest",
-    "sync": "node scripts/sync-local.mjs",
-    "sync:starter": "node scripts/sync-starter.mjs"
+    "chroma:start": "kb chroma:start",
+    "chroma:stop": "kb chroma:stop",
+    "ollama:pull": "kb ollama:pull",
+    "ollama:stop": "kb ollama:stop",
+    "sync": "node scripts/sync-local.mjs"
   },
   "dependencies": {
     "@kb/core": "link:../kb-base/packages/core",

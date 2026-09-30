@@ -45,8 +45,6 @@ Thumbs.db
 
 # Chroma local data
 data/chroma/
-# 旧版布局（server/data/chroma）的残留数据，勿入库
-server/
 
 # 向量索引清单（增量索引用，本地生成）
 data/index-manifest.json
