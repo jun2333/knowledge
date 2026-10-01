@@ -5,3 +5,6 @@ allowBuilds:
   onnxruntime-node: false
   protobufjs: true
   puppeteer: true
+minimumReleaseAgeExclude:
+  - '@minijun/kb-core@0.1.1 || 0.1.2'
+  - '@minijun/kb-site@0.1.1 || 0.1.2'
