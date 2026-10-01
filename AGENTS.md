@@ -13,14 +13,14 @@
 - 通用能力来自两个**基座包**（当普通依赖用即可，不必关心其源码在哪）：
   - `@minijun/kb-core`：RAG 引擎 + Agent + 评估框架 + CLI（`kb`）+ 导入/归档后端
   - `@minijun/kb-site`：VitePress 主题、批注 / AI 助手 / 内容管理组件、站点配置派生（`defineSite`）
-- `resume/`：简历与面试资料（不参与构建）
+- `docs/` 之外的个人目录（如 `resume/`）与 `archive/`：不参与构建，也不进索引
 - **实例配置**：根目录 `knowledge.config.mjs`（模型 / 向量集合名 / 展示 / `onlyLocal` 内容策略 等，唯一入口）
 - **内容固定放 `docs/`**（不可配置）：`docs/` 下的目录即分类。已有笔记用 `pnpm kb import <目录>` 导入到 `docs/imported/`（收件箱），再到站点右下角「内容管理」里归档到分类
-- **CLI**：`kb init | import | index | menu:export | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`（根 `package.json` 的脚本是其封装）
+- **CLI**：`kb init | import | index | menu:export | chroma:start | chroma:stop | ollama:pull | ollama:stop | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`（根 `package.json` 的脚本是其封装）
 - 站点壳：`docs/.vitepress/{config.mts,theme/index.js}`（各几行，逻辑都在 `@minijun/kb-site`）
 - 评估集：`eval/`（测试集 / 阈值 / 已审核记录）
 - 上手文：`docs/getting-started/`（`kb init` 时随骨架复制一份，之后就是本实例的内容，可自行修改；要跟上基座新版就手动复制 `node_modules/@minijun/kb-core/templates/instance/docs/getting-started/index.md`）
-- **菜单与侧边栏**：默认按目录推导（一级目录 = 菜单项；同一层 ≥2 篇页面就有侧边栏）。
+- **菜单与侧边栏**：默认按目录推导（一级目录 = 菜单项 + 一份完整侧边栏；子目录只是嵌套分组，不会单独顶掉父侧边栏）。
   想完全接管 → `pnpm kb menu:export` 生成 `menu.config.mjs`（有它时站点**完全按它渲染**，不兜底）。
 - **仅本地内容**：`knowledge.config.mjs` 的 `site.onlyLocal: [...]`（内容策略，与菜单解耦）
 - 旧版笔记归档在 `archive/` 目录

@@ -37,10 +37,12 @@ base: process.env.BASE_PATH || '/',
 |---|---|
 | `docs/A/` | 菜单一项「A」，名字取目录名（`categories` 可覆写显示名） |
 | `docs/A/index.md` | 点菜单进这一页；没有就取 A 里第一篇 |
-| 同一层有 **≥2 篇**页面 | 该层自动获得一份侧边栏（任意层级都算） |
-| 只有 1 篇的目录 | 不给侧边栏（一条的导航没意义） |
+| 一级目录 | 该目录一份侧边栏，**整棵子树都在里面**（子目录只是嵌套分组） |
+| 只有 1 条的目录 | 不给侧边栏（一条的导航没意义） |
 
-侧边栏条目：子目录折叠成组，`index.md` 排最前，其余按文件名；标题取 `frontmatter.title` → 正文 h1 → 文件名。
+侧边栏条目：子目录作为嵌套分组（默认展开），`index.md` 排最前，其余按文件名；标题取 `frontmatter.title` → 正文 h1 → 文件名。
+
+> **子目录不单独成 key** 是有意为之：VitePress 按"最长匹配前缀"选 sidebar，子目录若自成 key，点进去时整棵父侧边栏会被顶掉、只剩那几条（像"跳到了另一个页面"，还丢上下文）。
 
 **想完全接管**（分组菜单、外链、自定义顺序与名字）：跑 `pnpm kb menu:export` 生成实例根的 `menu.config.mjs` 再改。
 
@@ -67,13 +69,13 @@ export default defineSite({
 
 ### 设计 3：「仅本地」是内容策略，不挂在菜单上
 
-有些内容是个人隐私（读书笔记、面试题、运动、杂项等），本地要看、线上不公开。这属于**内容策略**，单独写在 `knowledge.config.mjs` 的 `site.onlyLocal` 里——和"菜单怎么排"是两件事：
+有些内容是个人隐私或暂时不想公开（私人笔记、草稿、还没整理完的读书笔记等），本地要看、线上不公开。这属于**内容策略**，单独写在 `knowledge.config.mjs` 的 `site.onlyLocal` 里——和"菜单怎么排"是两件事：
 
 ```js
 // knowledge.config.mjs
 site: {
   // 相对 docs/ 的路径，目录或文件都行（可省略 .md）
-  onlyLocal: ['algorithms', 'resume', 'service/roadmap.md'],
+  onlyLocal: ['私人笔记', 'notes/draft.md'],
 }
 ```
 
@@ -136,7 +138,7 @@ sidebar: filterSidebar(sidebarData, { excludeLocal, sidebarKeys, links })
 | `pnpm build`（默认） | true | 排除仅本地内容、过滤落在其下的菜单项 |
 | `INCLUDE_LOCAL=1 pnpm build` | false | **线上也全量**（临时用，比如自己看） |
 
-> 全量模式下额外忽略 `/localhost/` 死链，因为面试题里有指向本地调试地址的链接。
+> 全量模式下额外忽略 `/localhost/` 死链，因为有些私人笔记里有指向本地调试地址的链接。
 
 ## 三、首页：`docs/index.md`
 
@@ -159,7 +161,7 @@ hero 的 `actions` 里只有「快速上手」。**GitHub 按钮是算出来的*
 // @minijun/kb-site/config/define-site.mjs
 function githubHeroAction(site) {
   const link = (site.socialLinks ?? []).find((s) => s?.icon === 'github')?.link
-  return link ? { theme: 'alt', text: 'GitHub', link } : null
+  return typeof link === 'string' && link ? { theme: 'alt', text: 'GitHub', link } : null
 }
 ```
 
@@ -182,7 +184,7 @@ site: {
 
 ## 四、主题扩展
 
-实例的入口 `docs/.vitepress/theme/index.js` **只有两行**——主题实体在基座包 `@minijun/kb-site` 里：
+实例的入口 `docs/.vitepress/theme/index.js` **只有一行代码**（另有两行说明注释）—— 主题实体在基座包 `@minijun/kb-site` 里：
 
 ```js
 // docs/.vitepress/theme/index.js（实例）
@@ -205,11 +207,16 @@ export { default } from '@minijun/kb-site/theme'
 
 ### 共享 UI 基础：遮罩与 toast
 
-三个面板（批注 / AI 助手 / 内容管理）加上两个批注对话框，**不再各写一份遮罩样式**，统一用 `custom.css` 里的两个类，层级也集中在一处定义：
+三个面板（批注 / AI 助手 / 内容管理）加上两个批注对话框，**不再各写一份遮罩样式**，统一用 `custom.css` 里的两个类；层级集中在文件顶部的三个 CSS 变量里定义，避免各组件各写一个 `z-index` 互相打架：
 
 ```css
-.kb-overlay          /* 面板遮罩：rgba(0,0,0,.15)，z-index 999 */
-.kb-overlay-dialog   /* 对话框遮罩：更重 + 居中，z-index 2000 */
+:root {
+  --kb-z-overlay: 999;   /* 面板遮罩：rgba(0,0,0,.15)（面板本体在 1001+） */
+  --kb-z-dialog: 2000;   /* 对话框遮罩：更重 + 居中（要盖住面板） */
+  --kb-z-toast: 4000;    /* 右上角提示，永远在最上层 */
+}
+.kb-overlay          /* 面板遮罩 */
+.kb-overlay-dialog   /* 对话框遮罩 */
 ```
 
 toast 同理：`useToast.ts` 只存一份数据（模块级单例），`ToastHost.vue` 渲染一次并 `Teleport` 到 `body`，从右侧滑入、几秒后自动消失、点一下就关。之前是**两套实现**（一个 `document.createElement` 直插 DOM、一个面板内嵌提示条），样式和位置都不一致。
@@ -245,6 +252,7 @@ const isProd = import.meta.env.PROD
       <AnnotationSystem v-if="!isProd" />
       <AIChat v-if="!isProd" />
       <ManagePanel v-if="!isProd" />
+      <ToastHost v-if="!isProd" />
     </template>
   </Layout>
 </template>
@@ -366,7 +374,7 @@ pnpm kb import <目录>               # 真正导入
 > 索引过期可能由导入 / 归档 / 删除里任何一件事引起，而「归档」tab 在收件箱空时是不显示的
 > —— 早先把按钮放在归档 tab 里，出现了"把文章都归档完 → tab 消失 → 想更新索引却够不着"。
 
-状态栏有四种状态：`内容有改动，索引未更新`（黄）→ `正在建立索引…` + 最后一行进度（形如"已写入 300/2772"）→ `索引已更新 ✅`；失败时显示 `索引失败：…`（红）并弹右上角提示。
+状态栏有四种状态：`内容有改动，索引未更新`（黄）→ `正在建立索引…` + 最后一行进度（形如"已写入 300/2800"，分母是总块数）→ `索引已更新 ✅`；失败时显示 `索引失败：…`（红）并弹右上角提示。
 
 命令行等价：`pnpm index`。
 

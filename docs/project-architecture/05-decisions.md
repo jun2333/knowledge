@@ -20,7 +20,7 @@
 
 ### 坑 1：Markdown 里的 Vue 冲突语法导致构建失败
 
-**现象**：把 `resume/interview-questions/` 的笔记放进 `docs/` 后，构建直接报错，提示解析 JavaScript 表达式失败。
+**现象**：把一批来自别处的笔记搬进 `docs/` 后，构建直接报错，提示解析 JavaScript 表达式失败。
 
 **根因**：这些笔记里有 Vue 模板语法和裸 HTML 标签，而 VitePress 会把 Markdown 交给 Vue 编译器处理，于是它们被当成"要编译的模板"。
 
@@ -53,11 +53,11 @@ function escapeText(text) {
 
 ### 坑 2：目录根没有 `index.md` → 访问 404
 
-**现象**：访问 `/interview-questions/`（目录根）报 404，但 `/interview-questions/2026-08-05` 能打开。
+**现象**：访问某个分类的目录根 `/foo/` 报 404，但 `/foo/某篇文章` 能打开。
 
 **根因**：目录下只有若干文章、没有首页文件，VitePress 不会为目录根自动生成页面。
 
-**解法**：同步脚本为每个目录额外生成 `index.md`（列出各篇链接），这也是为什么"面试题"分类能在菜单里点进去。
+**解法**：同步脚本为每个目录额外生成 `index.md`（列出各篇链接），这也是为什么每个分类都能从菜单直接点进去。
 
 ### 坑 3：`pnpm preview` 满屏静态资源 404
 
@@ -87,17 +87,14 @@ const isProd = process.env.NODE_ENV === 'production'
 
 这样 dev 时是 `false`（看全量）、build 时是 `true`（排除本地专属内容 + 关闭相关死链检查）。
 
-### 坑 5：面试题污染检索结果
+### 坑 5：同质内容污染检索结果
 
-**现象**：问"什么是跨域"，top1 命中的是面试题文档而不是知识正文。
+**现象**：问"什么是跨域"，top1 命中的是一份问答式笔记，而不是对应的知识正文。
 
-**根因**：索引脚本扫 `docs` 下所有 md，面试题和正文是**同质内容**（同一批知识点），但它是精炼问答、和提问的相似度更高，于是挤占检索结果。
+**根因**：索引脚本扫 `docs` 下所有 md，那批笔记和正文是**同质内容**（讲的是同一批知识点），但它是精炼的问答体、和提问的相似度更高，于是挤占检索结果。
 
-**解法**：索引时排除：
-
-```ts
-ignore: ['node_modules/**', '.vitepress/**', 'interview-questions/**'],
-```
+**解法**：索引时排除——把这类同质内容（连同站点说明页、快速上手）列进 `knowledge.config.mjs` 的 `index.exclude`，
+`kb index` 扫描时直接跳过，不进向量库。
 
 排除后 Top1 命中率 **58% → 75%**（再叠加后面的"切分回退"最终到 83%），是本项目收益最大的一类改动。
 
@@ -122,13 +119,15 @@ ignore: ['node_modules/**', '.vitepress/**', 'interview-questions/**'],
 
 > 两次都先做了"是不是我写错了"的验证（如给 reranker 一条明显相关、一条明显不相关的候选看打分），确认实现无误后才判定是方案不适用——这一步很重要，否则会误把"实现 bug"当成"方案无效"。
 
-### 坑 8：pnpm 拦截 `onnxruntime-node` 构建脚本
+### 坑 8：pnpm 拦截依赖的构建脚本（顺带把一个原生依赖踢成可选）
 
-**现象**：装完 `@huggingface/transformers` 后，`pnpm build` 报 `ERR_PNPM_IGNORED_BUILDS`。
+**现象**：装完 `@huggingface/transformers` 后，`pnpm build` 报 `ERR_PNPM_IGNORED_BUILDS`（`onnxruntime-node`、`protobufjs` 有 install 脚本被拦下）。
 
-**根因**：pnpm 默认不运行依赖的构建脚本，需要显式声明。
+**根因**：pnpm 10+ 默认**不执行**任何依赖的构建脚本（防供应链攻击），不显式声明就留下一个「待批准」状态。
 
-**解法**：该包自带 arm64 预编译二进制、无需构建，在 `pnpm-workspace.yaml` 里显式声明忽略：
+**解法分两层**：
+
+1. **治标** —— 在 `pnpm-workspace.yaml` 里声明 `allowBuilds`（`onnxruntime-node` 自带 arm64 预编译二进制、无需构建，显式关掉即可）：
 
 ```yaml
 allowBuilds:
@@ -137,6 +136,15 @@ allowBuilds:
   protobufjs: true
   puppeteer: true
 ```
+
+2. **治本** —— `@huggingface/transformers` 只用在**默认关闭**的本地重排里，却会拖进整棵原生 ONNX 运行时（`onnxruntime-node` / `onnxruntime-web` / `sharp`，几十 MB）。改成 **可选 peer + 惰性加载**后：默认不装、安装体积明显下降，也少了一个触发上面这个报错的源头。要开重排再 `pnpm add @huggingface/transformers`。
+
+> ⚠️ **`allowBuilds` 救不了「第一次用」的那一瞬间**：新用户的路径是
+> `pnpm add @minijun/kb-core` → `pnpm kb init`，而 `allowBuilds` 恰恰躺在 `kb init` 生成出来的
+> `pnpm-workspace.yaml` 里 —— 鸡生蛋。`pnpm <脚本>` 执行前会先做依赖检查（内部跑 `pnpm install`），
+> 撞上「未批准」就直接退出，**`kb` 根本没启动**。
+> 所以引导命令必须用 `npx kb init`（只在 `node_modules/.bin` 里找 `kb` 执行，不经过这层检查），
+> 详见根 `README.md` 的「搭一个自己的知识库」。
 
 ## 三、提高知识库回答准确性的常用手段
 
@@ -182,7 +190,7 @@ allowBuilds:
 
 | 手段 | 是否试过 | 效果 |
 |------|---------|------|
-| 索引范围治理（排除面试题） | ✅ | Top1 58% → 75%，**有效** |
+| 索引范围治理（排除同质笔记） | ✅ | Top1 58% → 75%，**有效** |
 | 结果去重（按来源） | ✅ | 指标持平，多样性明显变好 → 保留 |
 | Prompt 约束 + 引用溯源 | ✅ | 内置在 `SYSTEM_PROMPT` 与工具结果里 |
 | 评估集升级（Top1 / MRR） | ✅ | 有了区分度，后续优化才有据可依 |

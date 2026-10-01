@@ -16,8 +16,8 @@ front-end-knowledge-summary/
 │   └── ...
 ├── eval/                      # 评估集（测试集 / 阈值 / 已审核记录）
 ├── data/                      # 本地数据产物（向量库 / 索引清单 / 评估历史与基线）
-├── scripts/                   # 个人脚本（简历同步、部署）
-├── archive/  resume/          # 个人内容（不参与构建）
+├── scripts/                   # 个人脚本（部署等，不参与构建）
+├── archive/                   # 历史归档（不参与构建）
 ├── package.json               # 实例依赖：@minijun/kb-core、@minijun/kb-site
 └── pnpm-workspace.yaml
 ```
@@ -95,7 +95,8 @@ pnpm ollama:stop       # 停掉模型释放内存
 ollama ps / ollama list # 查看运行中 / 已下载的模型
 ```
 
-> 只有 `dev` / `build` / `preview`（注入了 `BASE_PATH`）与 `test:rag*`（回归入口）保留为 npm 脚本；
+> 实例的 `package.json` 只保留少量封装脚本：`dev` / `build` / `preview`（注入 `BASE_PATH`）、
+> `index` / `index:full`、`chroma:*` / `ollama:*`、`test:rag*`（回归入口）。
 > 其余都是基座 CLI 的子命令，直接 `pnpm kb <子命令>` 即可（`pnpm kb` 看全部）。
 
 ## AI 知识问答
@@ -115,7 +116,7 @@ ollama ps / ollama list # 查看运行中 / 已下载的模型
 
 改检索逻辑或 prompt 后，跑一条命令就能确认有没有把质量改退化：
 
-- **检索层**（250 题，按主题分层）：`Hit@5` / `Hit@1` / `Recall@5` / `MRR`
+- **检索层**（249 题，按主题分层）：`Hit@5` / `Hit@1` / `Recall@5` / `MRR`
 - **生成层**（10 题，含"知识库外"负例）：引用准确性、忠实度、完整性（本地 LLM 打分）
 - **阈值门禁**：指标跌破底线即非零退出；每次结果留档，输出"较上次 / 较基线"变化
 
@@ -125,7 +126,7 @@ pnpm test:rag:full     # 大改动后跑全量（~15 分钟）
 pnpm test:rag:baseline # 认可某次结果时，固化为新基线
 ```
 
-> 设计细节见 `docs/project-architecture/06-evaluation.md`。评估集审核流程见 `server/eval/REVIEW-PLAYBOOK.md`。
+> 设计细节见 `docs/project-architecture/06-evaluation.md`。评估集审核流程见基座包内的 `eval/REVIEW-PLAYBOOK.md`（装好后位于 `node_modules/@minijun/kb-core/eval/`）。
 
 ## 实例配置与基座化
 
@@ -133,7 +134,7 @@ pnpm test:rag:baseline # 认可某次结果时，固化为新基线
 
 ### 实例配置（唯一入口）
 
-内容目录、模型、向量集合等全部集中在根目录 `knowledge.config.mjs`：
+内容、索引范围、模型、向量集合等全部集中在根目录 `knowledge.config.mjs`：
 
 ```js
 export default {
@@ -141,12 +142,14 @@ export default {
   collectionName: 'my_kb',      // 向量集合名（一实例一库）
   dataDir: './data',            // 索引清单 / 向量库 / 评估历史
   evalDir: './eval',            // 评估集 / 阈值
-  models: { chat: 'qwen3:8b', embedding: 'bge-m3' },
+  index: { include: ['**/*.md'], exclude: [...] },   // 索引范围（glob）
+  models: { baseUrl: 'http://localhost:11434/v1', chat: 'qwen3:8b', embedding: 'bge-m3' },
   // ...
 }
 ```
 
-换一份内容只需改这一份配置。**内容目录支持绝对路径**，因此可以把内容放在仓库外部的目录里。
+换一份内容只需改这一份配置。**内容根固定为 `docs/`**（不可配置）——内容与站点共用同一批 Markdown，
+不需要另外维护一份语料；把笔记搬进来比指过去更自然（搬迁用站点的导入能力）。
 
 ### 默认本地，可切远程
 
@@ -181,8 +184,8 @@ chroma: {
 |---|---|
 | `docs/A/` | 菜单里多一项「A」（名字取目录名，`categories` 可改显示名） |
 | `docs/A/index.md` | 点菜单进这一页；没有就取 A 里第一篇 |
-| 同一层有 **≥2 篇**页面 | 这一层自动获得一份侧边栏 |
-| 只有 1 篇的目录 | 不给侧边栏（一条的导航没意义） |
+| 一级目录 | 该目录一份侧边栏，**整棵子树都在里面**（子目录是嵌套分组） |
+| 只有 1 条的目录 | 不给侧边栏（一条的导航没意义） |
 
 **想完全接管菜单/侧边栏**（分组、外链、自定义顺序）：跑 `pnpm kb menu:export` 生成 `menu.config.mjs` 再改。
 **有它时站点完全按它渲染、不做任何推导** —— 新增文件要跟着改（`pnpm kb menu:export --check` 看差异）；删掉它就回到全自动。
@@ -192,7 +195,7 @@ chroma: {
 ```js
 site: {
   // 相对 docs/ 的路径，目录或文件都行（可省略 .md）
-  onlyLocal: ['algorithms', 'java-practice', 'books', 'resume', 'service/roadmap.md'],
+  onlyLocal: ['private', 'drafts', 'notes/scratch.md'],
 }
 ```
 
@@ -223,23 +226,10 @@ pnpm chroma:start && pnpm kb index && pnpm dev
 ```
 
 > 想在本地基座源码上开发 / 调试（不装 npm 上的发布版），加 `--local <基座目录>` 让生成的实例指向本地基座。
-> 站点 sidebar 默认按内容目录**自动生成**（`@minijun/kb-site` 的能力）；
-> 菜单与侧边栏默认按目录推导；本仓库用 `menu.config.mjs` 完全接管（分组菜单 + 精修侧边栏）。
-
-## 内容统计
-
-| 分类 | 文档数 |
-|------|--------|
-| React | 30+ |
-| Vue | 20+ |
-| 浏览器 / 网络 | 15+ |
-| JavaScript | 12+ |
-| 服务端（Node / Java / DB） | 45+ |
-| AI Agent | 20+ |
-| 性能 / 工程化 / CSS | 35+ |
-| 算法 / 大前端 / 其他 | 40+ |
-
-**总计**：250+ 篇技术笔记
+>
+> 菜单与侧边栏默认按目录推导（一级目录 = 菜单一项 + 一份完整侧边栏，子目录只是嵌套分组）；
+> 本仓库用 `menu.config.mjs` **完全接管**（自定义分组、顺序与显示名）—— 有它时站点不再按目录推导，
+> 所以**新增页面要跟着改**（`pnpm kb menu:export --check` 看差异），改完还要**重启 `pnpm dev`**。
 
 ## 技术栈
 
@@ -250,10 +240,10 @@ pnpm chroma:start && pnpm kb index && pnpm dev
 - **Embedding 模型**: bge-m3（本地 Ollama）
 - **LLM**: qwen3:8b（本地 Ollama）
 - **RAG**: LangChain.js
-- **检索优化**: 按来源去重；Rerank（bge-reranker，默认关闭，见评估结论）
+- **检索优化**: 混合检索（向量 + BM25，默认开启）；结果按来源去重；Rerank（bge-reranker，默认关闭 —— 实测反而变差，见评估结论。想开启要先 `pnpm add @huggingface/transformers`，它默认不装，避免所有人为一个默认关闭的功能拖进原生 ONNX 运行时）
 - **评估**: 自建回归测试集 + 阈值门禁
 - **包管理**: pnpm workspaces
 
 ## License
 
-ISC
+MIT

@@ -1,6 +1,6 @@
 // 知识库实例配置（唯一入口）。
-// 换一份内容只需改这里；路径支持相对本文件或绝对路径（内容可放在仓库外）。
-// 类型提示来自 server/src/config/types.ts。
+// 内容固定放本文件同级的 docs/（不可配置）；dataDir / evalDir 等其它路径支持相对本文件或绝对路径。
+// 类型提示来自基座包 @minijun/kb-core。
 /** @type {import('@minijun/kb-core/types').KnowledgeConfig} */
 export default {
   name: 'front-end-knowledge',
@@ -8,8 +8,16 @@ export default {
   // 索引范围（glob）。exclude 同时用于索引与评估出题，避免个人内容混入
   index: {
     include: ['**/*.md'],
-    // interview-questions：与其他正文同质、会挤占检索；index.md / getting-started：站点的元信息，非知识正文
-    exclude: ['node_modules/**', '.vitepress/**', 'interview-questions/**', 'index.md', 'getting-started/**'],
+    // interview-questions：与其他正文同质、会挤占检索；index.md / ANNOTATION-GUIDE.md / getting-started：
+    // 站点的元信息与使用说明，不是知识正文
+    exclude: [
+      'node_modules/**',
+      '.vitepress/**',
+      'interview-questions/**',
+      'index.md',
+      'ANNOTATION-GUIDE.md',
+      'getting-started/**',
+    ],
   },
 
   // 本实例的数据目录（index-manifest / chroma / eval-history / eval-baseline）

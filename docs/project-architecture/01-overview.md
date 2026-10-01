@@ -7,7 +7,7 @@
 
 一个**完全跑在本地**的个人技术知识库，由两部分组成：
 
-1. **知识库站点**（实例根 `docs/`）：基于 VitePress 的静态文档站，承载 250+ 篇技术笔记（React/Vue 原理、浏览器、工程化、服务端、AI Agent 等）。
+1. **知识库站点**（实例根 `docs/`）：基于 VitePress 的静态文档站，承载近 280 篇技术笔记（React/Vue 原理、浏览器、工程化、服务端、AI Agent 等；精确分类统计见根 `README.md`）。
 2. **AI 问答服务**（基座包 `@minijun/kb-core`）：基于 Koa + TypeScript 的后端，把笔记做成向量索引（RAG），接本地大模型实现**带引用溯源**的自然语言问答。
 
 **关键特性**：不联网、零 API 成本、数据不出本机——模型和向量库全部本地运行（Ollama + Docker 里的 Chroma）。
@@ -110,7 +110,6 @@ flowchart TB
 | `@minijun/kb-core` | RAG 引擎（索引/切分/检索/BM25 混合/重排）、Agent 工具调用、Koa 服务、导入与归档后端、评估框架、CLI | `cli.ts`（命令 `kb`） |
 | `@minijun/kb-site` | VitePress 主题、批注 / AI 助手 / 内容管理组件、站点配置派生（`defineSite`） | `config/define-site.mjs` |
 | 仓库根（实例） | 内容 `docs/`、配置 `knowledge.config.mjs`、菜单 `menu.config.mjs`、数据 `eval/` 与 `data/` | `knowledge.config.mjs` |
-| `resume/` | 简历与面试准备资料（不参与构建） | — |
 
 > 命令行统一走基座 CLI：`kb init | import | index | menu:export | serve | dev | build | preview | eval | eval:baseline | cases:gen | cases:review`；
 > 实例里直接 `pnpm kb <子命令>` 即可（`package.json` 只保留 `dev` / `build` / `preview` / `test:rag*` / `chroma:*` / `ollama:*` 等少数脚本）。
@@ -139,12 +138,10 @@ front-end-knowledge-summary/
 │   ├── .vitepress/
 │   │   ├── config.mts        # 几行：读 menu.config.mjs → 交给 defineSite
 │   │   └── theme/index.js    # 几行：扩展 @minijun/kb-site 的主题（Mermaid 等）
-│   ├── ai-agent/ javascript/ react/ vue/ ...   # 各类笔记（目录即分类）
-│   └── interview-questions/  # 面试题（由脚本从 resume 同步）
+│   └── ai-agent/ javascript/ react/ vue/ ...   # 各类笔记（目录即分类）
 ├── eval/                     # 评估集：测试题 / 阈值 / 已审核记录
 ├── data/                     # 索引清单、向量库（data/chroma）、评估基线与历史
-├── resume/                   # 简历与面试资料（不参与构建）
-├── scripts/                  # deploy-github.sh（部署）、sync-local.mjs（同步 resume 内容）
+├── scripts/                  # deploy-github.sh（部署）、sync-local.mjs（内容同步）
 ├── knowledge.config.mjs      # 实例配置：模型 / 集合名 / 展示 / onlyLocal 内容策略
 ├── menu.config.mjs           # 菜单与侧边栏（可选；有它就完全按它渲染，不兜底）
 └── package.json              # 脚本转发（kb / docker / ollama）
@@ -211,7 +208,7 @@ pnpm dev                  # 前后端一起（docs 5173 / server 3000）
 | `pnpm preview` | 预览构建产物（同样带 base） |
 | `pnpm kb index` | 增量更新向量索引（只处理变更的文件） |
 | `pnpm kb index --full` | 全量重建索引（首次或需要重建时） |
-| `kb eval` | 跑检索质量评估 |
+| `pnpm kb eval` | 跑检索质量评估 |
 
 ## 九、接下来读什么
 

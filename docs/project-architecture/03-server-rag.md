@@ -8,12 +8,13 @@
 
 ```
 src/
-├── cli.ts              # CLI 入口（kb 命令：init / import / index / menu:export / serve / eval …）
+├── cli.ts              # CLI 入口（kb 命令：init / import / index / menu:export / chroma:* / ollama:* / serve / eval …）
 ├── server.ts           # 组装 Koa 应用（中间件 + 路由）
 ├── index.ts            # 进程入口
 ├── config/
-│   ├── index.ts        # 统一配置出口
+│   ├── index.ts        # 统一配置出口（加载并归一化后的 config）
 │   ├── loader.ts       # 加载实例的 knowledge.config.mjs 并归一化
+│   ├── clients.ts      # 客户端工厂：聊天 / 向量 / Chroma 连接参数，收敛「本地 vs 远程」的差异
 │   └── types.ts        # 配置类型
 ├── routes/
 │   ├── chat.ts         # POST /api/chat（SSE 流式）
@@ -24,6 +25,9 @@ src/
 ├── manage.ts           # 归档逻辑（收件箱树、分类、移动、删除）
 ├── menu.ts             # 菜单配置导出（kb menu:export / --check）
 ├── init.ts             # 生成实例骨架（kb init）
+├── chroma.ts           # 向量库容器管理（kb chroma:start / chroma:stop；容器名按实例区分）
+├── docker.ts           # docker 命令封装（探测端口占用、挑空闲端口）
+├── ollama.ts           # 本地模型管理（kb ollama:pull / ollama:stop）
 ├── agent/
 │   ├── loop.ts         # Agent 工具调用循环
 │   ├── prompt.ts       # 系统提示词
@@ -33,7 +37,7 @@ src/
 │   ├── chunker.ts      # 文本切分
 │   ├── retriever.ts    # 检索
 │   ├── bm25.ts         # 关键词检索（混合检索的第二路）
-│   └── reranker.ts     # 重排（默认关闭）
+│   └── reranker.ts     # 重排（默认关闭；依赖 @huggingface/transformers，见下）
 └── eval/               # 检索层 / 生成层评估（rag-eval、rag-gen-eval、出题与审核）
 ```
 
@@ -50,13 +54,16 @@ export default {
   collectionName: 'knowledge_base',
   dataDir: './data',
   evalDir: './eval',
-  models: { ollamaBaseUrl: 'http://localhost:11434/v1', chat: 'qwen3:8b', embedding: 'bge-m3' },
+  models: { baseUrl: 'http://localhost:11434/v1', chat: 'qwen3:8b', embedding: 'bge-m3' },
   chunk: { size: 1000, overlap: 200 },
   rerank: { enabled: false, candidates: 20 },  // 实测反而变差，默认关
   chroma: { host: 'localhost', port: 8000 },
   port: 3000,
 }
 ```
+
+> `models.chat` / `models.embedding` 也可以写成对象（`{ baseUrl, model, apiKeyEnv }`）指向远程服务；
+> 加载后归一化成 `config.chat.baseUrl` / `config.embedding.baseUrl` 等，运行时只认这一份。
 
 > 加载后的绝对路径以 `config.docsPath` 等形式提供给运行时代码。
 > **内容根固定为实例根下的 `docs/`**（不再可配）——内容与站点共用同一批 Markdown，不需要另外维护一份语料。
@@ -89,10 +96,12 @@ flowchart TD
 
 ```ts
 // ① 扫描：glob 按通配符匹配文件（** = 任意层级，* = 任意文件名）
-const files = await glob('**/*.md', {
+//    索引范围（include / exclude）由实例配置的 index 字段提供，这里直接取归一化后的值
+const files = await glob(config.indexInclude, {
   cwd: config.docsPath,
-  // 排除非知识正文：面试题与正文同质，会挤占检索结果
-  ignore: ['node_modules/**', '.vitepress/**', 'interview-questions/**'],
+  // 排除非知识正文：与正文同质的"问答式笔记"会挤占检索；站点说明 / 快速上手属于元信息
+  // （具体清单写在 knowledge.config.mjs 的 index.exclude 里）
+  ignore: config.indexExclude,
   absolute: true,
 })
 
@@ -139,7 +148,7 @@ for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
 }
 ```
 
-> 分批的目的是**规避 Chroma 的请求体限制**，不是为了省内存——所有块始终都在内存里（文档总量约 2.4MB，Node 堆毫无压力）。
+> 分批的目的是**规避 Chroma 的请求体限制**，不是为了省内存——所有块始终都在内存里（文档正文合计约 2.9MB，Node 堆毫无压力）。
 
 ### 关键代码 4：增量更新（只重索引变了的文件）
 
@@ -216,12 +225,16 @@ export async function searchDocs(query: string, k: number = 5) {
 **① `embeddings` —— "文本 → 向量"的能力对象**
 
 ```ts
-const embeddings = new OpenAIEmbeddings({
-  modelName: config.embeddingModel,                 // 'bge-m3'
-  apiKey: 'ollama',                                 // 占位（Ollama 不校验，但 SDK 要求非空）
-  configuration: { baseURL: config.ollamaBaseUrl }, // http://localhost:11434/v1
-  batchSize: 10,
-})
+// @minijun/kb-core 的 config/clients.ts —— 聊天 / 向量客户端都从这里造，
+// 「本地 Ollama（apiKey 用占位符）vs 远程服务（从 apiKeyEnv 读）」的差异收敛在这一处
+export function createEmbeddings(): OpenAIEmbeddings {
+  return new OpenAIEmbeddings({
+    modelName: config.embedding.model,                     // 'bge-m3'
+    apiKey: config.embedding.apiKey || 'ollama',           // 占位（Ollama 不校验，但 SDK 要求非空）
+    configuration: { baseURL: config.embedding.baseUrl },  // http://localhost:11434/v1
+    batchSize: 10,
+  })
+}
 ```
 
 它本身**不存任何数据**，只有两个核心方法：
@@ -236,9 +249,10 @@ const embeddings = new OpenAIEmbeddings({
 **② `store` —— 连到 Chroma 的句柄，几乎不占内存**
 
 ```ts
-cachedStore = await Chroma.fromExistingCollection(embeddings, {
+// @minijun/kb-core 的 rag/retriever.ts
+cachedStore = await Chroma.fromExistingCollection(createEmbeddings(), {
   collectionName: config.collectionName,
-  url: `http://${config.chromaHost}:${config.chromaPort}`,
+  ...chromaVectorStoreParams(),   // url + clientParams（远程时的 token / tenant / database 都在里面）
 })
 ```
 
@@ -347,6 +361,11 @@ function dedupeBySource(results: [Document, number][], k: number) {
 
 > 后来又重测了一次：修好 2 道题，但代价是 **33.5 秒 / 每次查询**，性价比仍然不够，维持关闭。
 
+> **依赖说明**：重排依赖 `@huggingface/transformers`，但它**默认不安装**（在 `@minijun/kb-core` 里声明为
+> **可选 peer + 惰性加载**）—— 它背后会拖进原生 ONNX 运行时（`onnxruntime-node` / `onnxruntime-web` / `sharp`，
+> 几十 MB），而重排默认又是关的，不该让所有人为此买单。要开启就先 `pnpm add @huggingface/transformers`，
+> 没装时会给明确提示而不是静默降级。
+
 ### 4. 混合检索（默认开启，本项目收益最大的一项）
 
 `bm25.ts` + `retriever.ts` 的 `hybridFuse`：向量召回与 BM25 关键词召回**两路并行**，各自归一化后加权相加。
@@ -368,7 +387,7 @@ score[source] = (1 - distance / dMax) * 0.7 + (bm25 / bm25Max) * 0.3
 | 语料从**向量库**读而非重新扫文件 | 保证两路面对的"块"完全一致，也不会因切分逻辑改动而漂移 |
 | 建索引失败时**降级为纯向量** | 新实例还没跑过 `kb index` 时集合不存在，不能让关键词这路把检索拖挂 |
 
-**实测收益**（250 题评估集）：Hit@5 98.4%→**100%**，Hit@1 87.6%→**90%**，MRR 0.923→**0.944**，Recall@5 0.964→**0.985**；成本是零模型、微秒级。
+**实测收益**（249 题评估集）：Hit@5 98.4%→**100%**，Hit@1 87.6%→**90%**，MRR 0.923→**0.944**，Recall@5 0.964→**0.985**；成本是零模型、微秒级。
 
 #### BM25 到底是什么
 
@@ -453,8 +472,8 @@ kb eval
 
 | 改动 | Top1 | MRR | 结论 |
 |------|------|-----|------|
-| 基线（含面试题） | 58% | 0.743 | — |
-| 排除面试题 | 75% | 0.861 | **有效** |
+| 基线（含同质笔记） | 58% | 0.743 | — |
+| 排除同质笔记 | 75% | 0.861 | **有效** |
 | 纯字符切分（当前） | 83% | 0.917 | — |
 | + 按来源去重 | 83% | 0.917 | 指标持平，但多样性变好 → 保留 |
 | + Rerank | 58% | 0.764 | **负结果** → 关闭 |
