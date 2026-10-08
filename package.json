@@ -15,7 +15,8 @@
     "chroma:stop": "kb chroma:stop",
     "ollama:pull": "kb ollama:pull",
     "ollama:stop": "kb ollama:stop",
-    "sync": "node scripts/sync-local.mjs"
+    "sync": "node scripts/sync-local.mjs",
+    "deploy": "bash scripts/deploy-github.sh"
   },
   "dependencies": {
     "@minijun/kb-core": "^0.1.2",

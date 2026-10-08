@@ -18,7 +18,7 @@ SITE_URL="https://jun2333.github.io/knowledge/"
 echo "📦 ① 构建（BASE_PATH=/knowledge/）..."
 cd "$REPO_ROOT"
 # 可临时让线上也包含本地专属内容（与 dev 一致）；默认不开启
-INCLUDE_LOCAL=1
+# INCLUDE_LOCAL=1
 INCLUDE_LOCAL="${INCLUDE_LOCAL:-}" BASE_PATH=/knowledge/ pnpm build
 
 echo ""
