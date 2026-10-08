@@ -345,7 +345,7 @@ Docker 容器共享宿主机内核，启动秒级，体积 MB 级；虚拟机有
 
 ## 相关
 
-- [Node.js 服务部署最佳实践](/service/node-deployment) - Node 服务的完整上线流程（含多阶段构建）
-- [Java 服务部署最佳实践](/service/java-deployment) - Spring Boot 服务的完整上线流程（含分层镜像）
+- [Node.js 服务部署最佳实践](/service/node/node-deployment) - Node 服务的完整上线流程（含多阶段构建）
+- [Java 服务部署最佳实践](/service/java/java-deployment) - Spring Boot 服务的完整上线流程（含分层镜像）
 - [PM2 进程管理](/service/pm2) - 裸机部署时的进程守护与 cluster 模式
 - [mall 项目部署实操](/java-practice/09-deployment-practice) - 具体项目的 compose / nginx / ELK 配置

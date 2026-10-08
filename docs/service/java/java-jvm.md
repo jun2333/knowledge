@@ -143,6 +143,6 @@ jstat     # 查看 GC 频率与耗时
 
 ## 延伸阅读
 
-- [Java 并发编程](/service/java-concurrency) - JMM 与线程
+- [Java 并发编程](/service/java/java-concurrency) - JMM 与线程
 - [线上问题排查](/service/troubleshooting) - jstack/jmap 实战
-- [Java 入门（JS 开发者视角）](/service/java-basics) - 语言基础
+- [Java 入门（JS 开发者视角）](/service/java/java-basics) - 语言基础

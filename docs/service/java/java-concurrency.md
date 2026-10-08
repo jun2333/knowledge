@@ -171,6 +171,6 @@ CompletableFuture.allOf(f1, f2, f3).join();
 
 ## 延伸阅读
 
-- [JVM 入门](/service/java-jvm) - 内存分区与 GC（并发与 JVM 是 Java 面试两大护城河）
-- [Java 集合源码](/service/java-collections) - ConcurrentHashMap 等线程安全容器
-- [Java 入门（JS 开发者视角）](/service/java-basics) - 语言基础
+- [JVM 入门](/service/java/java-jvm) - 内存分区与 GC（并发与 JVM 是 Java 面试两大护城河）
+- [Java 集合源码](/service/java/java-collections) - ConcurrentHashMap 等线程安全容器
+- [Java 入门（JS 开发者视角）](/service/java/java-basics) - 语言基础

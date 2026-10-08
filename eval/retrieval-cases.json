@@ -274,22 +274,22 @@
   {
     "q": "MySQL 索引是怎么实现的（B+ 树）？",
     "expect": [
-      "service/mysql-advanced.md",
-      "service/database.md"
+      "service/common/mysql-advanced.md",
+      "service/common/database.md"
     ],
     "category": "服务端"
   },
   {
     "q": "Redis 缓存的穿透、击穿、雪崩是什么？",
     "expect": [
-      "service/redis-intro.md"
+      "service/common/redis-intro.md"
     ],
     "category": "服务端"
   },
   {
     "q": "Node 服务怎么部署上线？",
     "expect": [
-      "service/node-deployment.md"
+      "service/node/node-deployment.md"
     ],
     "category": "服务端"
   },
@@ -303,8 +303,8 @@
   {
     "q": "分布式锁有哪些实现方式？",
     "expect": [
-      "service/data-distribution-locks.md",
-      "service/concurrency-locks.md"
+      "service/common/data-distribution-locks.md",
+      "service/common/concurrency-locks.md"
     ],
     "category": "服务端"
   },
@@ -741,21 +741,21 @@
   {
     "q": "Spring AOP 是通过动态代理实现的吗？",
     "expect": [
-      "service/spring-principles.md"
+      "service/java/spring-principles.md"
     ],
     "category": "服务端"
   },
   {
     "q": "注册中心挂了服务还能调吗？",
     "expect": [
-      "service/spring-cloud.md"
+      "service/java/spring-cloud.md"
     ],
     "category": "服务端"
   },
   {
     "q": "Spring Boot 中如何实现依赖注入？",
     "expect": [
-      "service/spring-boot.md"
+      "service/java/spring-boot.md"
     ],
     "category": "服务端"
   },
@@ -783,7 +783,7 @@
   {
     "q": "缓存击穿如何解决？",
     "expect": [
-      "service/redis-intro.md"
+      "service/common/redis-intro.md"
     ],
     "category": "服务端"
   },
@@ -811,23 +811,23 @@
   {
     "q": "如何利用 cluster 实现 Node.js 多核部署？",
     "expect": [
-      "service/node-high-concurrency.md",
-      "service/node-core.md",
-      "service/node-deployment.md"
+      "service/node/node-high-concurrency.md",
+      "service/node/node-core.md",
+      "service/node/node-deployment.md"
     ],
     "category": "服务端"
   },
   {
     "q": "如何确保代码上线前符合规范？",
     "expect": [
-      "service/node-deployment.md"
+      "service/node/node-deployment.md"
     ],
     "category": "服务端"
   },
   {
     "q": "如何在 Node.js 中运行 JavaScript 文件？",
     "expect": [
-      "service/node-core.md"
+      "service/node/node-core.md"
     ],
     "category": "服务端"
   },
@@ -841,7 +841,7 @@
   {
     "q": "为什么联合索引不支持中间字段缺失的查询？",
     "expect": [
-      "service/mysql-advanced.md"
+      "service/common/mysql-advanced.md"
     ],
     "category": "服务端"
   },
@@ -855,14 +855,14 @@
   {
     "q": "为什么用 Kafka 实现削峰填谷？",
     "expect": [
-      "service/mq-intro.md"
+      "service/common/mq-intro.md"
     ],
     "category": "服务端"
   },
   {
     "q": "如何查看日志中出现次数最多的 IP？",
     "expect": [
-      "service/linux-basics.md"
+      "service/common/linux-basics.md"
     ],
     "category": "服务端"
   },
@@ -876,42 +876,42 @@
   {
     "q": "JVM 内存分区中堆和方法区有什么区别？",
     "expect": [
-      "service/java-jvm.md"
+      "service/java/java-jvm.md"
     ],
     "category": "服务端"
   },
   {
     "q": "限流和降级如何配合实现高可用？",
     "expect": [
-      "service/java-high-concurrency.md"
+      "service/java/java-high-concurrency.md"
     ],
     "category": "服务端"
   },
   {
     "q": "Java 服务如何优化 JVM 参数提升性能？",
     "expect": [
-      "service/java-deployment.md"
+      "service/java/java-deployment.md"
     ],
     "category": "服务端"
   },
   {
     "q": "Java 中如何保证多线程下的可见性和有序性？",
     "expect": [
-      "service/java-concurrency.md"
+      "service/java/java-concurrency.md"
     ],
     "category": "服务端"
   },
   {
     "q": "HashMap 的扩容机制是怎样的？",
     "expect": [
-      "service/java-collections.md"
+      "service/java/java-collections.md"
     ],
     "category": "服务端"
   },
   {
     "q": "Java 中如何将 JS 的对象字面量转换为类实例？",
     "expect": [
-      "service/java-basics.md"
+      "service/java/java-basics.md"
     ],
     "category": "服务端"
   },
@@ -939,7 +939,7 @@
   {
     "q": "Elasticsearch 和 MySQL 在数据一致性上有何不同？",
     "expect": [
-      "service/elasticsearch.md"
+      "service/common/elasticsearch.md"
     ],
     "category": "服务端"
   },
@@ -960,35 +960,35 @@
   {
     "q": "如何实现分布式事务的最终一致性？",
     "expect": [
-      "service/distributed-basics.md"
+      "service/common/distributed-basics.md"
     ],
     "category": "服务端"
   },
   {
     "q": "工厂模式在Spring中如何体现？",
     "expect": [
-      "service/design-patterns.md"
+      "service/common/design-patterns.md"
     ],
     "category": "服务端"
   },
   {
     "q": "数据库中为什么不能用浮点数存储金额？",
     "expect": [
-      "service/database.md"
+      "service/common/database.md"
     ],
     "category": "服务端"
   },
   {
     "q": "主从复制下写一致性如何保证？",
     "expect": [
-      "service/data-distribution-locks.md"
+      "service/common/data-distribution-locks.md"
     ],
     "category": "服务端"
   },
   {
     "q": "多个线程修改同一内存数据如何保证线程安全？",
     "expect": [
-      "service/concurrency-locks.md"
+      "service/common/concurrency-locks.md"
     ],
     "category": "服务端"
   },
@@ -1555,7 +1555,7 @@
   {
     "q": "如何实现 Agent CLI 的 L1 MVP 层？",
     "expect": [
-      "ai-agent/self-built-cli.md"
+      "agent-cli/index.md"
     ],
     "category": "AI Agent"
   },
@@ -1609,9 +1609,9 @@
     "category": "AI Agent"
   },
   {
-    "q": "知识库 AI 助理如何实现动态 RAG 检索？",
+    "q": "RAG 检索优化有哪些常用手段？为什么纯向量检索不够？",
     "expect": [
-      "ai-agent/function-calling-rag-upgrade.md"
+      "ai-agent/rag/retrieval-optimization.md"
     ],
     "category": "AI Agent"
   },
@@ -1751,7 +1751,7 @@
   {
     "q": "如何选择适合搭建知识库的大语言模型？",
     "expect": [
-      "ai-agent/rag/knowledge-base.md"
+      "ai-agent/llm-landscape.md"
     ],
     "category": "AI Agent"
   },

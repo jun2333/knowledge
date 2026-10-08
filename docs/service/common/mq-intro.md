@@ -109,6 +109,6 @@ Topic（主题 = 消息分类）
 
 ## 延伸阅读
 
-- [分布式基础](/service/distributed-basics) - CAP/分布式事务中 MQ 的角色（本地消息表）
-- [Spring Cloud 微服务](/service/spring-cloud) - 微服务间异步通信
+- [分布式基础](/service/common/distributed-basics) - CAP/分布式事务中 MQ 的角色（本地消息表）
+- [Spring Cloud 微服务](/service/java/spring-cloud) - 微服务间异步通信
 - [Docker 入门](/service/docker) - 本地起 Kafka 环境

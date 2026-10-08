@@ -72,5 +72,5 @@ CPU 密集重负载（视频转码/大规模计算） → Node 不合适，交�
 ## 相关
 
 - [Node.js vs Java 后端选型](/service/node-vs-java) - 并发模型的选型对比
-- [Java 高并发与高可用设计](/service/java-high-concurrency) - 另一侧的并发模型
+- [Java 高并发与高可用设计](/service/java/java-high-concurrency) - 另一侧的并发模型
 - [Docker 入门](/service/docker) - 多实例部署的基础

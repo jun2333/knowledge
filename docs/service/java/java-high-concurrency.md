@@ -80,6 +80,6 @@ MQ 削峰       → 突发流量先入队，消费者匀速处理（下单/秒�
 ## 相关
 
 - [Node.js vs Java 后端选型](/service/node-vs-java) - 并发模型对比
-- [Redis 入门](/service/redis-intro) - 高并发第一层（缓存）
-- [消息队列（Kafka）入门](/service/mq-intro) - 削峰
-- [分布式基础](/service/distributed-basics) - 集群/分布式锁
+- [Redis 入门](/service/common/redis-intro) - 高并发第一层（缓存）
+- [消息队列（Kafka）入门](/service/common/mq-intro) - 削峰
+- [分布式基础](/service/common/distributed-basics) - 集群/分布式锁

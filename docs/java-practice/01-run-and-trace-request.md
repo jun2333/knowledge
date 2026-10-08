@@ -140,6 +140,6 @@ A：是的。响应从 MySQL → Mapper → Service → Controller → Filter �
 
 ## 八、关联理论
 
-- [Spring Boot 入门与实战](/service/spring-boot) — Filter 过滤器链、Lombok、MyBatis 基础概念
-- [Spring 核心原理](/service/spring-principles) — IoC、AOP、Spring MVC 分发
+- [Spring Boot 入门与实战](/service/java/spring-boot) — Filter 过滤器链、Lombok、MyBatis 基础概念
+- [Spring 核心原理](/service/java/spring-principles) — IoC、AOP、Spring MVC 分发
 - [认证与授权](/service/auth) — JWT 原理

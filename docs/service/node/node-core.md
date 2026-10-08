@@ -20,7 +20,7 @@ Node.js 的出现让 JavaScript 第一次真正走出浏览器：
 
 ### 适用场景
 
-- **BFF 层**：为前端聚合、裁剪数据（见 [BFF 架构设计](./bff)）
+- **BFF 层**：为前端聚合、裁剪数据（见 [BFF 架构设计](/service/bff)）
 - **Web API**：Koa、Express、NestJS 等框架构建后端服务
 - **命令行工具**：Webpack、Vite、eslint 等都是 Node 写的
 - **构建工具链**：打包、编译、代码检查

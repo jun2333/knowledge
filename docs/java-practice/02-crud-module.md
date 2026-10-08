@@ -102,5 +102,5 @@ A：先在 Swagger 里看 `PmsProductParam` 的 model 结构，核心字段 `nam
 ## 六、关联理论
 
 - [MyBatis-Plus 入门](/service/mybatis-plus) — 对比看 MyBatis 和 MyBatis-Plus 的差异
-- [Spring 核心原理](/service/spring-principles) — AOP（事务、日志切面在请求里怎么生效）
+- [Spring 核心原理](/service/java/spring-principles) — AOP（事务、日志切面在请求里怎么生效）
 - [RESTful API 设计](/service/restful-api) — `/product/create` 这种风格的设计规范

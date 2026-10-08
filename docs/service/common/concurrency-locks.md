@@ -402,7 +402,7 @@ mall 学习项目**基本没写锁**（数据量小、无并发压测场景）�
 
 ## 相关
 
-- [Java 并发编程](/service/java-concurrency) - 锁的底层（synchronized/volatile/AQS）
-- [Redis 入门](/service/redis-intro) - 分布式锁的载体
-- [分布式基础](/service/distributed-basics) - 集群下的并发问题
-- [Java（Spring Boot）高并发与高可用设计](/service/java-high-concurrency) - 架构层视角
+- [Java 并发编程](/service/java/java-concurrency) - 锁的底层（synchronized/volatile/AQS）
+- [Redis 入门](/service/common/redis-intro) - 分布式锁的载体
+- [分布式基础](/service/common/distributed-basics) - 集群下的并发问题
+- [Java（Spring Boot）高并发与高可用设计](/service/java/java-high-concurrency) - 架构层视角

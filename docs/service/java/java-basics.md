@@ -519,10 +519,10 @@ src/
 1. **先跑通语法**：把上面的对照表过一遍，重点写几个类 + record + Stream 操作，体会静态类型和同步模型的差异
 2. **装好 Maven 工程**：用 [Spring Initializr](https://start.spring.io) 生成一个空项目（和 `npm create vite` 类似），看懂 pom.xml
 3. **重写一个 CRUD**：把你做过的任何一个 Node 小项目（比如 Koa + TypeORM 的接口）用 Spring Boot 重写一遍——这是最有效的迁移训练
-4. **对照框架**：继续学习 [Spring Boot 入门](/service/spring-boot)，理解 IoC/DI 容器如何对应 NestJS 的依赖注入
+4. **对照框架**：继续学习 [Spring Boot 入门](/service/java/spring-boot)，理解 IoC/DI 容器如何对应 NestJS 的依赖注入
 
 ## 延伸阅读
 
-- [Spring Boot 入门](/service/spring-boot) - 框架篇：Controller/Service/Repository 分层与自动配置
-- [Node.js 入门](/service/node-core) - 你已有的 JS 后端基础
+- [Spring Boot 入门](/service/java/spring-boot) - 框架篇：Controller/Service/Repository 分层与自动配置
+- [Node.js 入门](/service/node/node-core) - 你已有的 JS 后端基础
 - [TypeORM 用法](/service/typeorm) - 数据访问对照参考（Java 对应 MyBatis-Plus / Spring Data JPA）

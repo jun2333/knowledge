@@ -69,7 +69,7 @@ public class LogProxy implements Service {
 }
 ```
 
-**Spring 应用**：**AOP 就是动态代理**（JDK 代理/CGLIB），`@Transactional`、`@Cacheable` 都靠它（详见 [Spring 核心原理](/service/spring-principles)）。
+**Spring 应用**：**AOP 就是动态代理**（JDK 代理/CGLIB），`@Transactional`、`@Cacheable` 都靠它（详见 [Spring 核心原理](/service/java/spring-principles)）。
 
 ### 4. 策略模式（消除 if-else 全家桶）
 
@@ -153,6 +153,6 @@ public void onOrderCreated(OrderCreatedEvent event) { sendSms(event.getOrder());
 
 ## 延伸阅读
 
-- [Spring 核心原理](/service/spring-principles) - AOP 动态代理、单例容器
-- [Java 并发编程](/service/java-concurrency) - 单例的线程安全问题
-- [Java 入门（JS 开发者视角）](/service/java-basics) - 语言基础
+- [Spring 核心原理](/service/java/spring-principles) - AOP 动态代理、单例容器
+- [Java 并发编程](/service/java/java-concurrency) - 单例的线程安全问题
+- [Java 入门（JS 开发者视角）](/service/java/java-basics) - 语言基础

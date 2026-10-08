@@ -165,5 +165,4 @@ cd ~/Documents/Jun/code/mall/mall-admin && mvn spring-boot:run
 ```
 
 ## 七、参考
-- [Service 模块理论文章](/service/roadmap) — 所有概念的对应理论
 - [mall 官方文档](https://www.macrozheng.com/) — 项目作者写的教程，遇到不懂的模块可查

@@ -103,6 +103,6 @@ Map（键值对）
 
 ## 延伸阅读
 
-- [Java 并发编程](/service/java-concurrency) - ConcurrentHashMap 的 CAS/synchronized 背景
-- [Java 入门（JS 开发者视角）](/service/java-basics) - 集合使用基础
-- [Spring 核心原理](/service/spring-principles) - 单例 Bean 容器也是 Map 结构
+- [Java 并发编程](/service/java/java-concurrency) - ConcurrentHashMap 的 CAS/synchronized 背景
+- [Java 入门（JS 开发者视角）](/service/java/java-basics) - 集合使用基础
+- [Spring 核心原理](/service/java/spring-principles) - 单例 Bean 容器也是 Map 结构

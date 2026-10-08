@@ -93,7 +93,7 @@ Java 适合：
 
 ## 相关
 
-- [Node.js 高并发与高可用设计](/service/node-high-concurrency)
-- [Java（Spring Boot）高并发与高可用设计](/service/java-high-concurrency)
-- [Spring Boot 入门](/service/spring-boot) - Java 侧实战
+- [Node.js 高并发与高可用设计](/service/node/node-high-concurrency)
+- [Java（Spring Boot）高并发与高可用设计](/service/java/java-high-concurrency)
+- [Spring Boot 入门](/service/java/spring-boot) - Java 侧实战
 - [NestJS 从入门到放弃](/service/nest) - Node 侧框架

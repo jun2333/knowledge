@@ -100,6 +100,6 @@ graph LR
 
 ## 七、关联理论
 
-- [Spring Cloud 微服务](/service/spring-cloud) — 注册中心、网关、Feign
-- [分布式基础](/service/distributed-basics) — CAP、分布式事务、分布式锁
-- [消息队列](/service/mq-intro) — 异步、削峰填谷在购票场景的落地
+- [Spring Cloud 微服务](/service/java/spring-cloud) — 注册中心、网关、Feign
+- [分布式基础](/service/common/distributed-basics) — CAP、分布式事务、分布式锁
+- [消息队列](/service/common/mq-intro) — 异步、削峰填谷在购票场景的落地

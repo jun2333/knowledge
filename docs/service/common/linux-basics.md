@@ -123,4 +123,4 @@ curl -v http://localhost:8080/api   # 看请求响应详情（排接口问题神
 
 - [线上问题排查](/service/troubleshooting) - jps/jstack/jmap 等 Java 专用工具
 - [Docker 入门](/service/docker) - 容器化部署（服务器上跑项目的新姿势）
-- [Spring Cloud 微服务](/service/spring-cloud) - 多服务部署场景
+- [Spring Cloud 微服务](/service/java/spring-cloud) - 多服务部署场景

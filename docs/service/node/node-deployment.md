@@ -1,7 +1,7 @@
 # Node.js 服务部署最佳实践
 
 > **定位**：从"代码能跑"到"线上稳定运行"的完整流程。涵盖上线前准备、服务器环境、进程管理、反向代理、容器化、配置密钥、日志、监控、CI/CD、上线清单与回滚。
-> 配套阅读：[PM2 进程管理](/service/pm2)、[Docker 入门](/service/docker)、[Node.js 入门](/service/node-core)。
+> 配套阅读：[PM2 进程管理](/service/pm2)、[Docker 入门](/service/docker)、[Node.js 入门](/service/node/node-core)。
 
 ## 部署全景
 
@@ -50,7 +50,7 @@ process.on('SIGTERM', async () => {
 })
 ```
 
-> 原理详见 [Node.js 入门 · 优雅退出](/service/node-core)。
+> 原理详见 [Node.js 入门 · 优雅退出](/service/node/node-core)。
 
 ## 二、服务器与环境
 
@@ -324,6 +324,6 @@ ln -sfn /opt/my-api/releases/1.2.2 /opt/my-api/current && pm2 reload my-api
 
 - [PM2 进程管理](/service/pm2) - 进程守护与 cluster 模式
 - [Docker 入门](/service/docker) - Dockerfile / compose / 数据持久化
-- [Node.js 入门](/service/node-core) - 事件循环、优雅退出、内存管理
+- [Node.js 入门](/service/node/node-core) - 事件循环、优雅退出、内存管理
 - [CI/CD](/engineering/cicd) - 自动化流水线
-- [Java 服务部署最佳实践](/service/java-deployment) - 对照另一套技术栈的部署方式
+- [Java 服务部署最佳实践](/service/java/java-deployment) - 对照另一套技术栈的部署方式

@@ -100,6 +100,6 @@
 
 ## 延伸阅读
 
-- [消息队列（Kafka）入门](/service/mq-intro) - 最终一致的载体
-- [Spring Cloud 微服务](/service/spring-cloud) - 分布式组件落地
-- [Redis 入门](/service/redis-intro) - 分布式锁、缓存一致性
+- [消息队列（Kafka）入门](/service/common/mq-intro) - 最终一致的载体
+- [Spring Cloud 微服务](/service/java/spring-cloud) - 分布式组件落地
+- [Redis 入门](/service/common/redis-intro) - 分布式锁、缓存一致性

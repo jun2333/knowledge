@@ -108,6 +108,6 @@ jstack 直接会输出死锁检测结果：哪些线程互相持锁等待。解�
 
 ## 延伸阅读
 
-- [JVM 入门](/service/java-jvm) - OOM 的内存分区背景
-- [MySQL 进阶](/service/mysql-advanced) - 慢 SQL 排查
-- [Spring Cloud 微服务](/service/spring-cloud) - 链路追踪 traceId
+- [JVM 入门](/service/java/java-jvm) - OOM 的内存分区背景
+- [MySQL 进阶](/service/common/mysql-advanced) - 慢 SQL 排查
+- [Spring Cloud 微服务](/service/java/spring-cloud) - 链路追踪 traceId

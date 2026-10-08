@@ -114,6 +114,6 @@ sourceBuilder.from(0).size(10);                                   // 分页
 
 ## 相关
 
-- [Redis 入门](/service/redis-intro) - 另一种"数据不一定放 MySQL"的思路
-- [消息队列（Kafka）入门](/service/mq-intro) - 数据同步/削峰的中转站
-- [Spring Boot 入门](/service/spring-boot) - 应用开发，里面讲了日志链路（logback → Logstash）
+- [Redis 入门](/service/common/redis-intro) - 另一种"数据不一定放 MySQL"的思路
+- [消息队列（Kafka）入门](/service/common/mq-intro) - 数据同步/削峰的中转站
+- [Spring Boot 入门](/service/java/spring-boot) - 应用开发，里面讲了日志链路（logback → Logstash）

@@ -146,6 +146,6 @@
 
 ## 相关
 
-- [并发锁应用](/service/concurrency-locks) - 锁的粒度/阵营/具体 API
-- [分布式基础](/service/distributed-basics) - 分布式事务/一致性概念
-- [Java 高并发与高可用设计](/service/java-high-concurrency) - 架构视角
+- [并发锁应用](/service/common/concurrency-locks) - 锁的粒度/阵营/具体 API
+- [分布式基础](/service/common/distributed-basics) - 分布式事务/一致性概念
+- [Java 高并发与高可用设计](/service/java/java-high-concurrency) - 架构视角

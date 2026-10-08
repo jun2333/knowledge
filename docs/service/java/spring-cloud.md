@@ -128,6 +128,6 @@ spring:
 
 ## 延伸阅读
 
-- [分布式基础](/service/distributed-basics) - CAP 理论、分布式事务
+- [分布式基础](/service/common/distributed-basics) - CAP 理论、分布式事务
 - [Docker 入门](/service/docker) - 微服务部署载体
 - [权限设计](/service/permission-design) - 网关鉴权的落地

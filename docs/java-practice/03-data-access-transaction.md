@@ -292,5 +292,5 @@ int updateRole(Long adminId, List<Long> roleIds);
 ## 六、关联理论
 
 - [MyBatis-Plus 入门](/service/mybatis-plus) — mall 用原生 MyBatis，MP 是进阶写法
-- [Spring 核心原理](/service/spring-principles) — AOP 是事务的底层，值得读
-- [数据库基础](/service/database) / [MySQL 进阶](/service/mysql-advanced) — SQL、事务隔离级别
+- [Spring 核心原理](/service/java/spring-principles) — AOP 是事务的底层，值得读
+- [数据库基础](/service/common/database) / [MySQL 进阶](/service/common/mysql-advanced) — SQL、事务隔离级别

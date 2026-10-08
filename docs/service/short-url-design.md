@@ -199,7 +199,7 @@ flowchart LR
 | **缓存雪崩**（大量同时过期） | 过期时间加随机值 |
 | **超热短链**（明星微博的链接） | 多级缓存：本地缓存（Caffeine）+ Redis |
 
-> 缓存策略细节见 [Redis 入门](/service/redis-intro) 与 [数据库基础 · 缓存三兄弟](/service/database)。
+> 缓存策略细节见 [Redis 入门](/service/common/redis-intro) 与 [数据库基础 · 缓存三兄弟](/service/common/database)。
 
 **缓存存什么**：`short_code → original_url`，TTL 设 1 天左右（配合 DB 的过期时间）。热门链接可以用"逻辑过期"避免击穿。
 
@@ -306,8 +306,8 @@ DB 不可用   → 返回缓存中的结果；缓存也没有则 503
 
 ## 相关
 
-- [Redis 入门](/service/redis-intro) - 缓存策略、分布式锁、计数器
-- [数据库基础](/service/database) - 索引、分库分表、缓存三兄弟
-- [MySQL 进阶](/service/mysql-advanced) - 分库分表与索引设计
+- [Redis 入门](/service/common/redis-intro) - 缓存策略、分布式锁、计数器
+- [数据库基础](/service/common/database) - 索引、分库分表、缓存三兄弟
+- [MySQL 进阶](/service/common/mysql-advanced) - 分库分表与索引设计
 - [BFF 架构设计](/service/bff) - 另一个系统设计题（聚合层设计）
 - [权限设计](/service/permission-design) - 另一个设计题（RBAC + 动态权限）

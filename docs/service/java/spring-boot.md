@@ -811,8 +811,8 @@ jar 包内嵌 Tomcat，无需单独装服务器，`java -jar` 直接跑——这
 
 ## 延伸阅读
 
-- [Java 入门（JS 开发者视角）](/service/java-basics) - 语言基础与 Maven 工程化
-- [Spring 核心原理](/service/spring-principles) - IoC 容器、AOP、事务原理
-- [设计模式](/service/design-patterns) - Spring 里的模式落地（工厂/代理/策略）
+- [Java 入门（JS 开发者视角）](/service/java/java-basics) - 语言基础与 Maven 工程化
+- [Spring 核心原理](/service/java/spring-principles) - IoC 容器、AOP、事务原理
+- [设计模式](/service/common/design-patterns) - Spring 里的模式落地（工厂/代理/策略）
 - [TypeORM 用法](/service/typeorm) - JPA 的对照参考
 - [NestJS 从入门到放弃](/service/nest) - 你已经掌握的另一侧

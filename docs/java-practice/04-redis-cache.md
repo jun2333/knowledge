@@ -101,5 +101,5 @@ A：mall 的做法是**设置过期时间**（过期自然淘汰）+ 更新时�
 
 ## 六、关联理论
 
-- [Redis 入门](/service/redis-intro) — Redis 数据类型、过期策略
-- [分布式基础](/service/distributed-basics) — 缓存一致性、缓存穿透/击穿/雪崩
+- [Redis 入门](/service/common/redis-intro) — Redis 数据类型、过期策略
+- [分布式基础](/service/common/distributed-basics) — 缓存一致性、缓存穿透/击穿/雪崩

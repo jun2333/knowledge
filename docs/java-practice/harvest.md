@@ -288,7 +288,7 @@ JDBC url 加 rewriteBatchedStatements=true 让 MySQL 重写合并批里的 SQL
 - 第一层：主库并发写 → **主库行锁**（和单库一模一样，写全落主库）——需要锁
 - 第二层：主库→从库 → binlog **顺序重放**，没有并发写 → 不用锁，一致风险是**复制延迟**（不是冲突）
 - 所以"主从靠复制策略不是锁"指第二层（半同步/关键读走主/延迟监控）；第一层照样靠 DB 锁
-- 四种数据形态（单库/主从/分片/分布式库）的锁与一致见 [数据分布场景与锁设计](/service/data-distribution-locks)
+- 四种数据形态（单库/主从/分片/分布式库）的锁与一致见 [数据分布场景与锁设计](/service/common/data-distribution-locks)
 
 ### 十六、SQL 优化动手闭环 + IDEA 红波浪线
 

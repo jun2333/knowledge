@@ -184,4 +184,4 @@ A：白名单只放行**不需要登录就能访问**的接口（登录、注册
 
 - [认证与授权](/service/auth) — JWT/Session/OAuth 概念
 - [权限设计](/service/permission-design) — RBAC 模型
-- [Spring 核心原理](/service/spring-principles) — Spring Security 过滤器链、AOP
+- [Spring 核心原理](/service/java/spring-principles) — Spring Security 过滤器链、AOP

@@ -154,7 +154,7 @@ pm2 restart my-api --update-env                  # 改了环境变量后重启�
 
 ## 相关
 
-- [Node.js 服务部署最佳实践](/service/node-deployment) - 完整的上线流程
-- [Node.js 入门](/service/node-core) - cluster 模块、进程与线程原理
+- [Node.js 服务部署最佳实践](/service/node/node-deployment) - 完整的上线流程
+- [Node.js 入门](/service/node/node-core) - cluster 模块、进程与线程原理
 - [Docker 入门](/service/docker) - 容器化部署
-- [Linux 常用命令](/service/linux-basics) - 服务器上排查问题的基础
+- [Linux 常用命令](/service/common/linux-basics) - 服务器上排查问题的基础

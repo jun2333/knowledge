@@ -182,6 +182,6 @@ redis-cli -n 0 flushdb
 
 ## 延伸阅读
 
-- [MySQL 进阶](/service/mysql-advanced) - 数据库侧：缓存之外的最后屏障
-- [分布式基础](/service/distributed-basics) - CAP 理论：Redis/DB 一致性权衡的理论背景
-- [Spring Cloud 微服务](/service/spring-cloud) - Redis 在微服务中的典型用法
+- [MySQL 进阶](/service/common/mysql-advanced) - 数据库侧：缓存之外的最后屏障
+- [分布式基础](/service/common/distributed-basics) - CAP 理论：Redis/DB 一致性权衡的理论背景
+- [Spring Cloud 微服务](/service/java/spring-cloud) - Redis 在微服务中的典型用法

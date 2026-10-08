@@ -1,6 +1,6 @@
 # Java 服务部署最佳实践
 
-> **定位**：Spring Boot 服务从"代码能跑"到"线上稳定运行"的完整流程。与 [Node.js 服务部署](/service/node-deployment) 对照阅读——两者思路一致，差异集中在 **JVM 调优**和**打包方式**。
+> **定位**：Spring Boot 服务从"代码能跑"到"线上稳定运行"的完整流程。与 [Node.js 服务部署](/service/node/node-deployment) 对照阅读——两者思路一致，差异集中在 **JVM 调优**和**打包方式**。
 > 配套阅读：[Docker 入门](/service/docker)、[mall 项目部署实操](/java-practice/09-deployment-practice)（本文的"具体案例版"）。
 
 ## 部署全景
@@ -312,7 +312,7 @@ management:
 | **依赖** | 连接池使用率、Redis 命中率、外部 API 耗时 | 连接池打满 = 慢 SQL 或连接泄漏 |
 | **系统** | CPU、内存、磁盘、文件句柄 | 磁盘 80% 就该处理（日志/数据） |
 
-**告警分级**（同 [Node 部署](/service/node-deployment)）：P0 服务不可用 → 电话；P1 错误率飙升 → 即时消息；P2 资源预警 → 邮件。
+**告警分级**（同 [Node 部署](/service/node/node-deployment)）：P0 服务不可用 → 电话；P1 错误率飙升 → 即时消息；P2 资源预警 → 邮件。
 
 ## 十、发布策略与回滚
 
@@ -348,7 +348,7 @@ docker compose up -d --no-deps mall-admin     # 配合 image: mall/mall-admin:1.
 ## 相关
 
 - [mall 项目部署实操](/java-practice/09-deployment-practice) - 具体项目的 compose / nginx / ELK 配置
-- [Node.js 服务部署最佳实践](/service/node-deployment) - 对照阅读
+- [Node.js 服务部署最佳实践](/service/node/node-deployment) - 对照阅读
 - [Docker 入门](/service/docker) - Dockerfile / compose / 数据持久化
-- [Spring Boot 入门](/service/spring-boot) - 打包与 profile 机制
-- [Linux 常用命令](/service/linux-basics) - 服务器排查基础
+- [Spring Boot 入门](/service/java/spring-boot) - 打包与 profile 机制
+- [Linux 常用命令](/service/common/linux-basics) - 服务器排查基础

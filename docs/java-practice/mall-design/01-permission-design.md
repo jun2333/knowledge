@@ -114,5 +114,5 @@ flowchart TD
 
 - [Token 失效设计（版本号 + jti 黑名单）](/java-practice/mall-design/02-token-invalidation-design) - JWT 主动失效的完整方案（改密码/封号全端失效、登出单设备失效）
 - [权限设计](/service/permission-design) - 通用权限模型理论
-- [Spring Boot 入门](/service/spring-boot) - Spring Security/JWT/过滤器链
+- [Spring Boot 入门](/service/java/spring-boot) - Spring Security/JWT/过滤器链
 - [收获记录](/java-practice/harvest) - 认证改造/循环依赖/异常分层实战沉淀

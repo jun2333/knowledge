@@ -510,6 +510,6 @@ setTimeout(() => redis.del(key), 500)   // 延迟再删一次
 
 ## 延伸阅读
 
-- [数据库基础](/service/database) - 入门：表设计、SQL、范式
+- [数据库基础](/service/common/database) - 入门：表设计、SQL、范式
 - [TypeORM 用法](/service/typeorm) - ORM 使用层
-- [Redis 入门](/service/redis-intro) - 缓存层：索引查不到的兜底方案
+- [Redis 入门](/service/common/redis-intro) - 缓存层：索引查不到的兜底方案
