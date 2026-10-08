@@ -80,5 +80,5 @@
 ## 延伸阅读
 
 - [RAG 入门](./introduction.md) —— RAG 原理与工程实践
-- [AI 知识库实战](./knowledge-base.md) —— 本知识库的 RAG 实现
+- [检索优化](./retrieval-optimization.md) —— 切分、索引范围与重排的取舍
 - [大模型全景介绍](../llm-landscape.md) —— 模型与部署选型
