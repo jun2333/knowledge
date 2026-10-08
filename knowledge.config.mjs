@@ -8,12 +8,15 @@ export default {
   // 索引范围（glob）。exclude 同时用于索引与评估出题，避免个人内容混入
   index: {
     include: ['**/*.md'],
-    // interview-questions：与其他正文同质、会挤占检索；index.md / ANNOTATION-GUIDE.md / getting-started：
-    // 站点的元信息与使用说明，不是知识正文
+    // 排除「不是知识正文」的内容：
+    //   interview-questions：与其他正文同质、会挤占检索
+    //   resume：个人简历副本，会被当成技术内容误召回
+    //   index.md / ANNOTATION-GUIDE.md / getting-started：站点的元信息与使用说明
     exclude: [
       'node_modules/**',
       '.vitepress/**',
       'interview-questions/**',
+      'resume/**',
       'index.md',
       'ANNOTATION-GUIDE.md',
       'getting-started/**',
@@ -83,11 +86,16 @@ export default {
 
   // 站点（docs/.vitepress 消费）
   site: {
-    title: '知识库',
+    title: `Jun's Knowledge Base`,
     description: '个人知识库',
 
     // 「仅本地」的内容路径（相对 docs/，可省略 .md）—— 内容策略：
     // 这些目录/文件只在本地产出（线上不构建、不进菜单、不进侧边栏）
+    //
+    // 已在线上：service / dev-agent-harness（项目技术文档，对外展示）
+    // 仍为本地：下面这些要么是个人内容（简历、面试题、笔记），要么是
+    //含内部数据的项目文档（project-architecture 有评估基线数字、
+    // template-editor 是公司商业项目）。
     onlyLocal: [
       'algorithms',
       'java-practice',
@@ -97,7 +105,6 @@ export default {
       'interview-questions',
       'project-architecture',
       'template-editor',
-      'agent-cli',
       'resume',
     ],
     socialLinks: [{ icon: 'github', link: 'https://github.com/jun2333/knowledge' }],

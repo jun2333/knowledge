@@ -19,7 +19,7 @@ export default {
     },
     {
       text: 'AI',
-      link: '/ai-agent/'
+      link: '/ai-agent/glossary'
     },
     {
       text: '客户端',
@@ -66,8 +66,16 @@ export default {
       text: '服务端',
       items: [
         {
+          text: 'Node 服务端',
+          link: '/service/node/node-core'
+        },
+        {
+          text: 'Java 服务端',
+          link: '/service/java/java-basics'
+        },
+        {
           text: '后端基础',
-          link: '/service/node-core'
+          link: '/service/common/database'
         },
         {
           text: 'Java 实战',
@@ -89,6 +97,10 @@ export default {
         {
           text: 'Agent CLI',
           link: '/agent-cli/'
+        },
+        {
+          text: 'DevAgent Harness',
+          link: '/dev-agent-harness/'
         },
         {
           text: '模板编辑器',
@@ -796,13 +808,171 @@ export default {
         ]
       }
     ],
-    '/service/': [
+    '/service/node/': [
       {
-        text: '学习路线',
+        text: 'Node 服务端',
         items: [
           {
-            text: '前端转全栈学习路线',
-            link: '/service/roadmap'
+            text: 'Node.js 入门',
+            link: '/service/node/node-core'
+          },
+          {
+            text: 'Node.js 高并发与高可用设计',
+            link: '/service/node/node-high-concurrency'
+          },
+          {
+            text: 'Node.js 服务部署最佳实践',
+            link: '/service/node/node-deployment'
+          }
+        ]
+      }
+    ],
+    '/service/java/': [
+      {
+        text: 'Java 服务端',
+        items: [
+          {
+            text: 'Java 入门',
+            link: '/service/java/java-basics'
+          },
+          {
+            text: 'Java 并发编程',
+            link: '/service/java/java-concurrency'
+          },
+          {
+            text: 'Java（Spring Boot）高并发与高可用设计',
+            link: '/service/java/java-high-concurrency'
+          },
+          {
+            text: 'JVM 入门',
+            link: '/service/java/java-jvm'
+          },
+          {
+            text: 'Java 集合源码',
+            link: '/service/java/java-collections'
+          },
+          {
+            text: 'Spring Boot 入门',
+            link: '/service/java/spring-boot'
+          },
+          {
+            text: 'Spring 核心原理',
+            link: '/service/java/spring-principles'
+          },
+          {
+            text: 'Spring Cloud 微服务',
+            link: '/service/java/spring-cloud'
+          },
+          {
+            text: 'Java 服务部署最佳实践',
+            link: '/service/java/java-deployment'
+          }
+        ]
+      }
+    ],
+    '/service/common/': [
+      {
+        text: '后端基础',
+        items: [
+          {
+            text: '数据库基础',
+            link: '/service/common/database'
+          },
+          {
+            text: 'MySQL 进阶',
+            link: '/service/common/mysql-advanced'
+          },
+          {
+            text: 'Redis 入门',
+            link: '/service/common/redis-intro'
+          },
+          {
+            text: '消息队列（Kafka）入门',
+            link: '/service/common/mq-intro'
+          },
+          {
+            text: 'Elasticsearch 入门',
+            link: '/service/common/elasticsearch'
+          },
+          {
+            text: '分布式基础',
+            link: '/service/common/distributed-basics'
+          },
+          {
+            text: '并发锁应用',
+            link: '/service/common/concurrency-locks'
+          },
+          {
+            text: '数据分布场景与锁设计',
+            link: '/service/common/data-distribution-locks'
+          },
+          {
+            text: '设计模式',
+            link: '/service/common/design-patterns'
+          },
+          {
+            text: 'Linux 常用命令',
+            link: '/service/common/linux-basics'
+          }
+        ]
+      }
+    ],
+    '/service/': [
+      {
+        text: 'Node 服务端',
+        items: [
+          {
+            text: 'Node.js 入门',
+            link: '/service/node/node-core'
+          },
+          {
+            text: 'Node.js 高并发与高可用设计',
+            link: '/service/node/node-high-concurrency'
+          },
+          {
+            text: 'Node.js 服务部署最佳实践',
+            link: '/service/node/node-deployment'
+          }
+        ]
+      },
+      {
+        text: 'Java 服务端',
+        items: [
+          {
+            text: 'Java 入门',
+            link: '/service/java/java-basics'
+          },
+          {
+            text: 'Java 并发编程',
+            link: '/service/java/java-concurrency'
+          },
+          {
+            text: 'Java（Spring Boot）高并发与高可用设计',
+            link: '/service/java/java-high-concurrency'
+          },
+          {
+            text: 'JVM 入门',
+            link: '/service/java/java-jvm'
+          },
+          {
+            text: 'Java 集合源码',
+            link: '/service/java/java-collections'
+          },
+          {
+            text: 'Spring Boot 入门',
+            link: '/service/java/spring-boot'
+          },
+          {
+            text: 'Spring 核心原理',
+            link: '/service/java/spring-principles'
+          },
+          {
+            text: 'Spring Cloud 微服务',
+            link: '/service/java/spring-cloud'
+          },
+          {
+            text: 'Java 服务部署最佳实践',
+            link: '/service/java/java-deployment'
           }
         ]
       },
@@ -810,125 +980,49 @@ export default {
         text: '后端基础',
         items: [
           {
-            text: 'Node.js 入门',
-            link: '/service/node-core'
-          },
-          {
-            text: 'Java 入门',
-            link: '/service/java-basics'
-          },
-          {
             text: '数据库基础',
-            link: '/service/database'
-          },
-          {
-            text: 'TypeORM 用法',
-            link: '/service/typeorm'
+            link: '/service/common/database'
           },
           {
             text: 'MySQL 进阶',
-            link: '/service/mysql-advanced'
+            link: '/service/common/mysql-advanced'
           },
-          {
-            text: 'MyBatis-Plus 入门',
-            link: '/service/mybatis-plus'
-          }
-        ]
-      },
-      {
-        text: 'Java 进阶',
-        items: [
-          {
-            text: 'Java 并发编程',
-            link: '/service/java-concurrency'
-          },
-          {
-            text: '并发锁应用',
-            link: '/service/concurrency-locks'
-          },
-          {
-            text: '数据分布场景与锁设计',
-            link: '/service/data-distribution-locks'
-          },
-          {
-            text: 'JVM 入门',
-            link: '/service/java-jvm'
-          },
-          {
-            text: 'Java 集合源码',
-            link: '/service/java-collections'
-          },
-          {
-            text: 'Spring 核心原理',
-            link: '/service/spring-principles'
-          },
-          {
-            text: '设计模式',
-            link: '/service/design-patterns'
-          },
-          {
-            text: '线上问题排查',
-            link: '/service/troubleshooting'
-          }
-        ]
-      },
-      {
-        text: '中间件与分布式',
-        items: [
           {
             text: 'Redis 入门',
-            link: '/service/redis-intro'
+            link: '/service/common/redis-intro'
           },
           {
             text: '消息队列（Kafka）入门',
-            link: '/service/mq-intro'
+            link: '/service/common/mq-intro'
           },
           {
             text: 'Elasticsearch 入门',
-            link: '/service/elasticsearch'
+            link: '/service/common/elasticsearch'
           },
           {
             text: '分布式基础',
-            link: '/service/distributed-basics'
+            link: '/service/common/distributed-basics'
           },
           {
-            text: 'Spring Cloud 微服务',
-            link: '/service/spring-cloud'
+            text: '并发锁应用',
+            link: '/service/common/concurrency-locks'
+          },
+          {
+            text: '数据分布场景与锁设计',
+            link: '/service/common/data-distribution-locks'
+          },
+          {
+            text: '设计模式',
+            link: '/service/common/design-patterns'
+          },
+          {
+            text: 'Linux 常用命令',
+            link: '/service/common/linux-basics'
           }
         ]
       },
       {
-        text: '高并发专题',
-        items: [
-          {
-            text: 'Node.js 高并发与高可用设计',
-            link: '/service/node-high-concurrency'
-          },
-          {
-            text: 'Java（Spring Boot）高并发与高可用设计',
-            link: '/service/java-high-concurrency'
-          },
-          {
-            text: 'Node.js vs Java 后端选型',
-            link: '/service/node-vs-java'
-          }
-        ]
-      },
-      {
-        text: 'API 与安全',
-        items: [
-          {
-            text: 'RESTful API 设计',
-            link: '/service/restful-api'
-          },
-          {
-            text: '认证与授权',
-            link: '/service/auth'
-          }
-        ]
-      },
-      {
-        text: '后端框架',
+        text: '框架与 ORM',
         items: [
           {
             text: 'Express 入门',
@@ -947,29 +1041,37 @@ export default {
             link: '/service/nest'
           },
           {
-            text: 'Spring Boot 入门',
-            link: '/service/spring-boot'
-          },
-          {
             text: 'Fastify 入门',
             link: '/service/fastify'
+          },
+          {
+            text: 'TypeORM 用法',
+            link: '/service/typeorm'
+          },
+          {
+            text: 'MyBatis-Plus 入门',
+            link: '/service/mybatis-plus'
           }
         ]
       },
       {
-        text: '架构设计',
+        text: 'API 与架构设计',
         items: [
           {
-            text: 'BFF 架构设计',
-            link: '/service/bff'
+            text: 'RESTful API 设计',
+            link: '/service/restful-api'
+          },
+          {
+            text: '认证与授权',
+            link: '/service/auth'
           },
           {
             text: '权限设计',
             link: '/service/permission-design'
           },
           {
-            text: '短链接服务设计',
-            link: '/service/short-url-design'
+            text: 'BFF 架构设计',
+            link: '/service/bff'
           },
           {
             text: 'GraphQL 入门',
@@ -978,6 +1080,10 @@ export default {
           {
             text: 'Serverless 入门',
             link: '/service/serverless'
+          },
+          {
+            text: '短链接服务设计',
+            link: '/service/short-url-design'
           }
         ]
       },
@@ -993,20 +1099,16 @@ export default {
             link: '/service/pm2'
           },
           {
-            text: 'Node.js 服务部署最佳实践',
-            link: '/service/node-deployment'
-          },
-          {
-            text: 'Java 服务部署最佳实践',
-            link: '/service/java-deployment'
-          },
-          {
             text: '后端测试实践',
             link: '/service/backend-testing'
           },
           {
-            text: 'Linux 常用命令',
-            link: '/service/linux-basics'
+            text: 'Node.js vs Java 后端选型',
+            link: '/service/node-vs-java'
+          },
+          {
+            text: '线上问题排查',
+            link: '/service/troubleshooting'
           }
         ]
       }
@@ -1370,6 +1472,41 @@ export default {
         ]
       }
     ],
+    '/dev-agent-harness/': [
+      {
+        text: 'DevAgent Harness（AI 开发工作流工具箱）',
+        items: [
+          {
+            text: '总览与阅读路线',
+            link: '/dev-agent-harness/'
+          },
+          {
+            text: '设计文档（总览）',
+            link: '/dev-agent-harness/DESIGN'
+          },
+          {
+            text: '编排器设计',
+            link: '/dev-agent-harness/orchestrator-design'
+          },
+          {
+            text: '工作流规格',
+            link: '/dev-agent-harness/workflow-spec'
+          },
+          {
+            text: 'Skill 接口规范',
+            link: '/dev-agent-harness/skill-interface'
+          },
+          {
+            text: 'Agent 入口文件',
+            link: '/dev-agent-harness/agent-entry'
+          },
+          {
+            text: 'README（门面）',
+            link: '/dev-agent-harness/README'
+          }
+        ]
+      }
+    ],
     '/template-editor/': [
       {
         text: '自研模板编辑器',
@@ -1428,13 +1565,17 @@ export default {
           {
             text: 'v4 · 全栈版',
             link: '/resume/v4-fullstack'
-          }
+          },
+          {
+            text: '自研项目问答',
+            link: '/resume/interview-review'
+          },
         ]
       }
     ],
     '/ai-agent/': [
       {
-        text: 'AI 应用开发',
+        text: '基础知识',
         items: [
           {
             text: '名词解释',
@@ -1451,14 +1592,6 @@ export default {
           {
             text: 'Function Calling 与工具调用',
             link: '/ai-agent/function-calling'
-          },
-          {
-            text: '知识库引入 Function Calling（RAG 升级）',
-            link: '/ai-agent/function-calling-rag-upgrade'
-          },
-          {
-            text: '自研 Agent CLI 设计',
-            link: '/ai-agent/self-built-cli'
           },
           {
             text: 'AI 应用架构模式',
@@ -1507,25 +1640,12 @@ export default {
             link: '/ai-agent/rag/introduction'
           },
           {
-            text: 'AI 知识库实战',
-            link: '/ai-agent/rag/knowledge-base'
-          },
-          {
             text: 'RAG vs 微调',
             link: '/ai-agent/rag/rag-vs-finetuning'
           },
           {
-            text: '检索优化实践',
+            text: '检索优化常用手段',
             link: '/ai-agent/rag/retrieval-optimization'
-          }
-        ]
-      },
-      {
-        text: 'Spec-First 开发',
-        items: [
-          {
-            text: 'Spec-First 指南',
-            link: '/ai-agent/spec-first/guide'
           }
         ]
       },
@@ -1536,22 +1656,6 @@ export default {
             text: '核心思想',
             link: '/ai-agent/harness-engineering/core-concepts'
           },
-          {
-            text: '最佳实践',
-            link: '/ai-agent/harness-engineering/best-practices'
-          },
-          {
-            text: '质量控制对比',
-            link: '/ai-agent/harness-engineering/quality-control'
-          },
-          {
-            text: 'dev-agent-harness 项目介绍',
-            link: '/ai-agent/harness-engineering/dev-agent-harness'
-          },
-          {
-            text: '引入 Function Calling 计划',
-            link: '/ai-agent/harness-engineering/function-calling-upgrade'
-          }
         ]
       },
       {
