@@ -103,7 +103,7 @@ export default {
       'sports',
       'misc',
       'interview-questions',
-      'project-architecture',
+      // 'project-architecture',
       'template-editor',
       'resume',
     ],
