@@ -288,6 +288,8 @@ LEFT JOIN posts p ON u.id = p.user_id;
 
 索引是查询性能的关键。没有索引，数据库需要逐行扫描（全表扫描）；有了索引，可以快速定位。
 
+**它怎么工作的**：索引是一棵排好序的 B+ 树（结构细节见 [MySQL 进阶](/service/common/mysql-advanced)）。查询时数据库从树根开始逐层比较，3~4 次磁盘读就能在千万行里定位到目标——相当于查字典先翻拼音目录，而不是从第一页翻到最后一页。
+
 ```sql
 -- 创建索引
 CREATE INDEX idx_users_email ON users(email);
@@ -295,6 +297,16 @@ CREATE INDEX idx_posts_user_id ON posts(user_id);
 
 -- 联合索引（注意列的顺序）
 CREATE INDEX idx_posts_user_created ON posts(user_id, created_at);
+
+-- 删除索引
+DROP INDEX idx_users_email ON users;
+```
+
+**创建只是第一步——查询条件匹配上才会用**。判断一条查询有没有用上索引，`EXPLAIN` 一下（读法见 [MySQL 进阶](/service/common/mysql-advanced)）：
+
+```sql
+EXPLAIN SELECT * FROM users WHERE email = 'a@b.com';
+-- key 列出现 idx_users_email = 用上了；key = null = 全表扫描，白建了
 ```
 
 **索引原则：**
@@ -306,10 +318,12 @@ CREATE INDEX idx_posts_user_created ON posts(user_id, created_at);
 
 事务保证一组操作要么全部成功，要么全部失败（ACID 特性）。
 
+> **C（一致性）为什么拿"总金额不变"举例**：一致性不是某种独立技术，而是事务要达成的**业务约束**——"A + B 的总和恒定"就是转账业务的约束。没有事务保护时，可能扣了 A 的款系统就崩了、B 没收到，总和凭空少了 100 元——数据进入了业务上非法的状态。原子性（要么全做要么全不做）和隔离性（并发下不出错）共同保证了这个约束不被破坏。一句话：**A/I/D 是手段，C 是目的**。
+
 | 特性 | 含义 | 例子 |
 |------|------|------|
 | **A**tomicity 原子性 | 一组操作要么全成功，要么全失败 | 转账：扣款和加款必须同时完成，不能只扣不加 |
-| **C**onsistency 一致性 | 事务前后数据状态合法 | 转账前后，两个账户的总金额不变 |
+| **C**onsistency 一致性 | 事务前后数据满足业务规则（约束不被破坏） | 转账前后，两个账户的总金额不变——只扣了 A 没加 B，总和就变了，这就是被破坏的一致性 |
 | **I**solation 隔离性 | 并发事务互不干扰 | 两个事务同时转账，结果和串行执行一样 |
 | **D**urability 持久性 | 事务提交后数据永久保存 | 提交后即使立刻断电，数据也不会丢 |
 
@@ -440,10 +454,18 @@ RPOP tasks
 SADD tags:post:1 "javascript" "nodejs"
 SMEMBERS tags:post:1
 
-# 有序集合（排行榜）
+# 有序集合 zset（排行榜）：每个成员自带一个分数（score），Redis 按分数排序维护
+# ZADD key score member —— 加人时必须带分数（alice 100 分、bob 90 分）
 ZADD leaderboard 100 "alice" 90 "bob"
+
+# ZREVRANGE key 起 止 [WITHSCORES]：按分数从高到低取前 10 名（0 9）
+# WITHSCORES = 返回结果里连分数一起给（排行榜页面前端要展示"100 分"）
+# 不加 WITHSCORES 只返回成员名；加了就是 成员、分数 交替返回
 ZREVRANGE leaderboard 0 9 WITHSCORES
+# → 1) "alice"  2) "100"  3) "bob"  4) "90"
 ```
+
+> **WITHSCORES 是个"返回选项"，不是 zset 的固定结构**：分数是 zset 存储结构自带的（所以 `ZADD` 时必须给），而 `WITHSCORES` 只决定**返回时带不带它**——类似 SQL 里 `SELECT name` 和 `SELECT name, score` 的区别，要展示几列就查几列。
 
 ### Key 的组织方式
 
@@ -512,9 +534,38 @@ if (!user) {
 // 同一个不存在的 ID，5 分钟内只查一次数据库
 
 // 方案 2：布隆过滤器（高效）
-// 启动时把所有有效 ID 加载到布隆过滤器
-// 请求来了先问布隆过滤器，说"不存在"就直接返回，不到缓存和数据库
+// 原理：一个 bit 数组 + 多个哈希函数。加元素时把几个哈希位置全部置 1；
+// 查询时看这几个位——全是 1 说"可能存在"，只要有一个是 0 就说"一定不存在"。
+// 特点：不会漏报（说不存在的铁定不存在），但可能误报（说存在的其实没有）——
+// 对缓存穿透场景正好：宁可白查一次库，也绝不能把真实存在的数据挡在外面
 ```
+
+**Redis 实践**（Redis 4.0+，加载 RedisBloom 模块后）：
+
+```bash
+BF.ADD user:ids 1001          # 启动时把所有有效 ID 灌进去
+BF.EXISTS user:ids 999999     # 请求来了先问它
+# 返回 0 = 一定不存在 → 直接返回 null，缓存和数据库都不碰
+# 返回 1 = 可能存在 → 继续查缓存/库（小概率白跑一趟，可接受）
+```
+
+**Java 实践**（Guava，过滤器放进程内，适合单体/启动预热）：
+
+```java
+BloomFilter<Integer> filter = BloomFilter.create(
+    Funnels.integerFunnel(),
+    1_000_000,    // expectedInsertions：预计灌入量
+    0.01          // fpp：可接受的误判率（1%）
+);
+// 启动预热：把有效 ID 全集灌进去
+userIds.forEach(filter::put);
+// 查询前判断：
+if (!filter.mightContain(id)) {
+    return null;  // 一定不存在，直接挡掉
+}
+```
+
+> **使用要点**：① 必须在启动时/预热时把**全集**灌进去才有意义；② 删除困难（多个元素共享 bit，清一位可能误伤别人），所以适合"ID 全集相对稳定"的场景；③ 容量和误判率要按预期数据量规划（灌爆了误判率飙升）。
 
 ### 缓存击穿
 

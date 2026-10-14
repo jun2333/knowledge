@@ -79,3 +79,6 @@ docs/resume/
 
 # 同步生成的个人面试笔记（仅本地，不入库）
 docs/interview-questions/
+
+# Agent 工作日志（本地项目记忆，不入库）
+.workbuddy/

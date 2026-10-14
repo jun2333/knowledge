@@ -71,7 +71,7 @@ export default {
         },
         {
           text: 'Java 服务端',
-          link: '/service/java/java-basics'
+          link: '/service/java/'
         },
         {
           text: '后端基础',
@@ -829,39 +829,75 @@ export default {
     ],
     '/service/java/': [
       {
-        text: 'Java 服务端',
+        text: '总览',
+        items: [
+          {
+            text: '知识地图与学习路径',
+            link: '/service/java/'
+          }
+        ]
+      },
+      {
+        text: '语言基础',
         items: [
           {
             text: 'Java 入门',
             link: '/service/java/java-basics'
           },
           {
-            text: 'Java 并发编程',
-            link: '/service/java/java-concurrency'
-          },
-          {
-            text: 'Java（Spring Boot）高并发与高可用设计',
-            link: '/service/java/java-high-concurrency'
-          },
-          {
-            text: 'JVM 入门',
-            link: '/service/java/java-jvm'
+            text: 'Java 语言进阶',
+            link: '/service/java/java-language-advanced'
           },
           {
             text: 'Java 集合源码',
             link: '/service/java/java-collections'
           },
           {
-            text: 'Spring Boot 入门',
-            link: '/service/java/spring-boot'
+            text: 'Java IO/NIO 与序列化',
+            link: '/service/java/java-io'
+          }
+        ]
+      },
+      {
+        text: '运行时',
+        items: [
+          {
+            text: 'JVM 入门',
+            link: '/service/java/java-jvm'
           },
+          {
+            text: 'Java 并发编程',
+            link: '/service/java/java-concurrency'
+          }
+        ]
+      },
+      {
+        text: '框架',
+        items: [
           {
             text: 'Spring 核心原理',
             link: '/service/java/spring-principles'
           },
           {
+            text: 'Spring Boot 入门',
+            link: '/service/java/spring-boot'
+          },
+          {
             text: 'Spring Cloud 微服务',
             link: '/service/java/spring-cloud'
+          },
+          {
+            text: 'Netty 入门',
+            link: '/service/java/java-netty'
+          }
+        ]
+      },
+      {
+        text: '架构与工程',
+        items: [
+          {
+            text: 'Java（Spring Boot）高并发与高可用设计',
+            link: '/service/java/java-high-concurrency'
           },
           {
             text: 'Java 服务部署最佳实践',
@@ -875,12 +911,24 @@ export default {
         text: '后端基础',
         items: [
           {
+            text: 'HTTP 与网络基础',
+            link: '/service/common/http-network-basics'
+          },
+          {
+            text: 'Nginx 与 Web 容器',
+            link: '/service/common/nginx-web-container'
+          },
+          {
             text: '数据库基础',
             link: '/service/common/database'
           },
           {
             text: 'MySQL 进阶',
             link: '/service/common/mysql-advanced'
+          },
+          {
+            text: '数据库连接池与数据源',
+            link: '/service/common/database-connection-pool'
           },
           {
             text: 'Redis 入门',
@@ -913,6 +961,10 @@ export default {
           {
             text: 'Linux 常用命令',
             link: '/service/common/linux-basics'
+          },
+          {
+            text: '可观测性：监控与告警',
+            link: '/service/common/observability'
           }
         ]
       }
@@ -939,8 +991,16 @@ export default {
         text: 'Java 服务端',
         items: [
           {
+            text: '知识地图与学习路径',
+            link: '/service/java/'
+          },
+          {
             text: 'Java 入门',
             link: '/service/java/java-basics'
+          },
+          {
+            text: 'Java 语言进阶',
+            link: '/service/java/java-language-advanced'
           },
           {
             text: 'Java 并发编程',
@@ -959,6 +1019,10 @@ export default {
             link: '/service/java/java-collections'
           },
           {
+            text: 'Java IO/NIO 与序列化',
+            link: '/service/java/java-io'
+          },
+          {
             text: 'Spring Boot 入门',
             link: '/service/java/spring-boot'
           },
@@ -971,6 +1035,10 @@ export default {
             link: '/service/java/spring-cloud'
           },
           {
+            text: 'Netty 入门',
+            link: '/service/java/java-netty'
+          },
+          {
             text: 'Java 服务部署最佳实践',
             link: '/service/java/java-deployment'
           }
@@ -980,12 +1048,24 @@ export default {
         text: '后端基础',
         items: [
           {
+            text: 'HTTP 与网络基础',
+            link: '/service/common/http-network-basics'
+          },
+          {
+            text: 'Nginx 与 Web 容器',
+            link: '/service/common/nginx-web-container'
+          },
+          {
             text: '数据库基础',
             link: '/service/common/database'
           },
           {
             text: 'MySQL 进阶',
             link: '/service/common/mysql-advanced'
+          },
+          {
+            text: '数据库连接池与数据源',
+            link: '/service/common/database-connection-pool'
           },
           {
             text: 'Redis 入门',
@@ -1018,6 +1098,10 @@ export default {
           {
             text: 'Linux 常用命令',
             link: '/service/common/linux-basics'
+          },
+          {
+            text: '可观测性：监控与告警',
+            link: '/service/common/observability'
           }
         ]
       },
@@ -1213,6 +1297,10 @@ export default {
           {
             text: '二叉树',
             link: '/algorithms/binary-tree'
+          },
+          {
+            text: 'B+ 树',
+            link: '/algorithms/b-plus-tree'
           },
           {
             text: '字符串匹配算法',
@@ -1612,6 +1700,31 @@ export default {
           {
             text: 'Python AI 生态入门',
             link: '/ai-agent/python-ai-ecosystem'
+          }
+        ]
+      },
+      {
+        text: 'Java 生态',
+        items: [
+          {
+            text: 'Java AI 生态全景与选型',
+            link: '/ai-agent/java/java-ai-landscape'
+          },
+          {
+            text: 'Spring AI 实战',
+            link: '/ai-agent/java/spring-ai'
+          },
+          {
+            text: 'RAG 的 Java 实现',
+            link: '/ai-agent/java/rag-in-java'
+          },
+          {
+            text: 'Java AI 应用工程化',
+            link: '/ai-agent/java/java-ai-engineering'
+          },
+          {
+            text: 'MCP 与 Java',
+            link: '/ai-agent/java/mcp-in-java'
           }
         ]
       },
