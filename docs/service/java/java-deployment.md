@@ -347,8 +347,12 @@ docker compose up -d --no-deps mall-admin     # 配合 image: mall/mall-admin:1.
 
 ## 相关
 
+- [Java 服务端知识地图](/service/java/) - 全部篇目导航与学习路径
 - [mall 项目部署实操](/java-practice/09-deployment-practice) - 具体项目的 compose / nginx / ELK 配置
+- [Nginx 与 Web 容器](/service/common/nginx-web-container) - 门面配置：反代/负载均衡/HTTPS/限流
+- [可观测性：监控与告警](/service/common/observability) - 上线后的指标监控与告警
 - [Node.js 服务部署最佳实践](/service/node/node-deployment) - 对照阅读
 - [Docker 入门](/service/docker) - Dockerfile / compose / 数据持久化
 - [Spring Boot 入门](/service/java/spring-boot) - 打包与 profile 机制
+- [JVM 入门](/service/java/java-jvm) - GC 日志解读与 OOM 排查
 - [Linux 常用命令](/service/common/linux-basics) - 服务器排查基础

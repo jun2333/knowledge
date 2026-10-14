@@ -151,4 +151,5 @@ public class OrderService {
 
 - [Spring Boot 入门](/service/java/spring-boot) - 框架使用层
 - [Java 并发编程](/service/java/java-concurrency) - 代理/事务涉及的 AOP 底层
+- [Java 语言进阶](/service/java/java-language-advanced) - 反射与注解（IoC/AOP 的基石）
 - [设计模式](/service/common/design-patterns) - 单例、代理、工厂在 Spring 中的应用

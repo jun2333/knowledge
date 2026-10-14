@@ -812,7 +812,11 @@ jar 包内嵌 Tomcat，无需单独装服务器，`java -jar` 直接跑——这
 ## 延伸阅读
 
 - [Java 入门（JS 开发者视角）](/service/java/java-basics) - 语言基础与 Maven 工程化
+- [Java 语言进阶](/service/java/java-language-advanced) - 反射/注解（Spring 的地基）
 - [Spring 核心原理](/service/java/spring-principles) - IoC 容器、AOP、事务原理
+- [数据库连接池与数据源](/service/common/database-connection-pool) - 数据源的池化原理与参数调优
+- [可观测性：监控与告警](/service/common/observability) - Actuator 指标与 Prometheus 接入
 - [设计模式](/service/common/design-patterns) - Spring 里的模式落地（工厂/代理/策略）
 - [TypeORM 用法](/service/typeorm) - JPA 的对照参考
 - [NestJS 从入门到放弃](/service/nest) - 你已经掌握的另一侧
+- [Java 服务端知识地图](/service/java/) - 全部篇目导航与学习路径

@@ -89,6 +89,96 @@ Map（键值对）
 
 **高频题**：ArrayList 和 LinkedList 什么时候用哪个？——随机访问多、尾部追加多用 ArrayList；频繁头尾操作（队列）用 LinkedList。实际业务 95% 用 ArrayList。
 
+## 其他常用容器（面试第二梯队）
+
+### Map 家族
+
+| 容器 | 特点 | 典型场景 |
+|------|------|---------|
+| `HashMap` | 无序，最快 | 一切默认选择 |
+| `LinkedHashMap` | **维护插入顺序**（或访问顺序） | 有序遍历、**实现 LRU**（见下） |
+| `TreeMap` | **按 key 排序**（红黑树） | 需要排序/区间查询（`firstKey`/`subMap`） |
+| `ConcurrentHashMap` | 线程安全 | 并发缓存 |
+
+```java
+// LinkedHashMap：迭代顺序 = 插入顺序
+LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
+map.put("banana", 2); map.put("apple", 1); map.put("cherry", 3);
+map.forEach((k, v) -> System.out.println(k));   // 输出 banana → apple → cherry（不是字母序）
+
+// TreeMap：按 key 自然排序
+TreeMap<String, Integer> tree = new TreeMap<>();
+tree.put("banana", 2); tree.put("apple", 1);
+tree.firstKey();                    // "apple"
+tree.subMap("a", "c");              // 区间查询
+```
+
+### Set 家族（底层都是 Map）
+
+`HashSet`（快）、`LinkedHashSet`（插入序）、`TreeSet`（排序）。面试常问：**HashSet 怎么去重**——底层就是 HashMap，元素当 key，value 固定是一个 `PRESENT` 常量，靠 `equals`+`hashCode` 判重。
+
+```java
+Set<String> set = new HashSet<>();
+set.add("a"); set.add("a");        // 第二次加不进去
+set.size();                        // 1
+```
+
+### fail-fast：迭代时别改集合
+
+```java
+List<String> list = new ArrayList<>(List.of("a", "b", "c"));
+for (String s : list) {
+    list.remove(s);                // ❌ 抛 ConcurrentModificationException
+}
+
+// ✅ 用迭代器自己的 remove（或 Java 8+ removeIf）
+Iterator<String> it = list.iterator();
+while (it.hasNext()) { if (it.next().equals("b")) it.remove(); }
+list.removeIf(s -> s.equals("b"));  // ✅ 推荐写法
+```
+
+**原理一句话**：集合内部记了个 `modCount`，迭代时一旦发现版本变了就抛异常——这是"快速失败"的保护，不是 bug。**注意：多线程并发改普通集合，fail-fast 不保证一定触发**（它只是尽力而为的检测），并发场景老老实实用并发容器。
+
+### Collections 工具类：集合的瑞士军刀
+
+```java
+Collections.sort(list);                       // 排序（List）
+Collections.shuffle(list);                    // 打乱（洗牌）
+Collections.reverse(list);                    // 反转
+Collections.max(list);                        // 最值
+List<Integer> sync = Collections.synchronizedList(new ArrayList<>());  // 加锁包装（性能差，了解即可）
+Map<String, Integer> empty = Collections.emptyMap();   // 不可变空集合（省内存，常用返回值）
+List<Integer> immutable = List.of(1, 2, 3);   // Java 9+ 不可变集合（首选）
+```
+
+### 实战：LinkedHashMap 手写 LRU 缓存
+
+面试高频设计题。思路：继承 LinkedHashMap 开启"访问顺序"模式 + 重写淘汰方法：
+
+```java
+public class LruCache<K, V> extends LinkedHashMap<K, V> {
+    private final int capacity;
+
+    public LruCache(int capacity) {
+        super(capacity, 0.75f, true);    // ① true = 按访问顺序（get 也算一次访问）
+        this.capacity = capacity;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        return size() > capacity;        // ② 超过容量就淘汰最老的（最久未访问的）
+    }
+}
+
+LruCache<String, String> cache = new LruCache<>(2);
+cache.put("a", "1"); cache.put("b", "2");
+cache.get("a");                    // 访问过 a，现在 b 变成"最老"
+cache.put("c", "3");               // 超容量 → 淘汰 b
+cache.keySet();                    // 输出 [a, c]（b 被淘汰）
+```
+
+**对应前端**：这就是浏览器缓存淘汰策略的 LRU 算法，`new Map()` 的插入序特性在 JS 里也能玩同样花样。生产环境别手写——直接用 Redis 的 LRU 或 Caffeine 本地缓存。
+
 ## 常见面试陷阱
 
 | 题 | 答案 |
@@ -100,9 +190,15 @@ Map（键值对）
 | 自定义对象做 key 要注意什么 | 重写 `equals` 和 `hashCode`（否则同一内容对象查不到） |
 | HashMap 允许 null 吗 | key/value 都允许一个 null；ConcurrentHashMap 不允许 |
 | HashSet 怎么去重 | 底层是 HashMap，靠 equals + hashCode |
+| LinkedHashMap 和 HashMap 区别 | 多一条双向链表维护插入顺序（可切访问顺序），性能略低 |
+| TreeMap 按什么排序 | 按 key 自然序或自定义 Comparator，红黑树实现 |
+| 迭代中 remove 元素会怎样 | 抛 ConcurrentModificationException（fail-fast）；用迭代器 remove 或 removeIf |
+| 怎么实现 LRU | 继承 LinkedHashMap（accessOrder=true）+ 重写 removeEldestEntry |
+| `List.of()` 和 `new ArrayList<>()` 区别 | `List.of` 返回不可变集合，add/remove 抛 UnsupportedOperationException |
 
 ## 延伸阅读
 
-- [Java 并发编程](/service/java/java-concurrency) - ConcurrentHashMap 的 CAS/synchronized 背景
+- [Java 并发编程](/service/java/java-concurrency) - ConcurrentHashMap 的 CAS/synchronized 背景、并发容器全景
 - [Java 入门（JS 开发者视角）](/service/java/java-basics) - 集合使用基础
+- [Java 语言进阶](/service/java/java-language-advanced) - equals/hashCode 契约、泛型擦除
 - [Spring 核心原理](/service/java/spring-principles) - 单例 Bean 容器也是 Map 结构

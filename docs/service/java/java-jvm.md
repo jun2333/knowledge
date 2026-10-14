@@ -42,6 +42,37 @@ Java 程序运行在 JVM（Java Virtual Machine）上：`.java` 编译为 `.clas
 
 **JDK 8 变化**：永久代（PermGen）→ 元空间（Metaspace），从堆内移到了本地内存，不再有 PermGen OOM。
 
+## JIT：JVM 为什么比解释执行快
+
+`.class` 字节码不是机器码，JVM 有两种执行方式：
+
+```
+解释执行：逐行翻译字节码 → 启动快，跑得慢
+JIT 编译（Just-In-Time）：把"热点代码"整段编译成机器码 → 启动稍慢，跑得飞快
+```
+
+**分层编译**（面试常考）：方法先解释执行，调用够频繁后升级为 C1（快速编译）→ 继续热 → C2（深度优化编译，榨干性能）。
+
+### 逃逸分析：JIT 的杀手锏优化
+
+JIT 分析对象的作用域，如果发现一个对象**不会逃出方法外**（没有 return、没被别的线程拿到），就做激进优化：
+
+| 优化 | 做什么 |
+|------|--------|
+| **栈上分配** | 对象直接在栈上创建，方法结束自动回收，**不经过 GC** |
+| **标量替换** | 对象拆成一个个字段用局部变量存，连"对象"都不存在了 |
+| **锁消除** | 发现同步锁的对象其实是线程私有的，锁直接删掉 |
+
+```java
+// 这个 User 对象没人拿到方法外 —— JIT 可能把它优化成"栈上三个局部变量"
+public void handle() {
+    User u = new User("tom");      // 逃逸分析：u 没逃逸 → 栈上分配，零 GC 压力
+    System.out.println(u.getName());
+}
+```
+
+**前端对照**：JS 引擎（V8）也有同款——JIT + 逃逸分析 + 内联缓存。Java 和 JS 的"快"殊途同归：都是"热点代码编译成机器码 + 对象生命周期优化"。
+
 ## 垃圾回收（GC）
 
 ### 判断对象可回收
@@ -128,6 +159,45 @@ jmap      # 堆快照（查 OOM 对象）
 jstat     # 查看 GC 频率与耗时
 ```
 
+### GC 日志怎么读（调优的基本功）
+
+生产环境开 GC 日志（JDK 9+ 语法见《Java 服务部署》），一次 Minor GC 长这样：
+
+```
+[2026-10-13T11:00:02.123+0800][info][gc] GC(42) Pause Young (Normal) (G1 Evacuation Pause)
+  GC(42) Eden regions: 24->0(32)
+  GC(42) Survivor regions: 2->3(4)
+  GC(42) Pause Young (Normal) 38M->12M(256M) 8.512ms
+```
+
+抓三个数就够：
+
+| 看什么 | 健康值 | 异常信号 |
+|--------|--------|---------|
+| **停顿时间**（Pause ... 8.512ms） | < 200ms | 频繁超 1s → 停顿敏感业务不可接受 |
+| **GC 频率**（GC(42) 编号涨得快） | Minor GC 分钟级 | 秒级一次 → 分配速率过高或堆太小 |
+| **GC 后堆占用**（38M→12M） | 回落后保持平稳 | 每次 GC 后水位持续抬高 → **有泄漏趋势** |
+
+**最常见的调优动作**（面试常考"你怎么调 JVM"）：不是改算法，是**改堆大小和 GC 器**——`-Xms=-Xmx`（消除伸缩抖动）→ 堆给到物理内存的 60~70%（留 30% 给堆外）→ 仍停顿超标的低延迟业务换 ZGC。
+
+### OOM / 内存泄漏排查三步法
+
+**现象**：`java.lang.OutOfMemoryError: Java heap space`（堆溢出）或更隐蔽的——进程内存天天涨、过几天被 OOMKilled。
+
+```
+① 保留现场：-XX:+HeapDumpOnOutOfMemoryError 自动 dump（没配就 jmap -dump:live,format=b 手动抓）
+② 分析 dump：用 MAT（Eclipse Memory Analyzer）或 IDEA 打开
+   → 看 Dominator Tree：谁占了最大内存？
+   → 看 Leak Suspects：MAT 自动报告的可疑泄漏点
+③ 定位代码：典型嫌疑人——
+   · static 集合只加不减（"缓存"越攒越大）
+   · ThreadLocal 没 remove（线程池复用场景，见《Java 并发》）
+   · 连接/流没关（try-with-resources 没包住）
+   · 大对象进缓存（一次把整个表 load 进 Map）
+```
+
+**排查顺序的黄金法则**：先看"对象数量是不是异常多"（代码 bug 加了不该加的），再看"单个对象是不是异常大"（一次加载太多数据），别一上来就调堆——堆调大只是让"到达 OOM 的时间变长"，不治病。
+
 ## 面试题速查
 
 | 问题 | 一句话答案 |
@@ -140,9 +210,16 @@ jstat     # 查看 GC 频率与耗时
 | G1 和 CMS 区别 | G1 分 Region、可预测停顿；CMS 已废弃 |
 | 双亲委派是什么 | 子加载器先委托父加载器，保证核心类不被覆盖 |
 | 什么时候触发 Full GC | 老年代空间不足、元空间不足、System.gc() |
+| 什么是 JIT | 热点代码运行时编译成机器码，分层编译 C1→C2 |
+| 逃逸分析能做什么优化 | 栈上分配、标量替换、锁消除——对象不逃出方法就免 GC |
+| 怎么判断 GC 健康 | 看停顿时间、GC 频率、GC 后水位是否持续抬高 |
+| OOM 排查三步 | dump 现场（HeapDumpOnOutOfMemoryError）→ MAT 分析 Dominator Tree → 查代码嫌疑人（static 集合/ThreadLocal/未关流） |
+| 调优第一步做什么 | 统一 -Xms=-Xmx 消除伸缩抖动，再考虑堆大小和 GC 器选择 |
 
 ## 延伸阅读
 
 - [Java 并发编程](/service/java/java-concurrency) - JMM 与线程
 - [线上问题排查](/service/troubleshooting) - jstack/jmap 实战
 - [Java 入门（JS 开发者视角）](/service/java/java-basics) - 语言基础
+- [Java 服务部署最佳实践](/service/java/java-deployment) - 生产 JVM 参数模板（-Xms/-Xmx/GC 日志/G1/ZGC）
+- [Java（Spring Boot）高并发与高可用设计](/service/java/java-high-concurrency) - 容量视角的 JVM 调优
