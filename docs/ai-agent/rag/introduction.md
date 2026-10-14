@@ -705,3 +705,5 @@ RAG的核心价值:
 4. ✅ 应用到实际项目中
 
 下一步: 学习 [检索优化](./retrieval-optimization.md),把 RAG 的检索环节调好。
+
+**Java 侧落地**：[RAG 的 Java 实现](/ai-agent/java/rag-in-java)（ETL/切分/混合检索/评估的完整 Java 代码，含知识库实测数据）。

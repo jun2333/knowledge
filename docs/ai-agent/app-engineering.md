@@ -406,3 +406,7 @@ app.use(rateLimit({
 - [ ] 识别可缓存的请求模式
 - [ ] 尝试小模型替代大模型的场景
 - [ ] 收集 bad case，加入测试集
+
+---
+
+**Java 侧落地**：[Java AI 应用工程化](/ai-agent/java/java-ai-engineering)（流式输出/token 限流计费/语义缓存/监控）、[Spring AI 实战](/ai-agent/java/spring-ai)、[RAG 的 Java 实现](/ai-agent/java/rag-in-java)。

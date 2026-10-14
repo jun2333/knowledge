@@ -571,3 +571,7 @@ async function runToolCall(toolCall) {
 | **返回内容** | 结构化数据（JSON） | 文本片段 |
 
 两者经常组合使用：RAG 提供知识背景，Function Calling 执行具体操作。
+
+---
+
+**下一步（协议化）**：[MCP 与 Java](/ai-agent/java/mcp-in-java) —— 把"注册工具"从单次请求内升级为跨应用的标准化协议（M×N → M+N）。

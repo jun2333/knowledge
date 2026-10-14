@@ -398,3 +398,7 @@ router.post('/api/chat/stream', async (ctx) => {
 app.use(router.routes())
 app.listen(3000)
 ```
+
+---
+
+**Java 侧落地**：[Java AI 生态全景与选型](/ai-agent/java/java-ai-landscape)、[Spring AI 实战](/ai-agent/java/spring-ai)（本文协议的框架封装）。
