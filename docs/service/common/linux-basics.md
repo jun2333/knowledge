@@ -107,6 +107,80 @@ nc -vz host 3306       # 端口探测
 curl -v http://localhost:8080/api   # 看请求响应详情（排接口问题神器）
 ```
 
+## Shell 脚本编程（部署脚本要会改）
+
+部署时迟早要写/改脚本（启动、备份、巡检）。Shell 脚本 = 把上面的命令按逻辑串起来。**语法像 JS 的"命令版"**，半天能上手。
+
+### 变量与引号
+
+```bash
+#!/bin/bash                          # 声明解释器（第一行固定）
+APP_NAME="mall-admin"                # 变量：等号两边不能有空格
+echo "部署 $APP_NAME"                # 双引号：变量会展开 → 部署 mall-admin
+echo '部署 $APP_NAME'                # 单引号：原样输出 → 部署 $APP_NAME
+JAR=$(ls target/*.jar | head -1)     # $(命令)：把命令结果存进变量
+```
+
+**坑**：`$APP_NAME` 不加引号用在路径里，路径带空格就炸——养成 `"$APP_NAME"` 的习惯。
+
+### 判断与循环
+
+```bash
+# if：前后必须有空格（[ 是个命令，不是语法糖）
+if [ ! -f "$JAR" ]; then
+    echo "jar 不存在，先 mvn package"
+    exit 1                           # 非 0 = 失败，CI 靠它判断
+fi
+
+# for：遍历
+for svc in mall-admin mall-search mall-portal; do
+    echo "重启 $svc"
+done
+
+# 退出码判断命令成败（比 if 更地道）
+curl -f http://localhost:8080/actuator/health && echo "健康" || echo "挂了"
+```
+
+### 函数
+
+```bash
+log() { echo "[$(date '+%F %T')] $*"; }   # 带时间戳的日志函数，$*=所有参数
+
+deploy() {
+    log "开始部署 $1"
+    docker start "$1" || { log "启动失败"; return 1; }
+    log "部署完成"
+}
+
+deploy mysql8
+```
+
+### 实战：应用启动脚本（mall 风格）
+
+```bash
+#!/bin/bash
+# run.sh —— 停旧进程 → 备份 → 起新进程 → 健康检查
+APP_HOME=/opt/mall/mall-admin
+JAR=$APP_HOME/mall-admin.jar
+
+# 1. 停旧进程（避免端口占用）
+PID=$(ps -ef | grep "mall-admin.jar" | grep -v grep | awk '{print $2}')
+[ -n "$PID" ] && kill "$PID" && sleep 3
+
+# 2. 起新进程（nohup 后台 + 日志重定向）
+cd "$APP_HOME" || exit 1
+nohup java -jar -Xms512m -Xmx512m "$JAR" > app.log 2>&1 &
+
+# 3. 健康检查：最多等 30 秒
+for i in $(seq 1 30); do
+    curl -sf http://localhost:8080/actuator/health > /dev/null && { echo "启动成功"; exit 0; }
+    sleep 1
+done
+echo "启动失败，看 app.log" && exit 1
+```
+
+**这个脚本就是上岗后的日常**：改路径、改端口、加一行备份。写脚本的三条纪律：`set -e`（出错即停）、给每个步骤加 `log`、**先 echo 预演再真执行**（破坏性命令先 `echo rm -rf ...` 看展开对不对）。
+
 ## 面试题速查
 
 | 问题 | 答案 |
@@ -123,4 +197,5 @@ curl -v http://localhost:8080/api   # 看请求响应详情（排接口问题神
 
 - [线上问题排查](/service/troubleshooting) - jps/jstack/jmap 等 Java 专用工具
 - [Docker 入门](/service/docker) - 容器化部署（服务器上跑项目的新姿势）
+- [Nginx 与 Web 容器](/service/common/nginx-web-container) - 服务器门面的配置
 - [Spring Cloud 微服务](/service/java/spring-cloud) - 多服务部署场景

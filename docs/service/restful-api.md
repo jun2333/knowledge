@@ -7,6 +7,10 @@ date: 2026-07-30
 
 RESTful 是一种 API 设计风格，核心思想是**用 HTTP 方法表达对资源的操作**，让接口直观、可预测、易理解。
 
+::: tip 本文边界
+本文讲 **API 怎么设计**（URL 规范、状态码、响应格式、版本管理）。HTTP 协议本身（keep-alive、缓存头机制、TCP 握手、HTTPS）见 [HTTP 与网络基础](/service/common/http-network-basics)。
+:::
+
 ## 核心原则
 
 | 原则 | 说明 |
@@ -102,6 +106,18 @@ GET /api/replies/3?comment_id=xxx
 | **500** | Internal Server Error | 服务端未知错误 |
 | **502** | Bad Gateway | 上游服务不可用 |
 | **503** | Service Unavailable | 服务暂时不可用（维护/过载） |
+
+## HTTP 缓存与协商
+
+API 也要用缓存——列表类接口（商品、配置）客户端反复拉同样的内容，不缓存纯浪费。
+
+| 场景 | 缓存头 | 效果 |
+|------|--------|------|
+| 实时数据（余额、订单状态） | `Cache-Control: no-store` | 不缓存，每次问服务器 |
+| 准实时列表（商品列表，1 分钟可旧） | `Cache-Control: max-age=60` | 60 秒内直接用本地 |
+| 可协商的数据 | `ETag` / `Last-Modified` | 客户端带 `If-None-Match` 问服务器，没变返回 **304**（不传 body） |
+
+**304 的价值**：状态没变时只回一个头（几百字节），不回整个 JSON——带宽和序列化都省了。协议细节见 [HTTP 与网络基础](/service/common/http-network-basics)。
 
 ## 统一响应格式
 
