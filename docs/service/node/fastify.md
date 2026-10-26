@@ -5,6 +5,8 @@ date: 2026-08-11
 
 # Fastify 入门
 
+> **优先级：P2** — 以性能为中心的框架，Schema 自动校验 + 钩子机制。知道定位即可，想体验性能可把 Nest 底层换成 `platform-fastify`。
+
 Fastify 是一个**高性能**的 Node.js Web 框架：社区驱动（OpenJS 基金会项目），API 风格接近 Express，但更快、更规范。定位是 Express 的"性能升级版"。
 
 ## 核心特点
@@ -191,3 +193,7 @@ const app = await NestFactory.create<NestFastifyApplication>(
 - 记住 Fastify 三板斧：**return 即响应**、**Schema 自动校验**、**钩子代替中间件**
 - 国内热度一般，但国外是高性能 API 的主流选择
 - 主线学 NestJS 的话，Fastify 知道定位即可；想体验性能优势，把 NestJS 底层换成 `platform-fastify` 就行
+
+## 相关
+
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

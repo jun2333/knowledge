@@ -5,7 +5,9 @@ date: 2023-03-08
 
 # Egg.js 入门
 
-Egg.js 是阿里开源的企业级 Node.js 框架，基于 Koa（Egg 1.x 基于 Koa 1，2.x/3.x 基于 Koa 2），提供约定优于配置的开发体验。注意 Koa 本身已进入**维护模式**（功能冻结，只修安全与 bug，不再加新特性）——但 Egg 在这之上持续迭代，中间件与 Koa 完全兼容，底座停滞不影响 Egg 使用。
+> **优先级：P2** — 阿里系约定式框架，约定优于配置、插件机制。了解定位即可，按项目需要再深入。
+
+Egg.js 是阿里开源的企业级 Node.js 框架，基于 Koa（Egg 1.x 基于 Koa 1，2.x/3.x 基于 Koa 2），提供约定优于配置的开发体验。Koa 本身仍在维护（v3.x 持续发版，要求 Node ≥18），只是走的是"极简内核 + 生态自选"的路线——不内置路由、body 解析、校验，这部分要自己选型安装；Egg 在这之上做了企业级的约定与插件体系。
 
 ## 核心特点
 
@@ -524,3 +526,7 @@ console.log('worker id:', process.env.NODE_APP_INSTANCE, 'pid:', process.pid);
 - 团队协作、中大型项目 → Egg.js
 - 个人项目、微服务 → Koa
 - 需要 TypeScript → NestJS（Egg 也有官方 TS 支持，但属于"后补"——约定式动态加载（`ctx.service.xxx`）依赖 egg-ts-helper 生成类型声明，体验不如 Nest 原生 TS）
+
+## 相关
+
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

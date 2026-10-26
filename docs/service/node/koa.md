@@ -5,6 +5,8 @@ date: 2023-03-08
 
 # Koa 入门
 
+> **优先级：P1** — 洋葱模型比 Express 更贴近现代异步写法。建议先读 [Express.js 入门](/service/node/express)，再看本文的差异。
+
 Koa 是由 Express 原班人马打造的下一代 Web 框架，基于 async/await，更轻量、更现代。
 
 ## 核心特点
@@ -334,3 +336,7 @@ app.listen(3000);
 - 新项目 → Koa（更现代）
 - 老项目维护 → Express（生态成熟）
 - 需要企业级方案 → Egg.js / NestJS
+
+## 相关
+
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

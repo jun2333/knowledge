@@ -527,4 +527,4 @@ src/
 - [Spring Boot 入门](/service/java/spring-boot) - 框架篇：Controller/Service/Repository 分层与自动配置
 - [Java 服务端知识地图](/service/java/) - 全部篇目导航与三阶段学习路径
 - [Node.js 入门](/service/node/node-core) - 你已有的 JS 后端基础
-- [TypeORM 用法](/service/typeorm) - 数据访问对照参考（Java 对应 MyBatis-Plus / Spring Data JPA）
+- [TypeORM 用法](/service/node/typeorm) - 数据访问对照参考（Java 对应 MyBatis-Plus / Spring Data JPA）

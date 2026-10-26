@@ -4,7 +4,7 @@
 >
 > **读法建议**：不要按目录顺序从头读到尾——按下文的三阶段路径读，每篇开头都标了优先级（P0 必读 / P1 选读 / P2 加分）。
 
-## 一、知识地图（16 篇）
+## 一、知识地图（17 篇）
 
 ```mermaid
 graph TD
@@ -23,10 +23,11 @@ graph TD
 
     D --> D1["spring-principles<br/>IoC/AOP/事务原理"]
     D --> D2["spring-boot<br/>全家桶实战"]
-    D --> D3["spring-cloud<br/>微服务总览"]
-    D --> D4["java-netty<br/>NIO 网络框架"]
-    D --> D5["rpc-in-java<br/>RPC 原理与生态"]
-    D --> D6["spring-cloud-gateway<br/>API 网关深入"]
+    D --> D3["mybatis-plus<br/>持久层框架"]
+    D --> D4["spring-cloud<br/>微服务总览"]
+    D --> D5["java-netty<br/>NIO 网络框架"]
+    D --> D6["rpc-in-java<br/>RPC 原理与生态"]
+    D --> D7["spring-cloud-gateway<br/>API 网关深入"]
 
     E --> E1["java-high-concurrency<br/>高并发高可用设计"]
     E --> E2["java-deployment<br/>部署最佳实践"]
@@ -43,6 +44,7 @@ graph TD
 | [Java 并发编程](/service/java/java-concurrency) | P0 | JMM、锁、CAS、线程池、JUC、ThreadLocal、死锁 | 面试前 |
 | [Spring 核心原理](/service/java/spring-principles) | P0 | IoC、Bean 生命周期、AOP、循环依赖、事务失效 | 框架关 |
 | [Spring Boot 入门](/service/java/spring-boot) | P0 | 分层/注解/校验/异常/Security/MyBatis 全家桶 | 主力工具书 |
+| [MyBatis-Plus 入门](/service/java/mybatis-plus) | P0 | 持久层：BaseMapper、条件构造器、分页、插件、代码生成 | 接数据库时 |
 | [Java 服务部署](/service/java/java-deployment) | P1 | 打包/profile/JVM 参数/systemd/容器化/发布 | 上线前 |
 | [高并发高可用设计](/service/java/java-high-concurrency) | P1 | 缓存三难、限流算法、容量估算、演进路线 | 架构关 |
 | [Spring Cloud 微服务](/service/java/spring-cloud) | P1 | Nacos/Feign/Sentinel/Gateway 总览 | 微服务岗 |

@@ -1,7 +1,9 @@
 # Node.js 服务部署最佳实践
 
-> **定位**：从"代码能跑"到"线上稳定运行"的完整流程。涵盖上线前准备、服务器环境、进程管理、反向代理、容器化、配置密钥、日志、监控、CI/CD、上线清单与回滚。
-> 配套阅读：[PM2 进程管理](/service/pm2)、[Docker 入门](/service/docker)、[Node.js 入门](/service/node/node-core)。
+> **优先级：P0** — 从"代码能跑"到"线上稳定运行"的完整流程。上线前必读。
+>
+> **定位**：涵盖上线前准备、服务器环境、进程管理、反向代理、容器化、配置密钥、日志、监控、CI/CD、上线清单与回滚。
+> 配套阅读：[PM2 进程管理](/service/node/pm2)、[Docker 入门](/service/docker)、[Node.js 入门](/service/node/node-core)。
 
 ## 部署全景
 
@@ -83,7 +85,7 @@ sudo apt-get install -y nodejs
 
 | 方式 | 命令 | 适用 | 特点 |
 |------|------|------|------|
-| **PM2** | `pm2 start ecosystem.config.js` | 裸机 / 虚拟机 | 守护 + 集群 + 日志开箱即用（[详见](/service/pm2)） |
+| **PM2** | `pm2 start ecosystem.config.js` | 裸机 / 虚拟机 | 守护 + 集群 + 日志开箱即用（[详见](/service/node/pm2)） |
 | **systemd** | `systemctl start my-api` | 裸机（不想引入 PM2） | 系统原生、日志走 journald；**不做集群** |
 | **Docker** | `docker compose up -d` | 生产推荐 | 环境一致、易回滚；守护交给编排层 |
 
@@ -207,7 +209,7 @@ services:
     restart: always
 ```
 
-> 容器内**一般不再用 PM2**（`restart: always` 已经负责守护），详见 [PM2 · 什么时候不需要它](/service/pm2)。
+> 容器内**一般不再用 PM2**（`restart: always` 已经负责守护），详见 [PM2 · 什么时候不需要它](/service/node/pm2)。
 > Dockerfile / compose 细节见 [Docker 入门](/service/docker)。
 
 ## 六、配置与密钥
@@ -322,8 +324,9 @@ ln -sfn /opt/my-api/releases/1.2.2 /opt/my-api/current && pm2 reload my-api
 
 ## 相关
 
-- [PM2 进程管理](/service/pm2) - 进程守护与 cluster 模式
+- [PM2 进程管理](/service/node/pm2) - 进程守护与 cluster 模式
 - [Docker 入门](/service/docker) - Dockerfile / compose / 数据持久化
 - [Node.js 入门](/service/node/node-core) - 事件循环、优雅退出、内存管理
 - [CI/CD](/engineering/cicd) - 自动化流水线
 - [Java 服务部署最佳实践](/service/java/java-deployment) - 对照另一套技术栈的部署方式
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

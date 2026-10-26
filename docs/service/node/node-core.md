@@ -5,6 +5,8 @@ date: 2026-08-08
 
 # Node.js 入门
 
+> **优先级：P0** — Node 服务端的运行时地基：事件循环、模块系统、核心 API。先吃透本文，后面 Koa/Express/Nest 才有的放矢。
+
 Node.js 是运行在服务端的 JavaScript 运行时，基于 Chrome V8 引擎，采用**事件驱动、非阻塞 I/O** 模型。本文从零开始，由浅入深介绍 Node.js 的常用模块与核心概念。
 
 ## Node.js 是什么
@@ -1315,3 +1317,7 @@ server.listen(PORT, () => {
 | **常用模块** | process、path、fs、Buffer、events、stream、http |
 | **进阶** | crypto、os、util、zlib、多线程与多进程 |
 | **实战** | 静态服务器 → Koa 应用 → 接入数据库 → 部署（PM2/cluster） |
+
+## 相关
+
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

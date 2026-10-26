@@ -1,6 +1,8 @@
 # PM2 进程管理
 
-> **定位**：Node 服务上线的"进程管家"，解决三件事——**进程守护**（挂了自动拉起）、**多核利用**（cluster 模式）、**日志与监控**。裸机 / 虚拟机部署 Node 服务时的标准配置。
+> **优先级：P1** — 裸机部署 Node 服务的标准配置；容器化部署时通常不需要它。
+>
+> **定位**：Node 服务上线的"进程管家"，解决三件事——**进程守护**（挂了自动拉起）、**多核利用**（cluster 模式）、**日志与监控**。
 
 ## 为什么需要 PM2
 
@@ -158,3 +160,4 @@ pm2 restart my-api --update-env                  # 改了环境变量后重启�
 - [Node.js 入门](/service/node/node-core) - cluster 模块、进程与线程原理
 - [Docker 入门](/service/docker) - 容器化部署
 - [Linux 常用命令](/service/common/linux-basics) - 服务器上排查问题的基础
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

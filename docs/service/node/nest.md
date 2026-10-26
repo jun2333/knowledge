@@ -5,6 +5,8 @@ date: 2026-08-12
 
 # NestJS 从入门到放弃
 
+> **优先级：P1** — 企业级 Node 框架：依赖注入、模块化、装饰器。适合中大型项目与有 Java/Spring 背景的读者。
+
 NestJS 是一个用于构建高效、可扩展的 Node.js 服务器端应用的框架，基于 TypeScript，使用装饰器和依赖注入。
 
 ## 核心特点
@@ -511,7 +513,7 @@ export class UsersService {
 }
 ```
 
-**实体定义、条件查询、关联、事务、QueryBuilder、软删除、迁移等完整用法见 [TypeORM 用法](/service/typeorm)。**
+**实体定义、条件查询、关联、事务、QueryBuilder、软删除、迁移等完整用法见 [TypeORM 用法](/service/node/typeorm)。**
 
 ## 依赖注入进阶
 
@@ -907,3 +909,7 @@ export class UserResolver {
 - 需要 TypeScript → NestJS
 - 快速原型 → Koa
 - 阿里系项目 → Egg.js
+
+## 相关
+
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

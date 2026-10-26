@@ -817,6 +817,7 @@ jar 包内嵌 Tomcat，无需单独装服务器，`java -jar` 直接跑——这
 - [数据库连接池与数据源](/service/common/database-connection-pool) - 数据源的池化原理与参数调优
 - [可观测性：监控与告警](/service/common/observability) - Actuator 指标与 Prometheus 接入
 - [设计模式](/service/common/design-patterns) - Spring 里的模式落地（工厂/代理/策略）
-- [TypeORM 用法](/service/typeorm) - JPA 的对照参考
-- [NestJS 从入门到放弃](/service/nest) - 你已经掌握的另一侧
+- [MyBatis-Plus 入门](/service/java/mybatis-plus) - 持久层框架的完整用法
+- [TypeORM 用法](/service/node/typeorm) - JPA 的对照参考
+- [NestJS 从入门到放弃](/service/node/nest) - 你已经掌握的另一侧
 - [Java 服务端知识地图](/service/java/) - 全部篇目导航与学习路径

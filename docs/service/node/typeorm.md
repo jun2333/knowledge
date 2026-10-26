@@ -1,5 +1,7 @@
 # TypeORM 用法
 
+> **优先级：P1** — Node 侧最主流的 ORM。实体定义、条件查询、事务、迁移、软删除的完整用法，与 Java 侧的 MyBatis-Plus 互为对照。
+
 TypeORM 是 Node.js 生态最流行的 **ORM（对象关系映射）** 库：用 TypeScript 类（实体）描述表结构，框架自动生成 SQL，你不需要手写 `INSERT` / `SELECT`。NestJS 官方推荐搭配使用（`@nestjs/typeorm`）。
 
 ## 为什么需要 ORM
@@ -280,3 +282,7 @@ export class User {
 - **选型规律**：简单条件 → `where` 对象；业务要 404 → 先查后删；多步原子 → 事务（用 manager）；多表/聚合 → QueryBuilder；要可恢复 → 软删除
 - **生产三件事**：关 `synchronize`、用迁移、检查慢查询
 - 与 NestJS 集成链路：`forRoot` 注册连接 → `forFeature` 注册实体仓库 → `@InjectRepository` 注入 → 直接调用
+
+## 相关
+
+- [Node 服务端知识地图](/service/node/) - 全部篇目导航与三阶段学习路径

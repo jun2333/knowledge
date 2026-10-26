@@ -254,4 +254,4 @@ public Flux<String> stream(@RequestParam String message) {
 - [Java AI 应用工程化](/ai-agent/java/java-ai-engineering) - 流式/限流/缓存/监控的生产化
 - [Function Calling 与工具调用](/ai-agent/function-calling) - 通用概念（Spring AI 的前置）
 - [Spring Boot 入门](/service/java/spring-boot) - 自动配置原理的背景
-- [Koa 入门](/service/koa) - Advisor ≈ 中间件的思想同源
+- [Koa 入门](/service/node/koa) - Advisor ≈ 中间件的思想同源

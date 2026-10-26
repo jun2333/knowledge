@@ -67,7 +67,7 @@ export default {
       items: [
         {
           text: 'Node 服务端',
-          link: '/service/node/node-core'
+          link: '/service/node/'
         },
         {
           text: 'Java 服务端',
@@ -76,6 +76,10 @@ export default {
         {
           text: '后端基础',
           link: '/service/common/database'
+        },
+        {
+          text: 'API 与架构',
+          link: '/service/restful-api'
         },
         {
           text: 'Java 实战',
@@ -810,7 +814,16 @@ export default {
     ],
     '/service/node/': [
       {
-        text: 'Node 服务端',
+        text: '总览',
+        items: [
+          {
+            text: '知识地图与学习路径',
+            link: '/service/node/'
+          }
+        ]
+      },
+      {
+        text: 'Node 核心与运行时',
         items: [
           {
             text: 'Node.js 入门',
@@ -823,6 +836,48 @@ export default {
           {
             text: 'Node.js 服务部署最佳实践',
             link: '/service/node/node-deployment'
+          }
+        ]
+      },
+      {
+        text: 'Node 框架',
+        items: [
+          {
+            text: 'Express.js 入门',
+            link: '/service/node/express'
+          },
+          {
+            text: 'Koa 入门',
+            link: '/service/node/koa'
+          },
+          {
+            text: 'NestJS 从入门到放弃',
+            link: '/service/node/nest'
+          },
+          {
+            text: 'Egg.js 入门',
+            link: '/service/node/egg'
+          },
+          {
+            text: 'Fastify 入门',
+            link: '/service/node/fastify'
+          },
+          {
+            text: 'TypeORM 用法',
+            link: '/service/node/typeorm'
+          }
+        ]
+      },
+      {
+        text: 'Node 工程化与选型',
+        items: [
+          {
+            text: 'PM2 进程管理',
+            link: '/service/node/pm2'
+          },
+          {
+            text: 'Node.js vs Java 后端选型',
+            link: '/service/node/node-vs-java'
           }
         ]
       }
@@ -881,6 +936,10 @@ export default {
           {
             text: 'Spring Boot 入门',
             link: '/service/java/spring-boot'
+          },
+          {
+            text: 'MyBatis-Plus 入门',
+            link: '/service/java/mybatis-plus'
           },
           {
             text: 'Spring Cloud 微服务',
@@ -979,178 +1038,19 @@ export default {
     ],
     '/service/': [
       {
-        text: 'Node 服务端',
+        text: '技术栈总览',
         items: [
           {
-            text: 'Node.js 入门',
-            link: '/service/node/node-core'
+            text: 'Node 服务端',
+            link: '/service/node/'
           },
           {
-            text: 'Node.js 高并发与高可用设计',
-            link: '/service/node/node-high-concurrency'
-          },
-          {
-            text: 'Node.js 服务部署最佳实践',
-            link: '/service/node/node-deployment'
-          }
-        ]
-      },
-      {
-        text: 'Java 服务端',
-        items: [
-          {
-            text: '知识地图与学习路径',
+            text: 'Java 服务端',
             link: '/service/java/'
           },
           {
-            text: 'Java 入门',
-            link: '/service/java/java-basics'
-          },
-          {
-            text: 'Java 语言进阶',
-            link: '/service/java/java-language-advanced'
-          },
-          {
-            text: 'Java 并发编程',
-            link: '/service/java/java-concurrency'
-          },
-          {
-            text: 'Java（Spring Boot）高并发与高可用设计',
-            link: '/service/java/java-high-concurrency'
-          },
-          {
-            text: 'JVM 入门',
-            link: '/service/java/java-jvm'
-          },
-          {
-            text: 'Java 集合源码',
-            link: '/service/java/java-collections'
-          },
-          {
-            text: 'Java IO/NIO 与序列化',
-            link: '/service/java/java-io'
-          },
-          {
-            text: 'Spring Boot 入门',
-            link: '/service/java/spring-boot'
-          },
-          {
-            text: 'Spring 核心原理',
-            link: '/service/java/spring-principles'
-          },
-          {
-            text: 'Spring Cloud 微服务',
-            link: '/service/java/spring-cloud'
-          },
-          {
-            text: 'API 网关：Spring Cloud Gateway',
-            link: '/service/java/spring-cloud-gateway'
-          },
-          {
-            text: 'Netty 入门',
-            link: '/service/java/java-netty'
-          },
-          {
-            text: 'RPC 原理与 Java 生态',
-            link: '/service/java/rpc-in-java'
-          },
-          {
-            text: 'Java 服务部署最佳实践',
-            link: '/service/java/java-deployment'
-          }
-        ]
-      },
-      {
-        text: '后端基础',
-        items: [
-          {
-            text: 'HTTP 与网络基础',
-            link: '/service/common/http-network-basics'
-          },
-          {
-            text: 'Nginx 与 Web 容器',
-            link: '/service/common/nginx-web-container'
-          },
-          {
-            text: '数据库基础',
+            text: '后端基础',
             link: '/service/common/database'
-          },
-          {
-            text: 'MySQL 进阶',
-            link: '/service/common/mysql-advanced'
-          },
-          {
-            text: '数据库连接池与数据源',
-            link: '/service/common/database-connection-pool'
-          },
-          {
-            text: 'Redis 入门',
-            link: '/service/common/redis-intro'
-          },
-          {
-            text: '消息队列（Kafka）入门',
-            link: '/service/common/mq-intro'
-          },
-          {
-            text: 'Elasticsearch 入门',
-            link: '/service/common/elasticsearch'
-          },
-          {
-            text: '分布式基础',
-            link: '/service/common/distributed-basics'
-          },
-          {
-            text: '并发锁应用',
-            link: '/service/common/concurrency-locks'
-          },
-          {
-            text: '数据分布场景与锁设计',
-            link: '/service/common/data-distribution-locks'
-          },
-          {
-            text: '设计模式',
-            link: '/service/common/design-patterns'
-          },
-          {
-            text: 'Linux 常用命令',
-            link: '/service/common/linux-basics'
-          },
-          {
-            text: '可观测性：监控与告警',
-            link: '/service/common/observability'
-          }
-        ]
-      },
-      {
-        text: '框架与 ORM',
-        items: [
-          {
-            text: 'Express 入门',
-            link: '/service/express'
-          },
-          {
-            text: 'Koa 入门',
-            link: '/service/koa'
-          },
-          {
-            text: 'Egg.js 入门',
-            link: '/service/egg'
-          },
-          {
-            text: 'NestJS 从入门到放弃',
-            link: '/service/nest'
-          },
-          {
-            text: 'Fastify 入门',
-            link: '/service/fastify'
-          },
-          {
-            text: 'TypeORM 用法',
-            link: '/service/typeorm'
-          },
-          {
-            text: 'MyBatis-Plus 入门',
-            link: '/service/mybatis-plus'
           }
         ]
       },
@@ -1195,16 +1095,8 @@ export default {
             link: '/service/docker'
           },
           {
-            text: 'PM2 进程管理',
-            link: '/service/pm2'
-          },
-          {
             text: '后端测试实践',
             link: '/service/backend-testing'
-          },
-          {
-            text: 'Node.js vs Java 后端选型',
-            link: '/service/node-vs-java'
           },
           {
             text: '线上问题排查',
@@ -1784,6 +1676,31 @@ export default {
           {
             text: '核心思想',
             link: '/ai-agent/harness-engineering/core-concepts'
+          },
+          {
+            text: '最佳实践',
+            link: '/ai-agent/harness-engineering/best-practices'
+          },
+          {
+            text: 'dev-agent-harness 工程化框架',
+            link: '/ai-agent/harness-engineering/dev-agent-harness'
+          },
+          {
+            text: 'Function Calling 升级：提示词驱动 + 硬校验',
+            link: '/ai-agent/harness-engineering/function-calling-upgrade'
+          },
+          {
+            text: '质量控制机制对比',
+            link: '/ai-agent/harness-engineering/quality-control'
+          },
+        ]
+      },
+      {
+        text: 'Spec-First',
+        items: [
+          {
+            text: 'Spec-First 指南',
+            link: '/ai-agent/spec-first/guide'
           },
         ]
       },

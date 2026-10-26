@@ -145,7 +145,7 @@ if (limiter.tryAcquire()) {                       // 拿不到立即拒绝（不
 
 ## 相关
 
-- [Node.js vs Java 后端选型](/service/node-vs-java) - 并发模型对比
+- [Node.js vs Java 后端选型](/service/node/node-vs-java) - 并发模型对比
 - [Nginx 与 Web 容器](/service/common/nginx-web-container) - 入口层限流（nginx limit_req）与本文应用层限流互补
 - [Redis 入门](/service/common/redis-intro) - 高并发第一层（缓存）
 - [消息队列（Kafka）入门](/service/common/mq-intro) - 削峰

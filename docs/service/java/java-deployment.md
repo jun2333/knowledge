@@ -146,7 +146,7 @@ StandardError=append:/var/log/mall-admin/err.log
 WantedBy=multi-user.target
 ```
 
-> Java 服务**不需要 PM2**——JVM 本身是多线程的，进程守护交给 systemd 或容器编排即可（对比 [Node 用 PM2 的 cluster 模式](/service/pm2)）。
+> Java 服务**不需要 PM2**——JVM 本身是多线程的，进程守护交给 systemd 或容器编排即可（对比 [Node 用 PM2 的 cluster 模式](/service/node/pm2)）。
 
 ## 五、容器化部署
 

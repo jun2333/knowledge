@@ -724,5 +724,5 @@ setTimeout(() => redis.del(key), 500)   // 延迟再删一次
 
 - [B+ 树（算法篇）](/algorithms/b-plus-tree) - 本文索引的底层结构：多路矮树、IO 计算、分裂
 - [数据库基础](/service/common/database) - 入门：表设计、SQL、范式
-- [TypeORM 用法](/service/typeorm) - ORM 使用层
+- [TypeORM 用法](/service/node/typeorm) - ORM 使用层
 - [Redis 入门](/service/common/redis-intro) - 缓存层：索引查不到的兜底方案

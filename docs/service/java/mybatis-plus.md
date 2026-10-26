@@ -136,4 +136,5 @@ List<User> findByName(@Param("name") String name);
 
 - [Spring Boot 入门](/service/java/spring-boot) - 项目集成环境
 - [MySQL 进阶](/service/common/mysql-advanced) - SQL 优化的知识背景
-- [TypeORM 用法](/service/typeorm) - 你的 JS 侧对照
+- [TypeORM 用法](/service/node/typeorm) - 你的 JS 侧对照
+- [Java 服务端知识地图](/service/java/) - 全部篇目导航与学习路径
