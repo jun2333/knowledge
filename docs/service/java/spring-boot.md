@@ -625,7 +625,7 @@ public ResponseEntity<byte[]> download(@PathVariable Long id) throws IOException
 }
 ```
 
-大小限制配置（默认 1MB）：
+大小限制配置（Spring Boot 默认：单文件 1MB、整个请求 10MB）：
 
 ```yaml
 spring:

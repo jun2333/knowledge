@@ -27,6 +27,28 @@
 </dependency>
 ```
 
+> **版本坑（3.5.9 起）**：内置分页 `PaginationInnerInterceptor` 已拆到独立依赖，只引 starter 会编译不过，还必须加：
+> ```xml
+> <dependency>
+>     <groupId>com.baomidou</groupId>
+>     <artifactId>mybatis-plus-jsqlparser</artifactId>
+>     <version>3.5.x</version>
+> </dependency>
+> ```
+
+**Mapper 要被扫描到才能注入**——二选一（漏了启动就 `NoSuchBeanDefinitionException`）：
+
+```java
+// 方式一：启动类上批量扫描（推荐，包内所有 Mapper 一次搞定）
+@SpringBootApplication
+@MapperScan("com.example.mapper")
+public class App { }
+
+// 方式二：每个接口自己标 @Mapper
+@Mapper
+public interface UserMapper extends BaseMapper<User> { }
+```
+
 实体类 + Mapper 接口（继承 `BaseMapper` 即获得全套 CRUD）：
 
 ```java
@@ -119,6 +141,62 @@ List<User> findByName(@Param("name") String name);
 
 **动态 SQL 标签**（MyBatis 特色，面试可能问）：`<if>`、`<where>`、`<foreach>`（in 查询）、`<choose>`（switch）。
 
+## 底层：Mapper 接口为什么没有实现类也能调（必考）
+
+`UserMapper` 是个接口，没有 `UserMapperImpl`，但 `@Autowired` 注入后能直接调——靠 **JDK 动态代理**：
+
+```
+启动时：@MapperScan 扫描接口 → MapperFactoryBean → MapperProxyFactory 生成代理对象 → 注册成 Bean
+调用时：userMapper.selectById(1L)
+          → MapperProxy.invoke()             ← InvocationHandler
+          → 按「接口全限定名 + 方法名」找到 MappedStatement（XML/注解里那条 SQL）
+          → SqlSession.selectOne(statementId, 参数)
+          → Executor → StatementHandler → JDBC
+```
+
+**所以两个常见报错都能对上号**：漏 `@MapperScan`/`@Mapper` → 代理 Bean 没注册 → 注入报 `NoSuchBeanDefinitionException`；XML 的 `namespace` 写错或方法名对不上 → 找不到 `MappedStatement` → `Invalid bound statement (not found)`。
+
+**四大对象 + 插件链**（面试问"分页插件怎么实现的"）：
+
+| 对象 | 职责 |
+|------|------|
+| `Executor` | 执行器：真正发起查询/更新（`SimpleExecutor` 默认；`BatchExecutor` 攒批；`CachingExecutor` 套二级缓存） |
+| `StatementHandler` | 创建 `PreparedStatement`、设置参数、执行 SQL |
+| `ParameterHandler` | Java 参数 → JDBC 参数（`#{}` 就是它做预编译赋值） |
+| `ResultSetHandler` | ResultSet → Java 对象映射 |
+
+插件（`Interceptor`）用**动态代理包装这四大对象**，按 `@Intercepts/@Signature` 声明要拦谁。MyBatis-Plus 的分页插件就是拦 `StatementHandler`：先改写 SQL 加 `LIMIT`，同时按需生成一条 `COUNT` 语句——所以"分页 = 两条 SQL"（见 [harvest 里的记录](/java-practice/harvest)）。
+
+## 两级缓存（面试必问，且最容易答错）
+
+| | 一级缓存 | 二级缓存 |
+|--|---------|---------|
+| 作用域 | **SqlSession**（会话级） | **namespace / Mapper**（应用级） |
+| 默认 | **开启**，不用配 | 关闭，要 `<cache/>` 或 `@CacheNamespace` 显式开 |
+| 命中条件 | 同一 SqlSession + 同一 statementId + 相同参数 + 期间没执行过增删改 | 跨 SqlSession，同一 namespace |
+| 清理时机 | 执行 INSERT/UPDATE/DELETE、`commit()`/`rollback()`、手动 `clearCache()` | 该 namespace 有写操作时清除 |
+| 存储 | 内存 HashMap（`PerpetualCache`） | 内存 HashMap，可换 Redis/Ehcache |
+
+**最值钱的一个追问：Spring 项目里为什么感觉不到一级缓存？**
+
+因为 `SqlSessionTemplate` 每次数据库操作都会开一个**新的 SqlSession**（用完就关），缓存自然命中不了。**只有在同一个事务里**，多个 Mapper 调用才会复用同一个 SqlSession——所以一级缓存的实际生效场景是"一个事务内反复查同一条 SQL"。
+
+```java
+@Transactional
+public void demo() {
+    userMapper.selectById(1L);   // 查库
+    userMapper.selectById(1L);   // 命中一级缓存，不发 SQL
+}
+```
+
+**二级缓存为什么生产上基本不用**：
+
+- 缓存挂在 namespace 上，**多表关联时没法联动失效**——`orders` 的 Mapper 改了库存表，`products` 的 namespace 缓存不会清，直接读到脏数据
+- 它是**应用内本地缓存**，多实例部署时各存一份，一致性无从保证
+- 所以主流做法：关掉二级缓存，跨实例的缓存交给 Redis（`@Cacheable` 或手写 CacheService）
+
+> 面试如果被问"你们用二级缓存吗"，正确答法是"**默认不开，多表 join 场景下 namespace 级缓存无法保证一致性；要缓存就用 Redis 统一管**"，而不是背 `<cache/>` 怎么配。
+
 ## 面试考点
 
 | 考点 | 要点 |
@@ -129,6 +207,11 @@ List<User> findByName(@Param("name") String name);
 | 主键策略 | `IdType.AUTO`（自增）/ `ASSIGN_ID`（雪花算法） |
 | 逻辑删除 | `@TableLogic`：删除变更新 `deleted` 字段，查询自动带 `WHERE deleted = 0` |
 | 乐观锁 | `@Version` 字段 + 乐观锁插件，更新时 `SET version = version+1 WHERE version = ?` |
+| Mapper 接口没实现类怎么调 | JDK 动态代理（MapperProxy），按 statementId 找到 SQL 交给 SqlSession |
+| 一级缓存是什么 | SqlSession 级、默认开启；Spring 里只有同一事务内多查才命中 |
+| 二级缓存为什么不推荐 | namespace 级、多表 join 无法联动失效、多实例各存一份 → 用 Redis 代替 |
+| 分页插件原理 | 拦截 StatementHandler，改写 SQL 加 LIMIT + 另发一条 COUNT |
+| 插件怎么实现 | 动态代理包装 Executor/StatementHandler/ParameterHandler/ResultSetHandler 四大对象 |
 
 **`#{}` vs `${}` 是必考题**：`WHERE name = #{name}` 安全（预编译）；`ORDER BY ${column}` 只能用 `${}`（列名不能占位），但传入前必须白名单校验。
 

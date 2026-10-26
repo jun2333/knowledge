@@ -788,13 +788,18 @@ const os = require('os')
 os.platform()        // 'darwin' | 'linux' | 'win32'
 os.arch()            // 'arm64' | 'x64'
 os.cpus()            // CPU 信息数组（含每个核的型号/速度）
-os.cpus().length     // CPU 核心数（cluster 部署时用）
+os.cpus().length     // 逻辑核数 —— ⚠️ 容器里是「宿主机」核数，不能用来算 worker 数
+os.availableParallelism()  // 实际可用的并行度（Node ≥ 18.14/19.4），会考虑 cgroup CPU 配额
 os.totalmem()        // 总内存（字节）
 os.freemem()         // 空闲内存（字节）
 os.hostname()        // 主机名
 os.networkInterfaces()  // 网络接口信息
 os.EOL               // 换行符（Windows 是 '\r\n'，其他是 '\n'）
 ```
+
+> **容器里的陷阱**：`os.cpus().length` 读的是内核的**全局**信息，所以在容器里它返回的是**宿主机**的核数——一台 64 核机器上跑一个限了 2 核的容器，它照样返回 64。要算"我实际能用几个核"，用 `os.availableParallelism()`（Node ≥ 18.14 / 19.4），它会读 cgroup 的 CPU 配额。
+>
+> 但也别完全信它：libuv 1.49.1 / 1.50（对应 Node 22.12~22.16、24.0~24.1）在 **cgroup v2 + 未设 CPU requests** 时会保守地返回 1；libuv 1.51.0（Node 22.17+ / 24.2+）才对齐 Rust 的算法。生产上最稳的是用环境变量显式指定。
 
 ```javascript
 // 常见用法：格式化内存为 GB
@@ -976,11 +981,12 @@ const http = require('http')
 const os = require('os')
 
 if (cluster.isPrimary) {
-  // 主进程：按 CPU 核心数创建 worker
-  const cpus = os.cpus().length
-  console.log(`主进程 ${process.pid}，启动 ${cpus} 个 worker`)
+  // 主进程：按「实际可用的并行度」创建 worker
+  // ⚠️ 不要用 os.cpus().length——容器里它返回的是宿主机核数
+  const workers = Number(process.env.WEB_CONCURRENCY) || os.availableParallelism?.() || os.cpus().length
+  console.log(`主进程 ${process.pid}，启动 ${workers} 个 worker`)
 
-  for (let i = 0; i < cpus; i++) {
+  for (let i = 0; i < workers; i++) {
     cluster.fork()
   }
 
@@ -1002,6 +1008,8 @@ if (cluster.isPrimary) {
 - 每个 worker 是独立进程，**内存不共享**（这点与 worker_threads 不同）
 - 生产环境常用 PM2 管理集群：`pm2 start app.js -i max` 自动按核数启动
 - 注意：Session 等进程内状态在多进程下不共享，需外置到 Redis
+
+> **在容器里怎么用 cluster？** 容器化的主流解法是"多副本"而不是"容器内多进程"；真要用 cluster（比如 CPU 密集服务要吃满一台大机器），worker 数必须显式指定，别用 `os.cpus().length`。完整策略见 [Node.js 服务部署最佳实践 · 容器化如何充分利用多核](/service/node/node-deployment)。
 
 ## 并发方案选型
 

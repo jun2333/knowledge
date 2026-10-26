@@ -169,7 +169,7 @@ PID=$(ps -ef | grep "mall-admin.jar" | grep -v grep | awk '{print $2}')
 
 # 2. 起新进程（nohup 后台 + 日志重定向）
 cd "$APP_HOME" || exit 1
-nohup java -jar -Xms512m -Xmx512m "$JAR" > app.log 2>&1 &
+nohup java -Xms512m -Xmx512m -jar "$JAR" > app.log 2>&1 &
 
 # 3. 健康检查：最多等 30 秒
 for i in $(seq 1 30); do

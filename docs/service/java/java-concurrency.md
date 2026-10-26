@@ -66,6 +66,31 @@ public void add() { synchronized (this) { count++; } }  // 同步代码块：粒
   - 偏向锁：无竞争时，记录线程 ID，避免 CAS
   - 轻量级锁：少量竞争时，自旋 CAS 抢锁
   - 重量级锁：竞争激烈时，升级为 OS 互斥量（线程阻塞，上下文切换成本高）
+- ⚠️ **版本事实**：偏向锁从 **JDK 15（JEP 374）起默认禁用**，JDK 18 后相关代码逐步移除。所以实际是「无锁 → 轻量级 → 重量级」。面试提锁升级可以讲四段（说明 JDK 8 的设计），但**要主动补一句"JDK 15 之后默认没有偏向锁了"**——只背四段、不知道它被废弃，反而暴露是死记的
+
+#### 底层：锁状态存在哪？——对象头 Mark Word
+
+面试追问"锁升级靠什么实现"时的标准答案。每个 Java 对象在内存里分三块：
+
+```
+对象内存布局 = 对象头（Mark Word 8B + 类型指针 4/8B）+ 实例数据 + 对齐填充
+                  ↑
+            锁状态、GC 年龄、hashCode 全存在这 8 个字节里
+```
+
+64 位 JVM 下 Mark Word 的位分配（JDK 8）：
+
+| 锁状态 | 锁标志位 | Mark Word 里存什么 |
+|--------|---------|-------------------|
+| 无锁 | `01` | hashCode + 分代年龄 |
+| 偏向锁 | `01`（biased_lock=1） | **偏向线程 ID** + Epoch + 分代年龄 |
+| 轻量级锁 | `00` | 指向**线程栈中 Lock Record** 的指针（CAS 抢锁就是把这里替换掉） |
+| 重量级锁 | `10` | 指向 **ObjectMonitor** 的指针 |
+| GC 标记 | `11` | 空（不存业务信息） |
+
+**字节码层**：`synchronized` 代码块编译成 `monitorenter` / `monitorexit`（成对出现，异常路径也有一次 exit）；同步方法则是方法访问标志 `ACC_SYNCHRONIZED`。最终重量级锁落到 C++ 的 **ObjectMonitor**（`_owner` 持有线程、`_entryList` 阻塞队列、`_waitSet` 调用 `wait()` 的线程）。
+
+> **一个高频连带题**：`wait()` / `notify()` 为什么必须写在 `synchronized` 里？——因为它们操作的是 Monitor 的 `_waitSet`，必须先持有这个 Monitor（即拿到锁），否则抛 `IllegalMonitorStateException`。这也是它和 `Condition.await()` 的区别：后者绑的是 AQS 的 Condition 队列。
 
 ### ReentrantLock：API 级锁（比 synchronized 灵活）
 
@@ -86,6 +111,42 @@ try {
 | 公平锁 | 否 | `new ReentrantLock(true)` |
 | 超时获取 | 否 | `tryLock(1, TimeUnit.SECONDS)` |
 | 底层 | 锁升级（偏向→轻量→重量） | AQS + CAS |
+
+### AQS：ReentrantLock 的底层（JUC 的地基）
+
+`ReentrantLock`、`Semaphore`、`CountDownLatch`、`ReentrantReadWriteLock` 全都建立在 **AQS（AbstractQueuedSynchronizer）** 上——面试问"还了解 JUC 吗"，答 AQS 比背 API 高一个层次。
+
+**AQS 就两个东西**：
+
+```
+① volatile int state     —— 同步状态（ReentrantLock 里 = 重入次数，0 表示没人持有）
+② CLH 变体的双向队列      —— 没抢到锁的线程在这里排队（Node: prev/next/thread/waitStatus）
+```
+
+**加锁流程**（以非公平 `ReentrantLock.lock()` 为例）：
+
+```
+lock() → tryAcquire(state)          ← 子类实现！AQS 只定流程
+   ├─ state == 0 → CAS 抢到 → 设 owner 为当前线程 → 成功
+   ├─ owner 是自己 → state+1（这就是"可重入"）
+   └─ 失败 → 包装成 Node 入队尾
+              → acquireQueued：自旋检查前驱是不是 head
+                  → 是就再试一次 tryAcquire
+                  → 不是就 LockSupport.park() 挂起（不占 CPU）
+unlock() → tryRelease 把 state-1，减到 0 才真正释放 → 唤醒后继节点
+```
+
+**为什么这样设计**（面试爱问）：
+
+| 设计 | 解决什么 |
+|------|---------|
+| **模板方法**（`tryAcquire`/`tryRelease` 留给子类） | 排队、挂起、唤醒这套复杂逻辑只写一遍；子类只需定义"什么算获取成功" |
+| **state 用 volatile + CAS** | 状态变更无锁可见，抢锁靠 CAS 而非互斥量 |
+| **队列 + park** | 抢不到锁的线程不空转（对比自旋锁浪费 CPU） |
+| **独占 / 共享两种模式** | 独占=锁（ReentrantLock）；共享=许可证/计数器（Semaphore、CountDownLatch） |
+| **公平 / 非公平**（`hasQueuedPredecessors`） | 公平锁排队按序；非公平允许插队（吞吐更高，默认） |
+
+**面试答法**：先说"state + 一个 FIFO 队列"，再说"模板方法让子类只实现 tryAcquire"，最后补"独占/共享 + Condition 各有一条等待队列"。这三点讲清就够，不必背源码。
 
 ## CAS：无锁并发（compare and swap）
 
@@ -358,7 +419,11 @@ jstack 12345 | grep BLOCKED              # 找互相等待的线程栈
 |------|-----------|
 | volatile 能保证原子性吗 | 不能，只保证可见性和有序性 |
 | synchronized 和 ReentrantLock 区别 | 自动/手动释放、可中断、公平锁、底层不同 |
-| 锁升级过程 | 无锁 → 偏向锁 → 轻量级锁（自旋）→ 重量级锁（阻塞） |
+| 锁升级过程 | 无锁 → 偏向锁 → 轻量级锁（自旋）→ 重量级锁（阻塞）；**JDK 15 起偏向锁默认禁用** |
+| synchronized 底层怎么实现 | 对象头 Mark Word 存锁状态；代码块是 `monitorenter/exit`，同步方法是 `ACC_SYNCHRONIZED`；重量级落到 ObjectMonitor |
+| 对象头里有什么 | Mark Word（hashCode/GC 年龄/锁标志/偏向线程 ID）+ 类型指针；32/64 位各一套位分配 |
+| AQS 是什么 | `volatile int state` + CLH 双向队列；模板方法把 tryAcquire 留给子类（ReentrantLock/Semaphore/CountDownLatch 共用） |
+| ReentrantLock 怎么实现可重入 | AQS 的 state 当计数器，同一线程再拿锁 state+1，释放减到 0 才算真释放 |
 | CAS 的缺点 | ABA、自旋耗 CPU、只能单变量 |
 | 线程池为什么用有界队列 | 无界队列任务堆积可能 OOM |
 | 线程池拒绝策略 | Abort / CallerRuns / Discard / DiscardOldest |

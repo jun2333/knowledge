@@ -212,6 +212,148 @@ services:
 > 容器内**一般不再用 PM2**（`restart: always` 已经负责守护），详见 [PM2 · 什么时候不需要它](/service/node/pm2)。
 > Dockerfile / compose 细节见 [Docker 入门](/service/docker)。
 
+### 容器化如何充分利用多核（重点）
+
+Node 单进程只用一个核——这是 V8 的架构事实，**容器化改变不了它**。容器化改变的只是"**谁来把多个核组织起来**"：
+
+| | 裸机 / 虚拟机 | 容器化（Compose / K8s） |
+|---|---|---|
+| 组织多核的主体 | 进程内：PM2 cluster fork N 个 worker 共享端口 | **编排层：起 N 个容器副本**，前置 LB 分发 |
+| 一个实例吃几个核 | N 个 worker 吃 N 个核 | 1 个容器 = 1 个进程 = 1 个核 |
+| 扩容动作 | `pm2 scale`（重启 worker） | 改副本数（起新容器，不影响老容器） |
+| 能否跨机器 | 不能，只能吃本机核 | **能**——这是容器化相对裸机最大的价值 |
+| 崩溃自愈 | PM2 拉起 worker | 编排层重建 Pod / 容器 |
+| 无状态要求 | cluster 下必须无状态 | 多副本下必须无状态（更严格） |
+
+> **一句话结论**：容器化下"利用多核"的主力是**多副本（水平扩展）**，不是"容器内多进程"。
+> 这不是风格偏好——多副本能跨机器、能独立滚动更新、能被 HPA 自动扩缩；容器内多进程只能吃单机。
+
+**路线 A（主力方案）：多副本 + 负载均衡**
+
+Docker Compose 侧：
+
+```bash
+# 起 4 个副本（单机）
+docker compose up -d --scale api=4
+```
+
+三个必踩的坑：
+
+1. **固定宿主端口不能多副本**。`ports: ["3000:3000"]` 时第二个容器会 bind 失败。生产做法是：业务服务只 `expose`（仅容器网络内可见），前面单独放一个 nginx 容器当 LB，由它独占 `80:80`：
+
+   ```yaml
+   services:
+     api:
+       image: my-registry/my-api:1.2.3
+       expose: ["3000"]            # 不映射到宿主机
+       environment:
+         WEB_CONCURRENCY: "1"       # 单容器单进程，多核靠副本数
+     lb:
+       image: nginx:alpine
+       ports: ["80:80"]             # 只有 LB 对外
+       volumes: ["./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+   ```
+
+   nginx 里 `upstream` 写**服务名**而不是 IP：`proxy_pass http://api:3000;`——Docker 内嵌 DNS 会把服务名解析到全部副本 IP，客户端再自己轮询。
+
+2. **`deploy.replicas` 是 Swarm / 平台语义**。官方文档明确：`deploy.replicas` 只对 swarm 下的服务生效，普通 `docker compose up` 忽略它并使用 `--scale`（Compose 规范里 `deploy` 是一段"给平台看的可选元数据"）。多机集群用 `docker stack deploy`（Swarm）或直接上 K8s。
+
+3. **别写 `container_name`**。容器名必须唯一，写了就多副本起不来。
+
+K8s 侧（生产主流）：
+
+```yaml
+# Deployment：副本数交给 HPA，这里写 3 只是兜底下限
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: api
+          resources:
+            requests: { cpu: "500m", memory: "512Mi" }   # requests 必填：HPA 按它的百分比算
+            limits:   { cpu: "1000m", memory: "512Mi" }   # 内存 limit 要设，且和 request 对齐
+```
+
+```yaml
+# HPA：CPU 利用率超 70% 自动加副本
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+```
+
+**路线 B：容器内 cluster（用 Node 内置模块，不需要 PM2）**
+
+什么时候用：单个服务 CPU 密集、要把一台大机器吃满；或想减少实例数/内存开销。这时用 Node 自带的 `cluster`（PM2 只是它的封装，容器里直接用内置模块更干净）。
+
+**最关键的一条：worker 数必须显式指定，绝不能用 `os.cpus().length`。**
+
+```js
+// cluster.js
+const cluster = require('node:cluster')
+const os = require('node:os')
+
+// 优先级：环境变量 > availableParallelism > 1
+const WORKERS = Number(process.env.WEB_CONCURRENCY) || os.availableParallelism?.() || 1
+
+if (cluster.isPrimary) {
+  for (let i = 0; i < WORKERS; i++) cluster.fork()
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.error(`worker ${worker.process.pid} 退出(${signal || code})，重新拉起`)
+    cluster.fork()
+  })
+
+  // 容器 stop 时 SIGTERM 只发给 PID 1（primary），worker 收不到 → 必须转发
+  process.on('SIGTERM', () => {
+    for (const id of Object.keys(cluster.workers)) cluster.workers[id].process.kill('SIGTERM')
+    setTimeout(() => process.exit(0), 10000)
+  })
+} else {
+  require('./app').listen(3000)
+}
+```
+
+容器内 cluster 的坑（每一条都踩过血）：
+
+| 坑 | 现象 | 正确做法 |
+|---|---|---|
+| 用 `os.cpus().length` 算 worker 数 | 容器只给 2 核却起 64 个 worker → 内存爆 / 上下文切换抖动，吞吐反而下降 | 用 `os.availableParallelism()`（Node ≥ 18.14 / 19.4），生产再叠一层 `WEB_CONCURRENCY` 显式指定 |
+| `availableParallelism()` 的版本坑 | Node 22.12~22.16、24.0~24.1（内含 libuv 1.49.1 / 1.50）在 **cgroup v2 + 未设 CPU requests** 时恒返回 1，白白只用一个核；libuv 1.51.0（Node 22.17+ / 24.2+）才对齐 Rust 的算法 | 不赌运行时版本：显式给 `WEB_CONCURRENCY`；同时给 Pod 设 `requests.cpu` |
+| `CMD ["npm", "start"]` | npm 不转发 SIGTERM，容器 stop 时正在处理的请求被砍（exit 137） | `CMD ["node", "dist/app.js"]`，或用 tini 当 PID 1 |
+| primary 不转发 SIGTERM | 容器停时 worker 收不到信号，10s 宽限期后被 SIGKILL | primary 捕获后转发给所有 worker（见上） |
+| 每个 worker 是独立进程、独立堆 | N 个 worker 各自占一份 old-space → 容器内存超限 OOMKilled | 内存 limit ÷ N 作为 `--max-old-space-size` |
+| worker 之间内存不共享 | session 掉登录、缓存不一致 | session / 缓存外置 Redis（cluster 和多副本同理） |
+| 一次 crash 引发无限 fork 循环 | 端口没释放就 fork，worker 起不来又重启，打满 CPU | 统计重启次数，超阈值停止 respawn 并告警 |
+
+**第三条路：`worker_threads` —— 解决"单个请求里的重计算"，不是"服务并发"**
+
+`cluster` 横向分请求，`worker_threads` 纵向拆单个任务（图像处理、加密、大 JSON 解析）。两者常一起用：cluster 分发流量，重的活再丢给 worker 线程池。线程数也用 `os.availableParallelism()` 决定。
+
+**CPU limit 与 throttle：Node 特有的坑**
+
+- K8s 的 CPU limit 靠 cgroup **CFS quota** 强制：每 100ms 一个周期，只给 `limit 核 × 100ms` 的 CPU 时间；用超了整个容器被**冻结**到下个周期（不是"稍微变慢"，是直接挂起）。
+- Node 进程不只有 JS 主线程：libuv 线程池（默认 4 个，`UV_THREADPOOL_SIZE`）跑 crypto / zlib / 文件 IO，V8 还有并发 GC 和 JIT 线程。这些会**瞬时**用掉额外核。
+- 典型症状：**平均 CPU 使用率只有 60%，P99 延迟却飙到几百毫秒**——因为某些周期内配额被用光，进程被冻结。
+- 对策：① 延迟敏感的 Node 服务，`limits.cpu` 要比 `requests.cpu` 高一截，别贴着设；② 或者只设 requests 不设 CPU limit（AWS EKS 最佳实践同样建议 Node 服务不设 CPU limit），把弹性交给 HPA；③ 内存 limit 必须设、且和 request 对齐——内存是**不可压缩**资源，超了直接 OOMKill，不像 CPU 还能限流。
+- 监控指标：看 `container_cpu_cfs_throttled_periods_total / container_cpu_cfs_periods_total`，throttle 比例超过 5% 就该调 limit 了。
+
+**选型速查**
+
+| 场景 | 选谁 |
+|---|---|
+| IO 密集 API，流量会涨 | **多副本 + 负载均衡**（Node 主力方案） |
+| 单服务 CPU 密集，要吃满一台大机器 | 容器内 `cluster`（或 PM2 cluster）+ 显式 `WEB_CONCURRENCY` |
+| 单个请求里有重计算 | `worker_threads` 丢出去算 |
+| 要 sticky session / 长连接 | 别用 cluster（连接会绑死在某个 worker），用多副本 + 网关层做路由 |
+
+> **和 Java 对照**：Java 容器里一个 JVM 就是多线程（Tomcat 线程池），天然就能吃满多核，所以 Java 更适合"少副本 + 大容器"；Node 单线程一核，天然适合"多副本 + 小容器"。这不只是风格差异，直接决定了扩容成本模型——详见 [Node.js vs Java 后端选型](/service/node/node-vs-java)。
+
 ## 六、配置与密钥
 
 | 配置类型 | 放哪 | 注意 |

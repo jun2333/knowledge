@@ -322,6 +322,41 @@ docker pull registry.example.com/my-app:v1.2.0
 docker compose up -d
 ```
 
+## 扩容：多副本（容器化吃多核的主要手段）
+
+Node 这类单线程运行时，容器化下"用满多核"靠的是**多副本**——起 N 个容器（每个 1 进程 1 核），前面用负载均衡分发。
+
+```bash
+# 单机 Compose 扩到 4 个副本
+docker compose up -d --scale api=4
+docker compose ps              # 看 api-1 / api-2 / api-3 / api-4
+docker compose up -d --scale api=2   # 缩回去
+```
+
+**三个必踩的坑**：
+
+| 坑 | 现象 | 解决 |
+|----|------|------|
+| 固定宿主端口 | `ports: ["3000:3000"]` 扩到第二个就 `port is already allocated` | 业务服务改用 `expose: ["3000"]`（仅容器网络内可见），前面单独放一个 nginx 容器当 LB 独占 80:80 |
+| `deploy.replicas` 在单机 Compose 不生效 | 写了 `replicas: 3` 却只起 1 个 | 官方文档明确：`deploy.replicas` 只对 **swarm** 下的服务生效，普通 `docker compose up` 忽略它、用 `--scale`。多机集群用 `docker stack deploy`（Swarm）或上 K8s |
+| 写死 `container_name` | 容器名必须唯一，第二个副本起不来 | 删掉 `container_name`，用服务名 + Compose 网络访问 |
+
+**负载均衡怎么配**：nginx 的 `upstream` 写**服务名**而不是 IP——Docker 内嵌 DNS 会把服务名解析到全部副本 IP。
+
+```nginx
+upstream api_backend {
+    server api:3000;     # ← 服务名，不是 IP
+}
+server {
+    listen 80;
+    location /api/ { proxy_pass http://api_backend; }
+}
+```
+
+> ⚠️ **扩副本的前提是无状态**：session / 内存缓存必须外置到 Redis，否则请求轮到另一个副本就"掉登录"。判断标准：**杀掉任意一个实例，用户有感知吗？有感知就说明还有状态没搬出去。**
+>
+> Node 容器化如何吃满多核的完整策略（含容器内 cluster、cgroup 配额、CPU throttle）见 [Node.js 服务部署最佳实践 · 容器化如何充分利用多核](/service/node/node-deployment)。
+
 ## 镜像大小优化技巧
 
 | 技巧 | 效果 |

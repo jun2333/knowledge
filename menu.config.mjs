@@ -1172,6 +1172,31 @@ export default {
             link: '/java-practice/mall-design/02-token-invalidation-design'
           }
         ]
+      },
+      {
+        text: '🚄 12306 设计记录',
+        items: [
+          {
+            text: '总览（四条技术主线）',
+            link: '/java-practice/07-microservice-12306'
+          },
+          {
+            text: '① 幂等设计（注解 + AOP + 四策略）',
+            link: '/java-practice/12306-design/01-idempotent'
+          },
+          {
+            text: '② 余票与选座（令牌桶 + BitMap）',
+            link: '/java-practice/12306-design/02-seat-and-ticket'
+          },
+          {
+            text: '③ 分布式 ID 与分库分表（基因法）',
+            link: '/java-practice/12306-design/03-distributed-id-sharding'
+          },
+          {
+            text: '④ 延迟关单（延时消息 + 最终一致）',
+            link: '/java-practice/12306-design/04-delayed-close-order'
+          }
+        ]
       }
     ],
     '/algorithms/': [

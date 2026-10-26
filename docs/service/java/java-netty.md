@@ -15,7 +15,7 @@
 | 裸 NIO 的痛苦 | Netty 的方案 |
 |--------------|-------------|
 | Selector 事件循环要自己写，边角 case 巨多 | EventLoop 封装好，你只管注册 Handler |
-| 半包/粘包（TCP 是字节流，没有消息边界） | 内置解码器（`LengthFieldPrepender` 等） |
+| 半包/粘包（TCP 是字节流，没有消息边界） | 内置帧编解码器（`LengthFieldBasedFrameDecoder` 拆包 / `LengthFieldPrepender` 加长度头） |
 | ByteBuffer 难用（flip/clear/compact 反人类） | `ByteBuf` 引用计数 + 池化 |
 | 线程模型自己设计 | Reactor 模型开箱即用 |
 | 内存泄漏难查（Buffer 用完要释放） | 池化 + 泄漏检测 |
@@ -101,12 +101,16 @@ public class EchoServer {
             .channel(NioServerSocketChannel.class)
             .childHandler(new ChannelInitializer<SocketChannel>() {
                 protected void initChannel(SocketChannel ch) {
-                    ch.pipeline().addLast(new SimpleChannelInboundHandler<String>() {
-                        protected void channelRead0(ChannelHandlerContext ctx, String msg) {
-                            System.out.println("收到: " + msg);
-                            ctx.writeAndFlush(msg);      // 原样写回（echo）
-                        }
-                    });
+                    ch.pipeline()
+                        .addLast(new LengthFieldBasedFrameDecoder(1024, 0, 4, 0, 4))  // ① 按 4 字节长度头拆包
+                        .addLast(new StringDecoder())                                  // ② 字节 → 字符串（入站）
+                        .addLast(new StringEncoder())                                  // ③ 字符串 → 字节（出站，写回时用）
+                        .addLast(new SimpleChannelInboundHandler<String>() {
+                            protected void channelRead0(ChannelHandlerContext ctx, String msg) {
+                                System.out.println("收到: " + msg);
+                                ctx.writeAndFlush(msg + "\n");      // 原样写回（echo）
+                            }
+                        });
                 }
             })
             .bind(8080).sync().channel().closeFuture().sync();
@@ -114,7 +118,7 @@ public class EchoServer {
 }
 ```
 
-30 行就是一个生产级高并发 TCP 服务器。换成裸 NIO，这个至少要写 200 行还一堆坑。
+三十来行就是一个能跑的高并发 Echo 服务（注意编解码器不能省：没有 `StringDecoder`，`SimpleChannelInboundHandler<String>` 永远收不到数据）。换成裸 NIO，这个至少要写 200 行还一堆坑；生产上还要补空闲检测、TLS、业务线程池、异常处理。
 
 ## 谁在用 Netty（知道生态地位就够）
 

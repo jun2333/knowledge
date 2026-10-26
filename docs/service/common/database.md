@@ -583,16 +583,25 @@ if (!filter.mightContain(id)) {
 
 ```javascript
 // 方案 1：互斥锁（只让一个请求查库，其他等待）
-async function getHotData(key) {
+const RELEASE_LOCK = `
+  if redis.call('get', KEYS[1]) == ARGV[1] then
+    return redis.call('del', KEYS[1])
+  else
+    return 0
+  end`
+
+async function getHotData(key, retry = 0) {
   const cached = await redis.get(key)
   if (cached) return JSON.parse(cached)
 
-  // 尝试获取分布式锁（SET NX = 只在 key 不存在时设置，设置成功 = 拿到锁）
-  const lock = await redis.set(`lock:${key}`, '1', 'NX', 'EX', 10)
+  // value 必须是"持有者唯一标识"，不能写死 '1'
+  const token = crypto.randomUUID()
+  const lock = await redis.set(`lock:${key}`, token, 'NX', 'EX', 10)
   if (!lock) {
-    // 没抢到锁，等一会儿重试
+    // 没抢到锁：等一下再看缓存（别人可能刚重建好），必须设重试上限
+    if (retry >= 20) throw new Error('重建缓存超时')
     await sleep(100)
-    return getHotData(key)
+    return getHotData(key, retry + 1)
   }
 
   try {
@@ -600,7 +609,9 @@ async function getHotData(key) {
     await redis.setex(key, 3600, JSON.stringify(data))
     return data
   } finally {
-    await redis.del(`lock:${key}`)  // 释放锁
+    // 必须"比对 token 再删"且两步原子（Lua）：
+    // 否则业务超过 10s 锁已过期被他人持有，你会把别人的锁删掉
+    await redis.eval(RELEASE_LOCK, 1, `lock:${key}`, token)
   }
 }
 

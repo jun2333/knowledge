@@ -143,6 +143,19 @@ pm2 restart my-api --update-env                  # 改了环境变量后重启�
 
 > 一句话：**PM2 是"裸机 / 虚拟机部署 Node 服务"的最优解；上了容器编排就交给编排层**。如果容器内一定要用，建议 `instances: 1`（只保留守护和日志能力，不做集群）。
 
+**那容器里怎么吃满多核？**（常见追问）
+
+不是靠 PM2，而是靠**多副本**：编排层起 N 个容器（每个 1 进程 1 核），前面用 nginx / K8s Service 分发流量。
+
+如果确实需要"一个容器吃满多核"（CPU 密集服务），那就在容器内用 **Node 内置 `cluster` 模块**（PM2 只是它的封装，容器里用内置模块更干净），并且**必须显式指定 worker 数**——`os.cpus().length` 在容器里返回的是**宿主机**核数，会导致 2 核的容器起 64 个 worker。
+
+```js
+// 容器内 cluster 的正确写法
+const WORKERS = Number(process.env.WEB_CONCURRENCY) || os.availableParallelism?.() || 1
+```
+
+> 完整的多核策略、cgroup 配额、CPU throttle 与选型表见 [Node.js 服务部署最佳实践 · 容器化如何充分利用多核](/service/node/node-deployment)。
+
 ## 常见问题
 
 | 问题 | 原因 / 解决 |

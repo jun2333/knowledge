@@ -25,11 +25,14 @@ Node 是**单线程事件循环 + 异步 IO**：
 |------|--------|---------|
 | **全程异步 IO** | 用 fs/promises、`await` 数据库，**绝不调阻塞版 API**（如 `readFileSync`） | 别自己堵死事件循环 |
 | **cluster 多进程** | 起 N 个 worker 进程吃满多核（Node 单进程只用一个核） | 单核 → 多核 |
+| **容器多副本** | 编排层起 N 个容器（各 1 进程 1 核）+ 负载均衡 | 还能跨机器，是容器化的主力解法 |
 | **worker_threads** | CPU 密集任务丢线程池 | 主线程不被计算卡住 |
 | **PM2 fork 模式** | `pm2 start app.js -i max`（多实例 + 自动重启） | 多核 + 进程守护 |
 | **nginx 反代前置** | 静态资源 nginx 直接吐、动态走 Node | 减少 Node 负担 + keepalive |
 
 **为什么 nginx 前置**：Node 不擅长静态文件/连接管理，nginx（C 写的、事件模型更极致）在前面挡静态 + 负载均衡，Node 专注业务。
+
+> **裸机 vs 容器：多核由谁组织？** 裸机/虚拟机靠 PM2 在**进程内** fork 多个 worker；容器化则由**编排层**起多个副本（多副本还能跨机器，容器内多进程不能）。容器内要用 cluster 时，worker 数**绝不能写 `os.cpus().length`**（那是宿主机核数），详见 [Node.js 服务部署最佳实践 · 容器化如何充分利用多核](/service/node/node-deployment)。
 
 ## 三、高可用设计（挂了/多了也不出事）
 

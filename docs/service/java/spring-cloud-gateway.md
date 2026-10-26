@@ -102,13 +102,13 @@ spring:
 **两条匹配规则**（面试常问）：
 
 1. **同一条路由上的多个 Predicate 是"与"（AND）关系**——上面这条要求路径 **且** 方法都满足
-2. **不同路由之间按配置顺序遍历，第一条匹配的命中即停止**（不继续往下找）
+2. **不同路由之间按 `order` 升序遍历，第一条匹配的命中即停止**（不继续往下找）。`order` 默认都是 0，此时等价于按配置顺序（排序是稳定的）；**一旦显式配了 `order`，配置顺序就不作数了**
 
-**所以具体路由必须写在宽泛路由前面**，否则被"截胡"：
+**所以具体路由要优先命中**——两种做法：写在前面（order 都是 0 时生效），或给具体路由更小的 `order`（更可靠）：
 
 ```yaml
 routes:
-  - id: order-detail      # ✅ 具体的写前面
+  - id: order-detail      # ✅ 具体的写前面（也可显式 order: -1 保证优先级）
     uri: lb://order-service
     predicates:
       - Path=/api/orders/special/**
@@ -118,7 +118,7 @@ routes:
       - Path=/api/orders/**
 ```
 
-如果反过来写，`/api/orders/special/xxx` 会先命中宽泛那条，特殊路由永远不生效——**而且不报错**，只是静默走错。排查时用 `GET /actuator/gateway/routes` 看实际生效的路由表。
+如果反过来写，`/api/orders/special/xxx` 会先命中宽泛那条，特殊路由永远不生效——**而且不报错**，只是静默走错。排查时用 `GET /actuator/gateway/routes` 看实际生效的路由表（列表顺序就是真实匹配顺序）。
 
 ### 过滤器链：order 决定一切
 
@@ -676,7 +676,7 @@ curl http://localhost:8080/actuator/gateway/routes   # 确认路由真的加载�
 | 网关和 Nginx 什么区别 | Nginx 是四层代理，扛连接和流量（TLS/静态资源）；网关是应用层，做路由/鉴权/限流/灰度。两者叠加，不是二选一 |
 | 网关核心三件套 | Route（规则）+ Predicate（要不要走这条）+ Filter（走之前/之后做什么） |
 | 多个 Predicate 什么关系 | AND，全部满足才匹配 |
-| 多条路由怎么选 | 按配置顺序遍历，第一条匹配的命中（所以具体路由要写前面） |
+| 多条路由怎么选 | 按 `order` 升序，第一条匹配即命中；order 都默认 0 时等于配置顺序，所以具体路由要么写前面、要么配更小的 order |
 | 过滤器执行顺序怎么定 | 按 order 升序；`chain.filter()` 之前是前置，之后是后置（洋葱模型，同 Koa） |
 | 关键 order 值 | 自定义 < 10000；`RouteToRequestUrlFilter`=10000、`LoadBalancerClientFilter`=10150、`NettyRoutingFilter`=MAX |
 | 为什么网关不能写阻塞代码 | 跑在 Netty 事件循环上，阻塞会卡住整个网关的所有请求 |

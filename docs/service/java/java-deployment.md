@@ -113,7 +113,11 @@ java -jar app.jar \
 | **GC 选择** | 一般用 G1；追求极低延迟（如交易系统）可用 ZGC（JDK 15+ 生产可用） |
 | **OOM 排查** | `-XX:+HeapDumpOnOutOfMemoryError` + MAT / VisualVM 分析 dump |
 
-> **最经典的坑**：容器 limit 是 1G，JVM 却按物理机内存算堆 → 堆 + 堆外超限 → **容器被 OOMKilled（不是 Java OOM，日志里看不到异常）**。所以：**显式设 `-Xmx`，且留出 ~30% 给堆外和系统**。
+> **容器里的两个坑，方向相反**：
+> - **老 JDK（8u191 之前）不感知容器**：limit 是 1G，JVM 按物理机 16G 算堆 → 堆 + 堆外超限 → **容器被 OOMKilled（不是 Java OOM，日志里看不到异常）**
+> - **新 JDK（10+）感知容器，但默认只给 25%**：limit 1G 只有 256M 堆，稍微多点数据就 `OutOfMemoryError`——所以"感知"不等于"配好了"
+>
+> 结论不变：**显式设 `-Xmx`（或用 `-XX:MaxRAMPercentage=70`），并留 ~30% 给堆外和系统**。
 
 ## 四、进程管理：两种方式
 
@@ -136,7 +140,9 @@ User=deploy
 WorkingDirectory=/opt/mall-admin
 EnvironmentFile=/opt/mall-admin/.env
 ExecStart=/usr/bin/java -Xms2g -Xmx2g -jar /opt/mall-admin/app.jar --spring.profiles.active=prod
-SuccessExitStatus=143          # SIGTERM(143) 视为正常退出(优雅停机)
+# SIGTERM(143) 视为正常退出（优雅停机），否则 systemd 会判成失败反复重启
+# 注意：unit 文件不支持行尾注释，注释只能单独成行
+SuccessExitStatus=143
 Restart=always
 RestartSec=5
 StandardOutput=append:/var/log/mall-admin/out.log

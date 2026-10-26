@@ -281,7 +281,7 @@ server:
     threads:
       max: 200            # 最大工作线程：同时处理 200 个请求
       min-spare: 10       # 常驻空闲线程（预热，防突发创建开销）
-    accept-count: 100     # 等待队列：线程满时，请求排队等，超过 100 拒绝连接
+    accept-count: 100     # 内核 accept 队列长度：连接已建立、Tomcat 还没来得及取走的排队上限
     max-connections: 8192 # 最大连接数（NIO 下可远大于线程数）
 ```
 
