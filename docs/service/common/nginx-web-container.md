@@ -351,6 +351,7 @@ sequenceDiagram
 ## 延伸阅读
 
 - [HTTP 与网络基础](/service/common/http-network-basics) - 请求到达 nginx 之前发生了什么
+- [API 网关：Spring Cloud Gateway 深入](/service/java/spring-cloud-gateway) - nginx 里面那层的分工：连接与流量 vs 请求与身份
 - [Java 服务部署最佳实践](/service/java/java-deployment) - mall 的完整部署架构（nginx 只是其中一环）
 - [Java IO/NIO 与序列化](/service/java/java-io) - Tomcat NIO 的底层原理
 - [Java（Spring Boot）高并发与高可用设计](/service/java/java-high-concurrency) - 限流算法的另一视角（应用层）

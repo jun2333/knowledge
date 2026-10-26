@@ -220,6 +220,7 @@ management:
 ## 延伸阅读
 
 - [线上问题排查](/service/troubleshooting) - 告警响了之后的 jstack/jmap 实战
+- [API 网关：Spring Cloud Gateway 深入](/service/java/spring-cloud-gateway) - 网关层的访问日志、traceId 与路由指标
 - [Elasticsearch 入门](/service/common/elasticsearch) - 日志支柱的存储与检索
 - [Java 服务部署最佳实践](/service/java/java-deployment) - ELK 在 mall 的接入方式
 - [数据库连接池与数据源](/service/common/database-connection-pool) - `hikaricp_connections_active` 指标的来源

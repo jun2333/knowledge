@@ -887,6 +887,10 @@ export default {
             link: '/service/java/spring-cloud'
           },
           {
+            text: 'API 网关：Spring Cloud Gateway',
+            link: '/service/java/spring-cloud-gateway'
+          },
+          {
             text: 'Netty 入门',
             link: '/service/java/java-netty'
           },
@@ -1037,6 +1041,10 @@ export default {
           {
             text: 'Spring Cloud 微服务',
             link: '/service/java/spring-cloud'
+          },
+          {
+            text: 'API 网关：Spring Cloud Gateway',
+            link: '/service/java/spring-cloud-gateway'
           },
           {
             text: 'Netty 入门',
