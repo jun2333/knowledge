@@ -4,7 +4,7 @@
 >
 > **读法建议**：不要按目录顺序从头读到尾——按下文的三阶段路径读，每篇开头都标了优先级（P0 必读 / P1 选读 / P2 加分）。
 
-## 一、知识地图（14 篇）
+## 一、知识地图（15 篇）
 
 ```mermaid
 graph TD
@@ -25,6 +25,7 @@ graph TD
     D --> D2["spring-boot<br/>全家桶实战"]
     D --> D3["spring-cloud<br/>微服务总览"]
     D --> D4["java-netty<br/>NIO 网络框架"]
+    D --> D5["rpc-in-java<br/>RPC 原理与生态"]
 
     E --> E1["java-high-concurrency<br/>高并发高可用设计"]
     E --> E2["java-deployment<br/>部署最佳实践"]
@@ -46,6 +47,7 @@ graph TD
 | [Spring Cloud 微服务](/service/java/spring-cloud) | P1 | Nacos/Feign/Sentinel/Gateway 总览 | 微服务岗 |
 | [Java IO/NIO](/service/java/java-io) | P1 | 流体系、BIO/NIO/AIO、序列化 | 读 Netty 前 |
 | [Netty 入门](/service/java/java-netty) | P1 | EventLoop/Pipeline/ByteBuf、RPC 生态 | 中高级岗 |
+| [RPC 原理与 Java 生态](/service/java/rpc-in-java) | P1 | 动态代理原理、Dubbo/gRPC/Feign、超时重试熔断 | 微服务岗 |
 | [Java 实战计划](/java-practice/) | P0 | mall 项目六阶段实操，把知识落到代码 | 贯穿全程 |
 
 ### 配套目录（不在本篇展开，按需查）
@@ -83,8 +85,9 @@ graph TD
 1. [Java 服务部署](/service/java/java-deployment) —— 打 jar、配 JVM、上容器
 2. [高并发高可用设计](/service/java/java-high-concurrency) —— 缓存三难/限流/容量估算
 3. [Java IO/NIO](/service/java/java-io) + [Netty 入门](/service/java/java-netty) —— 网络编程全景
-4. [Spring Cloud 微服务](/service/java/spring-cloud) —— 按需（微服务岗必读）
-5. 配合 [Java 实战计划](/java-practice/) 阶段 5-7：安全、微服务、部署全流程
+4. [RPC 原理与 Java 生态](/service/java/rpc-in-java) —— 服务间调用怎么发生的（Dubbo/gRPC/Feign）
+5. [Spring Cloud 微服务](/service/java/spring-cloud) —— 按需（微服务岗必读）
+6. 配合 [Java 实战计划](/java-practice/) 阶段 5-7：安全、微服务、部署全流程
 
 **验收标准**：把一个 Spring Boot 服务从零部署到服务器（含 Docker + nginx + 优雅停机）；面试能讲清"缓存三坑怎么防""线程池参数怎么定""为什么 3 级缓存解循环依赖"。
 

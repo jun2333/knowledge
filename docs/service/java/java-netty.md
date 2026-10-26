@@ -144,6 +144,7 @@ public class EchoServer {
 ## 延伸阅读
 
 - [Java IO/NIO 与序列化](/service/java/java-io) - 本文的地基：Channel/Buffer/Selector
+- [RPC 原理与 Java 生态](/service/java/rpc-in-java) - 本文在服务间调用场景的正式展开：Dubbo/gRPC 怎么用 Netty 传字节
 - [HTTP 与网络基础](/service/common/http-network-basics) - Netty 处理的数据在网络层的来龙去脉
 - [Java 并发编程](/service/java/java-concurrency) - EventLoop 的线程模型基础
 - [Spring Cloud 微服务](/service/java/spring-cloud) - OpenFeign/Gateway 的 RPC 语境

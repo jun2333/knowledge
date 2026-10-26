@@ -238,4 +238,5 @@ private static final long serialVersionUID = 1L;
 - [Java 并发编程](/service/java/java-concurrency) - 线程模型与 IO 模型的配合
 - [HTTP 与网络基础](/service/common/http-network-basics) - IO 模型的网络语境：TCP 握手/keep-alive
 - [Netty 入门](/service/java/java-netty) - NIO 的工程封装，本文的直接后继
+- [RPC 原理与 Java 生态](/service/java/rpc-in-java) - 序列化技术在跨进程调用中的实战选型（Protobuf/Hessian2）
 - [Java 服务部署最佳实践](/service/java/java-deployment) - 线上 JVM 与 IO 调优

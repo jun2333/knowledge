@@ -72,6 +72,8 @@ public interface OrderClient {
 
 **面试题：Feign 和直接 HTTP 调用区别？**——Feign 声明式（接口即客户端）、自动集成负载均衡、可配置超时/重试/降级，不用手写 HTTP 请求。
 
+> Feign 本质上是"跑在 HTTP 上的半个 RPC"——保留了方法调用的写法，但传输层仍是普通 HTTP + JSON。Dubbo / gRPC 这类真 RPC 的原理与选型，见 [RPC 原理与 Java 生态](/service/java/rpc-in-java)。
+
 **降级**（服务挂了返回兜底）：
 
 ```java
@@ -128,6 +130,7 @@ spring:
 
 ## 延伸阅读
 
+- [RPC 原理与 Java 生态](/service/java/rpc-in-java) - Feign / Dubbo / gRPC 的原理与选型
 - [分布式基础](/service/common/distributed-basics) - CAP 理论、分布式事务
 - [Docker 入门](/service/docker) - 微服务部署载体
 - [权限设计](/service/permission-design) - 网关鉴权的落地

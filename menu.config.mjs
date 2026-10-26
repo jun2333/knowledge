@@ -889,6 +889,10 @@ export default {
           {
             text: 'Netty 入门',
             link: '/service/java/java-netty'
+          },
+          {
+            text: 'RPC 原理与 Java 生态',
+            link: '/service/java/rpc-in-java'
           }
         ]
       },
@@ -1037,6 +1041,10 @@ export default {
           {
             text: 'Netty 入门',
             link: '/service/java/java-netty'
+          },
+          {
+            text: 'RPC 原理与 Java 生态',
+            link: '/service/java/rpc-in-java'
           },
           {
             text: 'Java 服务部署最佳实践',
