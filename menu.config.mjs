@@ -1114,6 +1114,14 @@ export default {
             link: '/java-practice/'
           },
           {
+            text: '📖 双项目精读计划（mall × 12306）',
+            link: '/java-practice/code-reading-plan'
+          },
+          {
+            text: '🤖 ragent 精读地图（AI 应用）',
+            link: '/java-practice/ragent-reading'
+          },
+          {
             text: 'IDEA 使用指南',
             link: '/java-practice/08-intellij-idea'
           }

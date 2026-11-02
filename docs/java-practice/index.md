@@ -39,6 +39,8 @@
 | 7 | 12306 微服务（推荐） | 四条主线深挖：幂等 / 余票选座 / 分库分表 / 延迟关单 | [07 12306 微服务总览](/java-practice/07-microservice-12306) |
 
 > 📌 **实战收获记录**：在 mall 实战中沉淀的收获与踩坑，持续追加 → [harvest.md](/java-practice/harvest)
+>
+> 📖 **双项目精读计划**：不按文件读，按"同一个问题在两个项目里怎么解"读，10 天 10 张卡片 → [code-reading-plan.md](/java-practice/code-reading-plan)
 
 ## 四、阶段详解
 

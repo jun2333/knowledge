@@ -6,6 +6,38 @@
 承接 Spring Boot 篇。MyBatis-Plus = MyBatis（手写 SQL 的 ORM）+ 增强（CRUD 免写、分页、代码生成器）。对标你熟悉的 TypeORM，但哲学完全不同：**SQL 是一等公民**。
 :::
 
+## 和原生 MyBatis 的关系（先看这个，否则会懵）
+
+这一块有三层，新手最容易混的是「MyBatis 不是靠 XML 写 SQL 吗，怎么现在一行 SQL 都没有」：
+
+| 层 | 你写什么 | 谁生成 SQL |
+|--|---------|-----------|
+| ① JDBC | `Connection` / `PreparedStatement` / `ResultSet` 全套 | 你手写，还要自己遍历结果集 |
+| ② MyBatis | **只写 SQL**（XML 或注解），参数映射和结果集映射它包了 | 你写 |
+| ③ MyBatis-Plus | 大部分场景**连锁 SQL 都不写** | 它按实体自动生成 |
+
+同一个「按 id 查用户」，三种写法对照：
+
+```xml
+<!-- ② MyBatis XML：resources/mapper/UserMapper.xml -->
+<select id="findById" resultType="User">
+    SELECT * FROM users WHERE id = #{id}
+</select>
+```
+
+```java
+// ② MyBatis 注解
+@Select("SELECT * FROM users WHERE id = #{id}")
+User findById(@Param("id") Long id);
+
+// ③ MyBatis-Plus（一行，无 SQL）
+userMapper.selectById(id);
+```
+
+**关键认知：MP 不是替代 MyBatis，是在它上面加了一层。** 运行时依然是 `SqlSession → Executor → JDBC` 那条老路，MP 只是在**启动时**替你生成了「XML 本该写的内容」（也就是 `MappedStatement`）。
+
+所以后面讲的 MapperProxy、四大对象、两级缓存，全部是 **MyBatis 的机制**，MP 一层都没改。
+
 ## 和 TypeORM / JPA 的哲学差异
 
 | | TypeORM / JPA | MyBatis-Plus |
@@ -94,6 +126,48 @@ List<User> list = userMapper.selectList(
 | `like: { name: '%张%' }` | `.like(User::getName, "张")` |
 | `in: ...` | `.in(User::getId, ids)` |
 
+> `Wrappers.lambdaQuery(User.class)` 和 `new LambdaQueryWrapper<User>()` 完全等价，前者是静态工厂。
+> 嵌套调用时前者能省泛型参数（不用写 `Wrappers.<User>lambdaQuery()`），项目里更常见。
+
+## Wrapper 的边界
+
+`LambdaQueryWrapper` 只能构造**单表**的 `WHERE / ORDER BY / LIMIT`，做不了 join。所以分界线很清晰：
+
+| 场景 | 用什么 |
+|--|--------|
+| 单表条件查询 | `Wrapper`（绝大多数场景） |
+| 多表 join、聚合、报表 | `@Select` 注解，复杂到读不下去才开 XML |
+
+**「零 XML」是完全可行的现实选择**：一个中等规模的后端项目可以全库没有 mapper XML——单表走 Wrapper，多表走 `@Select`。看到「MyBatis 必须写 XML」的说法，那是原生 MyBatis 时代的事。
+
+### `selectOne` 的隐含约束
+
+```java
+mapper.selectOne(wrapper);   // 结果 >1 条直接抛 TooManyResultsException
+```
+
+所以「取最新一条」这类查询必须配 `.last("limit 1")`——**那是保护措施，不是性能优化**：
+
+```java
+mapper.selectOne(
+    Wrappers.lambdaQuery(SummaryDO.class)
+        .eq(SummaryDO::getConversationId, conversationId)
+        .orderByDesc(SummaryDO::getId)   // 雪花 ID 递增，id 降序 = 时间倒序
+        .last("limit 1")
+);
+```
+
+::: warning `.last()` 是字符串直拼
+它绕过所有参数化机制，把内容原样塞到 SQL 末尾：
+
+```java
+.last("limit 1")                    // ✅ 字面量，安全
+.last("limit " + userLimit)          // ❌ 拼接外部输入 = SQL 注入
+```
+
+只能用常量。确实需要外部数值（`limit` / `offset`）时，先做类型和范围校验，或者改用 `Page` 分页。
+:::
+
 ## 分页查询（高频用法）
 
 ```java
@@ -118,6 +192,33 @@ long total = page.getTotal();             // 总条数（自动 COUNT）
 ```
 
 **注意**：分页必须配置分页插件，否则 `Page` 参数会被忽略。
+
+## 逻辑删除：`@TableLogic`
+
+```java
+@TableLogic
+private Integer deleted;
+```
+
+配了之后：
+
+- `deleteById(id)` → 实际执行 `UPDATE ... SET deleted = 1`
+- 所有 **MP 自动生成**的查询 → 自动追加 `WHERE deleted = 0`
+
+**最大的坑：手写 SQL 不会自动加条件。**
+
+```java
+// Wrapper 查询：自动带 deleted = 0 ✅
+mapper.selectList(Wrappers.lambdaQuery(User.class).eq(User::getName, "张三"));
+
+// @Select / XML 手写：不加，查得到已删除的数据 ❌
+@Select("SELECT * FROM users WHERE name = #{name}")
+List<User> findByName(@Param("name") String name);
+```
+
+所以手写 SQL 必须自己带 `AND deleted = 0`，自定义的 `update` / `count` / `join` 同理。
+
+> 排查「列表里突然多出一条已删数据」时，第一个怀疑对象就是这条 SQL 是不是手写的。
 
 ## 手写 SQL：XML 还是注解
 

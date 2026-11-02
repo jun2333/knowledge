@@ -475,10 +475,12 @@ await logAspect(txAspect(target))(10)
 public void doSomething() { ... }
 ```
 
-三个高频坑：
-- **注解放接口上不生效**：Spring Boot 3 默认 CGLIB 代理（基于类），接口注解不被识别 → 必须放**实现类方法**上
-- **自调用失效**：同类的 `this.method()` 内部调用不走代理，事务不生效 → 事务方法要跨类调用
-- **默认只回滚 RuntimeException**：受检异常要加 `rollbackFor = Exception.class`
+五个高频坑：
+- **注解放接口上不推荐**：Spring 会回退到接口方法查找，能识别；但事务是实现细节，接口上声明污染契约、且容易被实现类注解覆盖 → 官方推荐放**实现类方法**上。真正**静默失效**的是：非 public 方法、final 方法、final 类、同类自调用（都不报错，只是事务悄悄没了）
+- **自调用失效**：同类的 `this.method()` 内部调用不走代理（`this` 是原始对象，不是代理），事务不生效 → 事务方法要跨类调用。`@Async` / `@Cacheable` 同理。反例：外层方法已有 `@Transactional` 时，内层即使自调用也在事务内，此时内层注解只是声明传播级别
+- **默认只回滚 RuntimeException**：受检异常要加 `rollbackFor = Exception.class`。设计依据是「受检异常 = 可预期的业务结果，调用方该处理」，但多数业务想要"任何异常都回滚"，所以建议默认就带上
+- **catch 吞掉异常也不回滚**：Spring 判断回滚的唯一依据是"方法有没有把异常抛出去"，catch 后自行消化等于告知成功 → 需要回滚时在 catch 里调 `TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()`。这个比坑三更隐蔽，因为抛的是 RuntimeException 也照样提交
+- **长事务**：事务里夹着 HTTP 请求、发邮件、调模型，数据库连接从方法开始一直占到结束 → 并发一高连接池就耗尽。非数据库操作一律挪到事务外，或拆成"事务内落库 + 事务后通知"
 
 ### 三个"拦截能力"的区分（面试必问）
 
