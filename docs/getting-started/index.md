@@ -119,7 +119,16 @@ export default {
   models: {
     baseUrl: 'http://localhost:11434/v1',  // 默认本地 Ollama
     apiKeyEnv: 'OPENAI_API_KEY',           // 远程时 Key 从这个环境变量读
-    chat: 'qwen3:8b',
+    thinking: false,                       // 关掉思考，首字快一个数量级（本地 Ollama 生效）
+    timeoutMs: 120000,                     // 空闲超时：这么久没数据就中断（防模型卡住挂死）
+    pool: {                                // 模型池：只描述「连哪」
+      'qwen3-8b': { model: 'qwen3:8b' },
+    },
+    stages: {                              // 按阶段选：数组顺序即优先级 / 降级顺序
+      prepare: ['qwen3-8b'],               // 改写 + 判断要不要检索
+      generate: ['qwen3-8b'],              // 生成阶段
+      // generateComplex: ['qwen3-8b'],   // 复杂问题用另一条链（开思考），不配则沿用 generate
+    },
     embedding: 'bge-m3',
   },
   chroma: { host: 'localhost', port: 8000 },
@@ -167,8 +176,17 @@ export default {
 
 ```js
 models: {
-  chat:      { baseUrl: 'https://api.deepseek.com/v1',   model: 'deepseek-chat',        apiKeyEnv: 'DEEPSEEK_API_KEY' },
-  embedding: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'BAAI/bge-m3',          apiKeyEnv: 'SILICONFLOW_API_KEY' },
+  baseUrl: 'http://localhost:11434/v1',   // 远端候选自己写 baseUrl 覆盖
+  pool: {
+    'ds-flash':  { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', apiKeyEnv: 'DEEPSEEK_API_KEY' },
+    'qwen3-8b':  { model: 'qwen3:8b' },
+  },
+  stages: {
+    // 云端优先，挂了自动回本地
+    generate: ['ds-flash', 'qwen3-8b'],
+    prepare: ['qwen3-8b'],
+  },
+  embedding: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'BAAI/bge-m3', apiKeyEnv: 'SILICONFLOW_API_KEY' },
 },
 chroma: {
   url: 'https://xxx.chromadb.cloud',   // 远程用 url（http/https）+ token
@@ -225,7 +243,9 @@ pnpm kb import ~/old-notes             # 真的导入
 
 | 命令 | 作用 |
 |------|------|
-| `pnpm dev` | 启动前后端（文档 5173 / API 3000） |
+| `pnpm dev` | 启动前后端（文档 5173 / API 3000），**前台运行**，日志直接打终端 |
+| `pnpm serve` | **只起 API**（3000），前台运行 —— 想单独看服务端日志时用这个 |
+| `pnpm serve:debug` | 同上，但带调试日志（`LOG_LEVEL=debug`），能看到检索/生成/prompt 每一步 |
 | `pnpm index` | 增量更新向量索引（改完文档跑这个） |
 | `pnpm index:full` | 全量重建索引（换向量模型后必须） |
 | `pnpm chroma:start` / `pnpm chroma:stop` | 启动 / 停止**本实例自己的**向量库容器 |
@@ -233,6 +253,10 @@ pnpm kb import ~/old-notes             # 真的导入
 | `pnpm kb import <目录>` | 把已有笔记导入 `docs/imported/`（`--dry-run` 只预检） |
 | `pnpm build` | 构建静态站点（生产） |
 | `npx kb init [目录]` | 生成一个新的知识库实例（**必须用 `npx`**，原因见上面「②」） |
+
+> **日志**：服务端日志分三级——开发环境默认 `debug`（每一步都打），生产环境默认 `info`，
+> 用 `LOG_LEVEL=info|debug|warn|error` 覆盖。开发环境装了 `pino-pretty` 就是彩色输出，
+> 没装则是 JSON 行。
 
 ## 五、本地放两个实例（互不干扰）
 

@@ -36,15 +36,56 @@ export default {
   models: {
     baseUrl: 'http://localhost:11434/v1',
     apiKeyEnv: 'OPENAI_API_KEY',
-    chat: 'qwen3:8b',
     embedding: 'bge-m3',
-    // 远程示例（取消注释并配好对应环境变量即可）：
-    // chat: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', apiKeyEnv: 'DEEPSEEK_API_KEY' },
-    // embedding: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'BAAI/bge-m3', apiKeyEnv: 'SILICONFLOW_API_KEY' },
+    // 关掉思考：查笔记这类问题不需要推理，开着首字要等 34 秒（实测），关掉降到个位数。
+    // 只对本地 Ollama 生效（走原生 /api/chat 的 think 参数；OpenAI 兼容接口不支持该参数）。
+    thinking: false,
+    // 空闲超时：多久没收到任何数据就中断（默认 120s）。
+    // 防的是「连接还在但一个字节都不来」——没有它会一直挂着。
+    timeoutMs: 120000,
+
+    // 模型池：只描述「连哪」，不含调用参数。key 是别名。
+    pool: {
+      // 常规档：继承上面的 thinking: false，用于准备阶段和简单问题的生成
+      'qwen3-8b': { model: 'qwen3:8b' },
+      // 同模型开思考：复杂问题的生成用
+      'qwen3-8b-think': { model: 'qwen3:8b', thinking: true },
+
+      // ── 外部模型示例（取消注释并配好环境变量即可用）──────────────
+      // SiliconFlow：OpenAI 兼容，key 放 .env，配置里只写变量名
+      // 'sf-qwen3-8b': {
+      //   baseUrl: 'https://api.siliconflow.cn/v1',
+      //   model: 'Qwen/Qwen3-8B',
+      //   apiKeyEnv: 'SILICONFLOW_API_KEY',
+      //   timeoutMs: 30000,          // 远端超时给短一点，挂了快速失败好切下一个
+      // },
+      // DeepSeek：便宜、指令遵循好，非思考模式也能稳定调工具
+      // 'ds-flash': {
+      //   baseUrl: 'https://api.deepseek.com/v1',
+      //   model: 'deepseek-chat',
+      //   apiKeyEnv: 'DEEPSEEK_API_KEY',
+      //   timeoutMs: 30000,
+      // },
+    },
+
+    // 按阶段选模型：数组顺序 = 优先级 = 失败降级顺序
+    stages: {
+      // 准备阶段：改写 + 要不要检索 + 复杂不复杂（一次调用搞定）
+      prepare: ['qwen3-8b'],
+      // 简单问题的生成：关思考，快
+      generate: ['qwen3-8b'],
+      // 复杂问题的生成：开思考，回答更完整（对比 / 综合 / 原理类问题）
+      generateComplex: ['qwen3-8b-think'],
+    },
   },
 
   // 文本切分
   chunk: { size: 1000, overlap: 200 },
+
+  // 对话编排
+  // 只有一条路径：改写 → 意图判断 → 检索 → 拼装 → 生成
+  // topK = 预检索条数（生成阶段模型还能自己补检索，编号沿用同一张表）
+  agent: { topK: 3 },
 
   // Rerank 重排（实测 bge-reranker-base 弱于 bge-m3 向量本身，默认关闭）
   rerank: { enabled: false, candidates: 20 },
@@ -114,6 +155,7 @@ export default {
       title: '知识库助手',
       welcome: '你好！我是知识库助手',
       hints: '可以问我关于本知识库涉及的任何问题',
+      suggestions: ['前端主流框架对比', 'agent是什么?']
     },
   },
 }

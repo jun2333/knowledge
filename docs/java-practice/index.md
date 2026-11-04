@@ -37,6 +37,7 @@
 | 5 | 安全与权限 | 读懂 JWT 过滤器、白名单、动态权限（RBAC） | [05 安全与权限](/java-practice/05-security-auth) |
 | 6 | 动手开发 | 在 mall 里**新增一个完整功能模块**，走一遍真实开发流程 | [06 动手开发新功能](/java-practice/06-build-new-feature) |
 | 7 | 12306 微服务（推荐） | 四条主线深挖：幂等 / 余票选座 / 分库分表 / 延迟关单 | [07 12306 微服务总览](/java-practice/07-microservice-12306) |
+| 8 | **开发方法论** | 拿到一个需求，从澄清到上线的**完整动作序列**（含并发设计、部署顺序、排障） | [10 从需求到上线](/java-practice/10-requirement-to-delivery) |
 
 > 📌 **实战收获记录**：在 mall 实战中沉淀的收获与踩坑，持续追加 → [harvest.md](/java-practice/harvest)
 >
@@ -132,6 +133,21 @@
 **动手**：至少启动 gateway + user + ticket 三个服务走通一次查票；在三处关键代码打断点（领令牌 / 判座 / 关单消费）。
 
 **验收**：能画出"下单全链路"，并说清每条主线的**代价**（不只是优点）。
+
+### 阶段 8：从需求到上线（开发方法论）
+
+**目标**：把「会写代码」升级成「会交付需求」。用一个真实需求（优惠券发放与核销改造）走一遍高级后端的完整思路流：
+
+**读**：需求单 → 拆名词/动词/约束 → 定位现有代码的反面教材 → 设计表与状态机 → 设计接口契约与错误码 → 设计并发方案 → 编码 → 自测 → 部署 → 排障
+
+**重点节**：
+- [Step 1 澄清需求](/java-practice/10-requirement-to-delivery#step-1-clarify) —— 待澄清清单怎么列
+- [Step 5 并发与一致性](/java-practice/10-requirement-to-delivery#step-5-concurrency) —— 条件 UPDATE + 影响行数，**后端真正的门槛所在**
+  - [6.0 地基：事务不会自动帮你加锁](/java-practice/10-requirement-to-delivery#mvcc-baseline) —— 快照读 vs 当前读，**理解并发前先看这节**
+- [Step 9 部署](/java-practice/10-requirement-to-delivery#step-9-deploy) —— DDL 与代码的先后顺序、回滚预案
+- [Step 10 排障](/java-practice/10-requirement-to-delivery#step-10-troubleshoot) —— 常见异常速查表
+
+**验收**：能画出一个需求的完整交付流程图；能说清「为什么防超发要用条件 UPDATE 而不是先查再改」。
 
 ## 五、学习方法论
 

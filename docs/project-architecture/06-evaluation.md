@@ -167,12 +167,17 @@ pnpm kb cases:gen --limit 20   # 用本地 LLM 逐篇文档生成"能由它回�
 这是**测幻觉的关键设计**。评估集里放了几道**知识库答不了**的题：
 
 ```ts
-{ q: '今天上海的天气怎么样？', category: '知识库外(负例)', expectAnswer: false },
-{ q: '请介绍一下 Kubernetes 的 Pod 调度机制', category: '知识库外(负例)', expectAnswer: false },
-{ q: '2025 年世界杯冠军是谁？', category: '知识库外(负例)', expectAnswer: false },
+// ⚠️ 这里**不能写题目原文**——本文档本身在知识库里，会被检索到。
+// 写出原文的后果（实测踩过）：模型检索到本文档 → 看到"资料里提到了这道题"
+// → 把文档里的 [来源N] 字样当成真编号 → 编出一个越界引用。
+// 题目原文在 eval/generation-cases.json 里，这里只说有几道、考什么。
+{ q: '<知识库答不了的题，原文见 eval/generation-cases.json>', category: '知识库外(负例)', expectAnswer: false },
 ```
 
 对这类题，**正确的行为是"如实说知识库没有"**，而不是硬答。脚本用关键词（没有/未找到/无法提供…）粗判，人工复核。
+
+> **通用规则**：任何写进知识库、又包含评估集题目的文档，都有这个问题。
+> 评估集设计类文档要么不写题目原文，要么把这类文档排除出索引（见 `knowledge.config.mjs` 的 `index.exclude`）。
 
 ## 五、评估体系的演进（实战顺序）
 

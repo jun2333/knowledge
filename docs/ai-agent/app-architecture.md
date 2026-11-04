@@ -164,6 +164,8 @@ class Agent {
 
 ### ReAct 模式
 
+> **ReAct 是 Agent 的一种实现范式，不是同类概念。** Agent 回答的是"谁来决定下一步"（模型 vs 代码），ReAct 回答的是"决策过程怎么组织"（思考 → 行动 → 观察 → 再思考）。同一个 Agent 也可以换成 Plan-and-Execute、单轮 Function Calling 等别的范式。现在主流框架（如 agentscope 的 `ReActAgent`）是「ReAct 的循环 + Function Calling 的结构化 tool_calls」的组合——所以你会看到代码里既有一轮轮循环，又是结构化的工具调用。
+
 ReAct（Reasoning + Acting）是最经典的 Agent 模式：先思考，再行动，再观察结果。
 
 ```

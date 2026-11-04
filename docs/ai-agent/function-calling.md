@@ -220,10 +220,79 @@ for (const block of response.content) {
 
 宿主启动时会从 MCP server 拉取工具定义，**转成自家 LLM API 的 `tools` 参数格式**注入进去。对 LLM 来说毫无区别——它看到的还是普通的 function calling。
 
+### 两个价值：标准化之外，还有能力扩展
+
+MCP 常被说成"工具格式的统一"，但它其实解决两个不同的问题：
+
+**① 标准化**——同一个 server 可以被 Claude Code、IDE 插件、自研应用同时使用，不用为每个宿主重写一遍对接。
+
+**② 能力扩展**（更本质的一半）——本地 Function Calling 的工具**实现在你的应用进程里**，能力边界等于"你的代码能访问什么"；MCP 工具**实现在独立进程或远程服务里**，能力边界等于"那个 server 能访问什么"。
+
+接 GitHub 就能看出差别：
+
+```
+本地 Function Calling              MCP
+────────────────────              ─────────────────────────────────
+① 写 API 客户端（octokit）         ① npx -y @modelcontextprotocol/server-github
+② 处理 OAuth / PAT                ② 配个 token
+③ 处理分页、rate limit
+④ 定义 schema + 写 handler
+⑤ API 版本变了自己跟着改
+```
+
+省掉的不只是"定义 schema"，**是整个集成的维护责任**。
+
+| | 本地 Function Calling | MCP |
+|--|---------------------|-----|
+| 工具在哪 | 你的进程内 | 独立进程 / 远程服务 |
+| 能力边界 | 你的应用能访问的 | **server 能访问的** |
+| 谁维护 | 你 | 工具提供方 |
+| 凭据 | 握在你手里 | 握在 server 手里 |
+| 故障隔离 | 工具挂了可能拖垮进程 | 崩了宿主还活着 |
+| 适合 | 自己的数据 | 别人的系统 |
+
+**但不是所有工具都该做成 MCP。** 一次 MCP 调用要付出进程间通信 + JSON 序列化的代价，一个"读配置文件"的工具包成 server 纯属自找麻烦：
+
+```
+工具属于自己应用的一部分（查自己的库、读自己的配置）→ 本地 Function Calling 更简单
+工具属于外部系统（GitHub、Slack、公司内部 API）    → MCP 更合适
+```
+
+### 三个角色：Host / Client / Server
+
+读 MCP 文档最容易绕晕的就是这三个词，先分清：
+
+```
+Host（宿主应用：Claude Desktop / QoderCLI / 自研 Web 应用）
+  │  ← 提供 UI、持有 LLM API Key、决定要不要把工具结果喂回模型
+  ├── MCP Client（Host 内置，与每个 Server 一对一）
+  │      │  ← 实现协议：初始化握手、tools/list、tools/call、通知
+  │      └── MCP Server（工具提供方）
+  │             ← 只关心"我有哪些工具、怎么执行"，
+  │               不关心宿主是谁、模型是哪家
+  └── MCP Client ── MCP Server（可以接多个）
+```
+
+对应到「谁写什么」：
+
+| 角色 | 谁来实现 | 你要做的事 |
+|---|---|---|
+| **Host** | AI 应用本身 | 选一个（Claude Code / IDE 插件）或自己开发 |
+| **Client** | **Host 内置** | **不用写**——协议细节由 Host 处理 |
+| **Server** | 你（或第三方） | 写工具，或用现成的官方包 |
+
+所以「注册 MCP」这个动作，本质是**告诉 Host 怎么启动一个 Server 进程**：
+
+```json
+{"command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"]}
+```
+
+`command` 不是"客户端命令"，而是"**如何拉起 server 进程**"的命令。这里的 `@modelcontextprotocol/server-filesystem` 是**官方 Server 包**，`npx` 负责下载并执行它，Host 再通过 stdio 和它通信。
+
 ### 最小 MCP server 示例
 
 ```javascript
-// verify-mcp-server.js
+// .harness/mcp/verify-server.js
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
@@ -243,6 +312,23 @@ server.registerTool('verify', {
 }, async (args) => {
   const results = runVerification(args.commands)
   return { content: [{ type: 'text', text: JSON.stringify(results) }] }
+})
+
+// 同一个 server 可以注册任意多个工具，tools/list 会一次全部返回
+server.registerTool('read_notes', {
+  title: '读取项目笔记',
+  description: '按关键词读取 .notes 目录下的笔记，返回匹配的片段。',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      keyword: { type: 'string', description: '检索关键词' },
+      limit: { type: 'number', description: '最多返回几条，默认 3' },
+    },
+    required: ['keyword'],
+  },
+}, async (args) => {
+  const hits = searchNotes(args.keyword, args.limit ?? 3)
+  return { content: [{ type: 'text', text: JSON.stringify(hits) }] }
 })
 
 const transport = new StdioServerTransport()
@@ -267,6 +353,44 @@ await server.connect(transport)
 ```
 
 Claude Code 则用命令行注册：`claude mcp add harness node .harness/mcp/verify-server.js`。
+
+两个字段的含义：
+
+| 字段 | 作用 |
+|---|---|
+| `command` | **启动 server 进程**的可执行文件：`node` / `npx` / `python` / `java` 都行 |
+| `args` | 传给它的参数。用现成的 npm 包时就是 `["-y", 包名, ...]`，`-y` 表示跳过安装确认 |
+
+### 自己写 client 的话
+
+绝大多数场景不用写——Claude Code、IDE 插件、Claude Desktop 都内置了 Client，它们负责握手、拉工具列表、转发调用。只有**自己做宿主应用**（比如把 MCP 接进自研的后端服务）时才需要：
+
+```javascript
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+
+const transport = new StdioClientTransport({
+  command: 'node',
+  args: ['.harness/mcp/verify-server.js'],
+})
+const client = new Client({ name: 'my-host', version: '1.0.0' })
+await client.connect(transport)
+
+// 发现：拿到 server 声明的全部工具
+const { tools } = await client.listTools()
+// [{ name: 'verify', description: '...', inputSchema: {...} },
+//  { name: 'read_notes', description: '...', inputSchema: {...} }]
+
+// 调用：参数由模型给出，这里负责执行
+const result = await client.callTool({
+  name: 'verify',
+  arguments: { commands: ['pnpm build'] },
+})
+```
+
+拿到 `tools` 之后，Host 要做的事和在 Function Calling 里**完全一样**：转成各家 LLM API 的 `tools` 参数 → 让模型选 → 用 `callTool` 执行 → 结果喂回模型。
+
+**MCP 只替换了「工具从哪来、怎么执行」这一段，推理循环还是宿主自己写。**
 
 ### 调用闭环
 

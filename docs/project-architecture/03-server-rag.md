@@ -29,9 +29,12 @@ src/
 ├── docker.ts           # docker 命令封装（探测端口占用、挑空闲端口）
 ├── ollama.ts           # 本地模型管理（kb ollama:pull / ollama:stop）
 ├── agent/
-│   ├── loop.ts         # Agent 工具调用循环
-│   ├── prompt.ts       # 系统提示词
-│   └── tools.ts        # 工具定义与实现
+│   ├── pipeline.ts     # 对话管线（唯一入口 runChat）：改写→意图→检索→拼装→生成
+│   ├── prepare.ts      # 阶段一：改写 + 判断要不要检索 + 复杂度
+│   ├── loop.ts         # 生成阶段的工具循环
+│   ├── prompt.ts       # 提示词入口（chat / generate）
+│   └── tools.ts        # 工具定义与实现（来源登记表 = 引用编号唯一权威）
+├── observe/            # 阶段观测（写 data/logs/*.jsonl；kb obs 查看）
 ├── rag/
 │   ├── indexer.ts      # 建索引（离线）
 │   ├── chunker.ts      # 文本切分
@@ -54,7 +57,12 @@ export default {
   collectionName: 'knowledge_base',
   dataDir: './data',
   evalDir: './eval',
-  models: { baseUrl: 'http://localhost:11434/v1', chat: 'qwen3:8b', embedding: 'bge-m3' },
+  models: {
+    baseUrl: 'http://localhost:11434/v1',
+    pool: { 'qwen3-8b': { model: 'qwen3:8b' } },   // 模型池：只描述「连哪」
+    stages: { prepare: ['qwen3-8b'], generate: ['qwen3-8b'] },  // 按阶段选，顺序即优先级
+    embedding: 'bge-m3',
+  },
   chunk: { size: 1000, overlap: 200 },
   rerank: { enabled: false, candidates: 20 },  // 实测反而变差，默认关
   chroma: { host: 'localhost', port: 8000 },
@@ -62,8 +70,9 @@ export default {
 }
 ```
 
-> `models.chat` / `models.embedding` 也可以写成对象（`{ baseUrl, model, apiKeyEnv }`）指向远程服务；
+> 池成员（`models.pool`）和 `models.embedding` 也可以写成对象（`{ baseUrl, model, apiKeyEnv }`）指向远程服务；
 > 加载后归一化成 `config.chat.baseUrl` / `config.embedding.baseUrl` 等，运行时只认这一份。
+> **按阶段选模型用 `models.stages`**（`prepare` / `generate` / `generateComplex`），数组顺序即失败降级顺序。
 
 > 加载后的绝对路径以 `config.docsPath` 等形式提供给运行时代码。
 > **内容根固定为实例根下的 `docs/`**（不再可配）——内容与站点共用同一批 Markdown，不需要另外维护一份语料。

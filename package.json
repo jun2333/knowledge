@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "kb dev",
+    "serve": "kb serve",
+    "serve:debug": "LOG_LEVEL=debug kb serve",
     "build": "BASE_PATH=${BASE_PATH:-/knowledge/} kb build",
     "preview": "BASE_PATH=/knowledge/ kb preview",
     "index": "kb index",
@@ -16,13 +18,17 @@
     "ollama:pull": "kb ollama:pull",
     "ollama:stop": "kb ollama:stop",
     "sync": "node scripts/sync-local.mjs",
-    "deploy": "bash scripts/deploy-github.sh"
+    "deploy": "bash scripts/deploy-github.sh",
+    "sync:core": "bash scripts/sync-core.sh"
   },
   "dependencies": {
     "@minijun/kb-core": "^0.1.2",
-    "@minijun/kb-site": "^0.1.2"
+    "@minijun/kb-site": "^0.1.2",
+    "marked": "^18.1.2",
+    "pino": "^10.4.0"
   },
   "devDependencies": {
+    "pino-pretty": "^13.2.0",
     "vitepress": "^1.6.4",
     "vue": "^3.5.0"
   },

@@ -99,6 +99,10 @@ export default {
           link: '/project-architecture/'
         },
         {
+          text: 'ragent',
+          link: '/project-architecture/ragent/'
+        },
+        {
           text: 'Agent CLI',
           link: '/agent-cli/'
         },
@@ -1124,6 +1128,10 @@ export default {
           {
             text: 'IDEA 使用指南',
             link: '/java-practice/08-intellij-idea'
+          },
+          {
+            text: '🚀 从需求到上线（开发方法论）',
+            link: '/java-practice/10-requirement-to-delivery'
           }
         ]
       },
@@ -1386,7 +1394,7 @@ export default {
             link: '/project-architecture/03-server-rag'
           },
           {
-            text: '04 · Agent 与流式对话',
+            text: '04 · 对话链路',
             link: '/project-architecture/04-agent-chat'
           },
           {
@@ -1396,6 +1404,21 @@ export default {
           {
             text: '06 · 评估体系设计',
             link: '/project-architecture/06-evaluation'
+          }
+        ]
+      }
+    ],
+    '/project-architecture/ragent/': [
+      {
+        text: 'ragent 项目架构',
+        items: [
+          {
+            text: '总览',
+            link: '/project-architecture/ragent/'
+          },
+          {
+            text: '01 · Workflow 链路',
+            link: '/project-architecture/ragent/01-workflow'
           }
         ]
       }
@@ -1438,6 +1461,14 @@ export default {
           {
             text: '架构叙事：SaaS 与 AI 工程化',
             link: '/misc/arch-narrative-saas-ai'
+          },
+          {
+            text: 'ragent 与知识库：设计对比',
+            link: '/misc/ragent-borrowings'
+          },
+          {
+            text: 'kb 重构详细计划',
+            link: '/misc/kb-refactor-plan'
           }
         ]
       }

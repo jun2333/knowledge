@@ -3,6 +3,9 @@ node_modules/
 package-lock.json
 yarn.lock
 
+# pnpm 本地 store 缓存（某些环境下 pnpm 会把 store 放在项目里，不入库）
+.pnpm-store/
+
 # Build output
 dist/
 build/
@@ -57,6 +60,10 @@ data/gen-eval-report.md
 # 评估历史与基线（本地数据）
 data/eval-history.jsonl
 data/eval-baseline.json
+data/eval-baseline.*.json
+
+# 阶段观测日志（本地数据，按天切分）
+data/logs/
 
 # Environment variables
 .env
