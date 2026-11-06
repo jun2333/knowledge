@@ -20,6 +20,7 @@ export default {
       'index.md',
       'ANNOTATION-GUIDE.md',
       'getting-started/**',
+      'prompts/**'
     ],
   },
 
@@ -147,6 +148,7 @@ export default {
       // 'project-architecture',
       'template-editor',
       'resume',
+      'prompts'
     ],
     socialLinks: [{ icon: 'github', link: 'https://github.com/jun2333/knowledge' }],
 

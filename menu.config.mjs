@@ -19,7 +19,16 @@ export default {
     },
     {
       text: 'AI',
-      link: '/ai-agent/glossary'
+      items: [
+        {
+          text: 'AI知识库',
+          link: '/ai-agent/glossary'
+        },
+        {
+          text: '提示词库',
+          link: '/prompts'
+        }
+      ]
     },
     {
       text: '客户端',
@@ -143,6 +152,21 @@ export default {
     }
   ],
   sidebar: {
+    '/prompts/': [
+      {
+        text: '知识产出类',
+        items: [
+          {
+            text: '生成提示词的提示词',
+            link: '/prompts/'
+          },
+          {
+            text: '服务端学习资料生成提示词（前端转型版）',
+            link: '/prompts/java-server-learning'
+          }
+        ]
+      }
+    ],
     '/javascript/': [
       {
         text: '语言基础',
@@ -934,12 +958,12 @@ export default {
         text: '框架',
         items: [
           {
-            text: 'Spring 核心原理',
-            link: '/service/java/spring-principles'
-          },
-          {
             text: 'Spring Boot 入门',
             link: '/service/java/spring-boot'
+          },
+          {
+            text: 'Spring 核心原理',
+            link: '/service/java/spring-principles'
           },
           {
             text: 'MyBatis-Plus 入门',
@@ -960,6 +984,15 @@ export default {
           {
             text: 'RPC 原理与 Java 生态',
             link: '/service/java/rpc-in-java'
+          }
+        ]
+      },
+      {
+        text: '中间件',
+        items: [
+          {
+            text: '中间件全景与 Java 实战',
+            link: '/service/java/middleware'
           }
         ]
       },

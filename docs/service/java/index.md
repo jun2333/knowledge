@@ -4,7 +4,7 @@
 >
 > **读法建议**：不要按目录顺序从头读到尾——按下文的三阶段路径读，每篇开头都标了优先级（P0 必读 / P1 选读 / P2 加分）。
 
-## 一、知识地图（17 篇）
+## 一、知识地图（18 篇）
 
 ```mermaid
 graph TD
@@ -31,6 +31,7 @@ graph TD
 
     E --> E1["java-high-concurrency<br/>高并发高可用设计"]
     E --> E2["java-deployment<br/>部署最佳实践"]
+    E --> E3["middleware<br/>中间件：Redis/MQ/ES/OSS/Nacos"]
 ```
 
 ### 每篇讲什么、什么时候读
@@ -52,6 +53,7 @@ graph TD
 | [Java IO/NIO](/service/java/java-io) | P1 | 流体系、BIO/NIO/AIO、序列化 | 读 Netty 前 |
 | [Netty 入门](/service/java/java-netty) | P1 | EventLoop/Pipeline/ByteBuf、RPC 生态 | 中高级岗 |
 | [RPC 原理与 Java 生态](/service/java/rpc-in-java) | P1 | 动态代理原理、Dubbo/gRPC/Feign、超时重试熔断 | 微服务岗 |
+| [中间件全景与 Java 实战](/service/java/middleware) | P1 | Redis/MQ/ES/对象存储/Nacos 的接入、机制与坑 | 接第二个系统时 |
 | [Java 实战计划](/java-practice/) | P0 | mall 项目六阶段实操，把知识落到代码 | 贯穿全程 |
 
 ### 配套目录（不在本篇展开，按需查）
